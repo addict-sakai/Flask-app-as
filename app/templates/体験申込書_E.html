@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>Experience flight application</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_e.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+    <!-- flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  </head>
+
+  <body>
+    <form id="entryForm">
+      <div class="sheet">
+        <h1>Experience flight application</h1>
+        <table>
+          <th>Application date</th>
+          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
+        </table>
+
+        <table>
+          <tr>
+            <th>Name</th>
+            <td><input type="text" id="fullName" name="full_name"></td>
+            <th>Weight（kg）</th>
+            <td><input type="text" id="weight" name="weight"></td>
+          </tr>
+          <tr>
+            <th>Gender</th>
+            <td>
+              <select name="gender">
+                <option value="" selected>-- please select --</option>
+                <option value="man">man</option>
+                <option value="woman">woman</option>
+              </select>
+            </td>
+            <th>Blood type</th>
+            <td>
+              <select name="blood_type">
+                <option value="" selected>-- please select --</option>
+                <option value="A">Ａ</option>
+                <option value="B">Ｂ</option>
+                <option value="O">Ｏ</option>
+                <option value="AB">ＡＢ</option>
+                <option value="unkown">Unkown</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>Birthday</th>
+            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+            <th>age</th>
+            <td><input type="text" id="age" readonly></td>
+          </tr>
+          <tr>
+            <th>Post code</th>
+            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
+                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
+            <th>country</th>
+            <td><input type="text" name="furigana"></td>
+          </tr>
+          <tr>
+            <th>Address</th>
+            <td colspan="3"><input type="text" id="address" name="address"></td>
+          </tr>
+          <tr>
+            <th>mobile</th>
+            <td><input type="text" name="mobile_phone"></td>
+            <th>tel</th>
+            <td><input type="text" name="home_phone"></td>
+          </tr>
+          <tr>
+            <th>The Office</th>
+            <td><input type="text" name="company_name"></td>
+            <th>tel（office）</th>
+            <td><input type="text" name="company_phone"></td>
+          </tr>
+          <tr>
+            <th>Emergency Contact</th>
+            <td><input type="text" name="emergency_name"></td>
+            <th>tel（Emergency）</th>
+            <td><input type="text" name="emergency_phone"></td>
+          </tr>
+          <tr>
+            <th>Relationship to the person</th>
+            <td><input type="text" id="relationship" name="relationship"></td>
+            <th>e-mail</th>
+            <td><input type="text" id="email" name="email"></td>
+          </tr>
+          <tr>
+            <th>Injury and illness history</th>
+            <td colspan="3"><textarea name="medical_history" placeholder="（Please inform us in advance if you have any medical conditions, such as a history of dislocation, a tendency for fractures, or recent fractures (within the past few weeks.)"></textarea></td>
+          </tr>
+        </table>
+
+        <h4>　★ Which course will you be attending today ?　　　【Please choose one of the courses listed below.】</h4>
+        <div class="checkbox-group1">
+          　　<label><input type="radio" id="short_exp" name="course_exp" value="1" required>　① Ｅｘｐｅｒｉｅｎ（Half day ¥10,000）</label><br>
+          　　　　　　<label>【 With the support of an instructor, you will enjoy a floating experience from a 22-meter hill.】</label><br>
+          　　<label><input type="radio" id="tandem_exp" name="course_exp" value="2" required>　② Ｔａｎｄｅｍ　flight（¥15,000）</label><br>
+          　　　　　　<label>【 You will experience high-altitude flight in tandem with a pilot.】</label><br>
+          　　<label><input type="radio" id="all_exp" name="course_exp" value="3" required>　③ Ｅｘｐｅｒｉｅｎ flight ＋ Ｔａｎｄｅｍ　flight（¥23,000）</label><br>
+          　　　　　　<label>【 This package includes both ① and ②.】</label>
+          <p class="note">　　※ The price of each course includes a ¥1,000 safety management fee.</p>
+        </div>
+
+        <h4>　★ How did you hear about our school?</h4>
+        <div class="checkbox-group2">
+          　　<label><input type="radio" id="advertis_find" name="school_find" value="1" required>　advertising</label><br>
+          　　<label><input type="radio" id="acquaintance_find" name="school_find" value="2" required>　Referral from an acquaintance</label><br>
+          　　<label><input type="radio" id="word_find" name="school_find" value="3" required>　Word of mouth</label><br>
+          　　<label><input type="radio" id="saw_find" name="school_find" value="4" required>　After seeing people paragliding.</label><br>
+          　　<label><input type="radio" id="search_find" name="school_find" value="5" required>　Online search</label><br>
+          　　<label><input type="radio" id="others_find" name="school_find" value="6" required>　Other</label><br>
+        </div>
+        
+        <div class="rules">
+          <h3>　※ Important Notes for Participants</h3>
+          　　　As this is an outdoor activity, it may have to be canceled due to adverse weather conditions.<br>
+          　　　If this occurs, we will issue a reflight voucher. Please note that a ¥1,000 safety management fee will apply on your next visit.<br>
+          　　　Please note that we do not offer cash refunds under any circumstances.<br>
+        </div>
+
+        <div class="agreement">
+          <strong>Waiver and Release of Liability</strong><br>
+          To: THP Holdings Co., Ltd.<br>
+          Mt. FUJI PARAGLIDING<br><br>
+          I, <span id="agreeName" class="handwrite">　　　　　　　　　　　　</span>, acknowledge and fully understand the risks associated with paragliding activities. 
+          I agree to comply with all established rules and regulations.<br>
+          While participating in activities within the flight area operated by THP Holdings Co., Ltd., 
+          I accept full responsibility for any and all injuries, damages, or losses that may occur to me, whether foreseeable or unforeseeable.
+          I agree that any compensation for injuries or damages incurred shall be limited to the coverage provided by applicable insurance policies. 
+          Neither I nor my family members or related parties shall pursue any further claims, demands, or legal actions against the school, 
+          its owners, instructors, staff members, or affiliates.<br>
+          Furthermore, in accordance with the area membership regulations, if I violate any rules or cause disadvantage or harm to THP Holdings Co., Ltd., 
+          I understand and accept that my membership may be revoked or terminated. In such cases, I shall not file objections, claims for damages, or any similar actions.<br><br>
+          <table>
+            <tr>
+              <th>Date:</th>
+              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date"></td>
+              <th>Signature:</th>
+              <td><input type="text" name="signature_name"></td>
+            </tr>
+            <tr>
+              <th>Parent/Guardian Name (Under 20)</th>
+              <td colspan="3"><input type="text" name="guardian_name"></td>
+              <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
+            </tr>
+          </table>
+        </div>
+      <div class="buttons">
+        <button type="button" id="submitBtn">Submit</button>
+        <button type="button" id="exitBtn">Cancel</button>
+      </div>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+    <script src="{{ url_for('static', filename='app_exp_e.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>Information on One-Day Accident Insurance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_ins.css') }}">
+    <script src="{{ url_for('static', filename='app_ins.js') }}"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+    <!-- flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  </head>
+
+  <body>
+    <form id="entryForm">
+      <div class="container">
+        <h1>【One day Insurance explanation】</h1>
+        <h2>Regarding the Insurance</h2>
+
+        <p>
+          Relaxing flight experience, Experience flight, Tandem flight, Experience flight with Tandem and A-class course are requested to pay ¥1,000 for the insurance.<br>
+          If you have travel insurance or have private insurance, please use the insurance that you have with priority.
+        </p>
+        <p class="note">
+          （Please register your details at the reception counter before using our school area. If you fall to do so there will be no Insurance compensations claim for any accidents that happens during your course period）
+        </p>
+        <p>
+          Visitors, free pilot, and school members can also join this insurance.
+        </p>
+        <div class="section-title">Coverage Details</div>
+      <table>
+        <tr>
+          <th>Insurance Details.... in case of Death or disability</th>
+          <td>¥30,000,000</td>
+        </tr>
+        <tr>
+          <th>Hospitalization insurance daily amount (up to 180 days)</th>
+          <td>¥4,000 per day</td>
+        </tr>
+        <tr>
+          <th>transportation amount (up to 180 days)</th>
+          <td>¥1,500 per day</td>
+        </tr>
+      </table>
+
+      <p class="note">（Hospitalization benefits are limited to 90 days, and outpatient treatment benefits are limited to 180 days.）</p>
+      <p class="note">（Depending on the degree of injury, 3-100% of disability insurance amount will be paid.）</p>
+
+      <div class="section-title">Cases Where Insurance Benefits Will Be Paid</div>
+      <p>
+        Insurance can be claimed only when accidents took place In Mt.FUJIPARAGLIDING.
+      </p>
+      <p class="note">
+        ※Insurance benefits will be payable only if the injured person visits a hospital on the day of the injury or the following day and obtains a medical certificate.
+      </p>
+
+      <div class="section-title">Cases Where Insurance Benefits Will Not Be Paid</div>
+      <p>
+        Insurance will not be claimed if proper registration is not done at the reception counter.
+      </p>
+      <p class="note">
+        ※Regardless of the cause, insurance benefits will not be paid for cervical syndrome (so-called whiplash injury) or lower back pain without objective medical findings.
+      </p>
+
+      <p class="note">※insurance will not be paid also to the injury caused by the reasons listed in the following Items.</p>
+      <ul>
+        <li>Ａ）If the intention was proved to be premeditated.</li>
+        <li>Ｂ）If the policy holder's main intentions were to get the Insurance money.</li>
+        <li>Ｃ）If you Involve In the act of violence, suicide, and criminal.</li>
+        <li>Ｄ）If the insured has Brain disease or Insanity or any similar diseases.</li>
+        <li>Ｅ）If the Insured had a surgical operation childbirth due to pregnancy, premature birth, or abortion, other medical procedure.</li>
+        <li>Ｆ）If accidents happen due to natural disasters like volcano eruption, earthquake or due to the tsunami.</li>
+        <li>Ｇ）Due to War, armed foreign act, revolution, civil war, riot of incident, similar to these.</li>
+      </ul>
+
+      <!--
+      <div class="signature">
+        <div>2025年　　月　　日（　　）</div>
+        <div>氏名　　　　　　　　　　　　印</div>
+      </div>
+      -->
+
+        <div style="text-align: center; padding: 30px; background: #f9f9f9; border-top: 1px solid #ccc;">
+            <p>After reviewing the information, please click the button below to agree.</p>
+            <button id="agreeBtn" style="padding: 10px 40px; font-size: 1.2rem; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Agree and Apply
+            </button>
+            <button onclick="window.close();" style="margin-left: 10px; padding: 10px 20px;">同意しない</button>
+        </div>
+      </div>
+    </form>
+
+    <script>
+      document.getElementById("agreeBtn").addEventListener("click", function() {
+        // 親画面（申込書）にメッセージを送信
+        if (window.opener) {
+          window.opener.postMessage("agreed", "*");
+          window.close(); // 同意したらポップアップを閉じる
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+Flask>=2.3.0
+Flask-SQLAlchemy>=3.0.3
+psycopg2-binary>=2.9.9
+qrcode[pil]>=8.2
+Pillow>=12.1.1

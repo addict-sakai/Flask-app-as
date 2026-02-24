@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>請負管理 | FujiPara System</title>
+  <link rel="stylesheet" href="../static/style_cont_info.css" />
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ============================================================
+       Sidebar
+       ============================================================ -->
+  <aside class="sidebar">
+
+    <!-- ロゴ -->
+    <div class="sidebar-logo">
+      ⚙ FujiPara System
+    </div>
+
+    <!-- トップボタン -->
+    <div class="sidebar-top-area">
+      <a href="/" class="btn-top-link">
+        <span class="btn-top-icon">←</span> トップ
+      </a>
+    </div>
+
+    <!-- ナビ（2項目） -->
+    <nav class="sidebar-nav-wrap">
+      <ul class="sidebar-nav">
+        <li>
+          <a href="#"
+             class="nav-item active"
+             id="nav-flight"
+             onclick="switchView('flight'); return false;">
+            <span class="sidebar-icon">✈</span>
+            フライト状況
+          </a>
+        </li>
+        <li>
+          <a href="#"
+             class="nav-item"
+             id="nav-work"
+             onclick="switchView('work'); return false;">
+            <span class="sidebar-icon">📆</span>
+            出勤可否状況
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+  </aside><!-- /.sidebar -->
+
+
+  <!-- ============================================================
+       Main
+       ============================================================ -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <span class="topbar-title" id="topbar-title">✈ フライト状況</span>
+    </header>
+
+    <!-- ======================================================
+         VIEW: フライト状況
+         ====================================================== -->
+    <div class="view-panel" id="view-flight">
+
+      <!-- コントロールバー -->
+      <div class="control-bar">
+        <div class="month-nav">
+          <button class="btn btn-ghost btn-sm" onclick="repMonthPrev()">◀ 前月</button>
+          <span class="month-label" id="rep-month-label">—</span>
+          <button class="btn btn-ghost btn-sm" onclick="repMonthNext()">翌月 ▶</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" id="btn-show-all" onclick="toggleShowAll()">
+            全員表示
+          </button>
+        </div>
+      </div>
+
+      <!-- テーブル（スクロール可能） -->
+      <div class="scroll-area">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="col-name">名前</th>
+                <th class="col-num center">フライト日数</th>
+                <th class="col-num center">フライト本数</th>
+                <th class="col-amount right">合計金額</th>
+                <th class="col-action center">詳細</th>
+              </tr>
+            </thead>
+            <tbody id="flight-status-body">
+              <tr class="loading-row">
+                <td colspan="5">読み込み中…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /.scroll-area -->
+
+    </div><!-- /#view-flight -->
+
+
+    <!-- ======================================================
+         VIEW: 出勤可否状況
+         ====================================================== -->
+    <div class="view-panel hidden" id="view-work">
+
+      <!-- コントロールバー -->
+      <div class="control-bar">
+        <div class="month-nav">
+          <button class="btn btn-ghost btn-sm" id="wc-prev-btn" onclick="wcMonthPrev()">◀ 前月</button>
+          <span class="month-label" id="wc-month-label">—</span>
+          <button class="btn btn-ghost btn-sm" id="wc-next-btn" onclick="wcMonthNext()">翌月 ▶</button>
+        </div>
+        <!-- 凡例 -->
+        <div class="legend">
+          <span><span class="status-ok">○</span> 出勤可</span>
+          <span><span class="status-ng">×</span> 出勤不可</span>
+          <span><span class="status-null">　</span> 未入力</span>
+          <!-- <span><span class="status-null">△</span> 未入力</span> -->
+        </div>
+      </div>
+
+      <!-- テーブル（スクロール可能） -->
+      <div class="scroll-area" id="wc-scroll-area">
+        <div id="wc-table-wrap">
+          <p class="loading-text">読み込み中…</p>
+        </div>
+      </div><!-- /.scroll-area -->
+
+    </div><!-- /#view-work -->
+
+  </div><!-- /.main-content -->
+</div><!-- /.layout -->
+
+
+<!-- ============================================================
+     Detail Modal
+     ============================================================ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title-text">詳細</span>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body-content"></div>
+    <div class="modal-footer" id="modal-summary"></div>
+  </div>
+</div>
+
+<script src="../static/app_cont_info.js"></script>
+</body>
+</html>

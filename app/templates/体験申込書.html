@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>体験フライト申込書</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_exp.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+    <!-- flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  </head>
+
+  <body>
+    <form id="entryForm">
+      <div class="sheet">
+        <h1>体験フライト申込書</h1>
+        <table>
+          <th>申込日</th>
+          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
+        </table>
+
+        <table>
+          <tr>
+            <th>氏名</th>
+            <td><input type="text" id="fullName" name="full_name"></td>
+            <th>ふりがな</th>
+            <td><input type="text" name="furigana"></td>
+          </tr>
+          <tr>
+            <th>性別</th>
+            <td>
+              <select name="gender">
+                <option value="" selected>-- 選択してください --</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </td>
+            <th>血液型</th>
+            <td>
+              <select name="blood_type">
+                <option value="" selected>-- 選択してください --</option>
+                <option value="A">Ａ</option>
+                <option value="B">Ｂ</option>
+                <option value="O">Ｏ</option>
+                <option value="AB">ＡＢ</option>
+                <option value="不明">不明</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>生年月日</th>
+            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+            <th>年齢</th>
+            <td><input type="text" id="age" readonly></td>
+          </tr>
+          <tr>
+            <th>郵便番号</th>
+            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
+                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
+            <th>体重（kg）</th>
+            <td><input type="text" id="weight" name="weight"></td>
+          </tr>
+          <tr>
+            <th>住所</th>
+            <td colspan="3"><input type="text" id="address" name="address"></td>
+          </tr>
+          <tr>
+            <th>携帯電話</th>
+            <td><input type="text" name="mobile_phone"></td>
+            <th>自宅電話</th>
+            <td><input type="text" name="home_phone"></td>
+          </tr>
+          <tr>
+            <th>勤務先名</th>
+            <td><input type="text" name="company_name"></td>
+            <th>電話番号（勤務先）</th>
+            <td><input type="text" name="company_phone"></td>
+          </tr>
+          <tr>
+            <th>緊急連絡先氏名</th>
+            <td><input type="text" name="emergency_name"></td>
+            <th>電話番号（緊急時）</th>
+            <td><input type="text" name="emergency_phone"></td>
+          </tr>
+          <tr>
+            <th>本人との続柄</th>
+            <td><input type="text" id="relationship" name="relationship"></td>
+            <th>e-mail</th>
+            <td><input type="text" id="email" name="email"></td>
+          </tr>
+          <tr>
+            <th>傷病履歴</th>
+            <td colspan="3"><textarea name="medical_history" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
+          </tr>
+        </table>
+
+        <h3>　★ 本日はどのコースにご参加されますか？</h3>
+        <div class="checkbox-group1">
+          　　<label><input type="radio" id="short_exp" name="course_exp" value="1" required>　① ショートフライト体験（¥10,000）</label><br>
+          　　　　　　<label>【 22mの小山からインストラクターのサポートを受けて浮遊体験をします。】</label><br>
+          　　<label><input type="radio" id="tandem_exp" name="course_exp" value="2" required>　② タンデムフライト（¥15,000）</label><br>
+          　　　　　　<label>【 タンデムパイロットと二人乗りで高高度を浮遊体験します。】</label><br>
+          　　<label><input type="radio" id="all_exp" name="course_exp" value="3" required>　③ ショート＋タンデム セット（¥23,000）</label><br>
+          　　　　　　<label>【 ①と②のセット体験です。】</label>
+        </div>
+        <p class="note">　　　　※ 各コース安全管理費 ¥1,000 込みの値段になります。</p>
+
+        <h3>　★ 当スクールは何でお知りになりましたか？</h3>
+        <div class="checkbox-group2">
+          　　<label><input type="radio" id="advertis_find" name="school_find" value="広告" required>　広告（雑誌名等を記入）</label><br>
+          　　<label><input type="radio" id="acquaintance_find" name="school_find" value="紹介" required>　知人の紹介（当校の生徒、会員の方、その他フライヤー）</label><br>
+          　　<label><input type="radio" id="saw_find" name="school_find" value="3" required>　パラグライダーを見て（どこで見ましたか？）</label><br>
+          　　<label><input type="radio" id="search_find" name="school_find" value="検索" required>　ホームページ検索（どの検索エンジンですか？）</label><br>
+          　　<label><input type="radio" id="brochure_find" name="school_find" value="パンフレット" required>　パンフレットどこで入手しましたか？）</label><br>
+          　　<label><input type="radio" id="others_find" name="school_find" value="その他" required>　その他</label><br>
+          <table>
+            <tr>
+              <th>選択項目の詳細：</th>
+              <td><input type="text" id="school_text" name="school_text"></td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="rules">
+          <h3>　※ ご参加の際の注意事項</h3>
+          　　　アウトドアである為、気象条件の悪化等により、やむなく中止せざるを得ない場合があります。<br>
+          　　　その際は《リフライト券》を発行します。（次回は安全管理費として￥1,000頂きます）<br>
+          　　　現金でのお返しは一切出来ませんのでご承知の上でご参加下さい。<br>
+        </div>
+
+        <div class="agreement">
+          <strong>参加誓約書</strong><br>
+          ＴＨＰホールディング株式会社　　　Mt.FUJI PARAGLIDING　殿<br>
+          私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+          ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し、
+          予測可能か否かに問わず私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、
+          当スクール関係者に対してその他の責任追及及、損害請求を一切致しません。
+          またエリア会員規定に基づき、規約に違反した場合、もしくはＴＨＰホールディング株式会社に対して不利益をもたらした場合、会員資格の無効化及び
+          退会を申し渡されても、異議申し立て、損害賠償請求、それらにに類似した行為を一切致しません。<br><br>
+          <table>
+            <tr>
+              <th>確認日</th>
+              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date"></td>
+              <th>本人署名</th>
+              <td><input type="text" name="signature_name"></td>
+            </tr>
+            <tr>
+              <th>保護者氏名（20歳未満）</th>
+              <td colspan="3"><input type="text" name="guardian_name"></td>
+              <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
+            </tr>
+          </table>
+        </div>
+      <div class="buttons">
+        <button type="button" id="submitBtn">申 請</button>
+        <button type="button" id="exitBtn">終 了</button>
+      </div>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+    <script src="{{ url_for('static', filename='app_exp.js') }}"></script>
+  </body>
+</html>

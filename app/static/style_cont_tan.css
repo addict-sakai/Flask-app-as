@@ -1,0 +1,545 @@
+/* =========================================
+   style_cont_tan.css  –  請負日報ページ専用スタイル
+   ========================================= */
+
+.cont-page {
+  background: #f0f0f0;
+  padding: 0;
+  text-align: left;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── ヘッダー ─── */
+.cont-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #000;
+  color: #fff;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cont-header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cont-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.15em;
+  color: #fff;
+}
+.cont-month-display {
+  font-size: 0.78rem;
+  color: #aaa;
+  letter-spacing: 0.08em;
+}
+.cont-back-btn {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.cont-back-btn:hover { color: #fff; border-color: #fff; }
+
+/* ─── メインラッパー ─── */
+.cont-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── カード共通 ─── */
+.cont-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 14px;
+  padding: 20px;
+}
+.cont-card--full { overflow: hidden; }
+.cont-card--search-top { padding: 20px; }
+
+.cont-card__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ─── 検索行 ─── */
+.cont-search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cont-search-input {
+  flex: 1;
+  max-width: 420px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #000;
+}
+.cont-search-input:focus { border-color: #000; }
+.cont-search-input::placeholder { color: #bbb; font-size: 0.8rem; }
+
+.cont-search-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.cont-search-btn:hover { opacity: 0.75; }
+.cont-search-hint { font-size: 0.72rem; color: #bbb; margin: 0 0 8px; }
+
+/* ─── アラート ─── */
+.cont-alert {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: none;
+}
+.cont-alert--danger  { background: #fff0f0; border: 1.5px solid #ff3355; color: #cc1133; }
+.cont-alert--success { background: #f0fff4; border: 1.5px solid #00c853; color: #007a33; }
+
+/* ─── エントリーポップアップ（検索後に展開） ─── */
+.cont-entry-popup {
+  margin-top: 14px;
+  border: 1.5px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+  animation: popupExpand 0.22s ease;
+}
+
+@keyframes popupExpand {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 担当者バナー ─── */
+.cont-member-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #000;
+  color: #fff;
+  padding: 12px 18px;
+  gap: 12px;
+}
+.cont-member-banner__info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cont-member-banner__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #888;
+  text-transform: uppercase;
+}
+.cont-member-banner__name {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+.cont-member-banner__sub {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+.cont-member-banner__clear {
+  background: none;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.75rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cont-member-banner__clear:hover { border-color: #ff3355; color: #ff3355; }
+
+/* ─── ポップアップ本体 ─── */
+.cont-popup-body {
+  padding: 18px 20px 16px;
+  background: #fff;
+}
+
+/* ─── ポップアップ内行 ─── */
+.cont-popup-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.cont-popup-row--boxes {
+  gap: 14px;
+}
+
+.cont-popup-group {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.cont-popup-divider {
+  border: none;
+  border-top: 1px dashed #e0e0e0;
+  margin: 14px 0;
+}
+
+/* ─── ポップアップ内ボックス（機体・ハーネス・報告） ─── */
+.cont-popup-box {
+  flex: 1;
+  min-width: 200px;
+  background: #f8f8f8;
+  border: 1px solid #ebebeb;
+  border-radius: 10px;
+  padding: 14px;
+}
+.cont-popup-box--report {
+  flex: 1.4;
+  min-width: 240px;
+}
+.cont-popup-box__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #888;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.cont-popup-box-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ─── フォーム共通 ─── */
+.cont-form-group { margin-bottom: 12px; }
+
+.cont-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.cont-required {
+  background: #ff3355;
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+.cont-input {
+  width: 100%;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  color: #111;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.cont-input--sm { width: 90px; }
+.cont-input:focus { border-color: #000; }
+
+.cont-textarea {
+  width: 100%;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.85rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  color: #111;
+  outline: none;
+  resize: vertical;
+  min-height: 58px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.cont-textarea:focus { border-color: #000; }
+
+/* ─── 選択ボタングループ ─── */
+.cont-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cont-btn-group--col {
+  flex-direction: column;
+}
+.cont-opt-btn {
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1.5px solid #ddd;
+  background: #fafafa;
+  color: #666;
+  cursor: pointer;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cont-opt-btn:hover   { border-color: #000; color: #000; }
+.cont-opt-btn.selected { border-color: #000; background: #000; color: #fff; }
+
+/* ─── 区切り ─── */
+.cont-divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 16px 0;
+}
+
+/* ─── 登録・キャンセルバー ─── */
+.cont-action-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+.cont-register-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.cont-register-btn:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
+.cont-register-btn:disabled { background: #eee; color: #bbb; cursor: not-allowed; }
+
+.cont-cancel-btn {
+  padding: 13px 24px;
+  border-radius: 10px;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  color: #888;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.cont-cancel-btn:hover { border-color: #888; color: #333; background: #f5f5f5; }
+
+/* ─── 結果メッセージ ─── */
+.cont-result-msg {
+  margin-top: 10px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+  display: none;
+}
+
+/* ─── テーブル ─── */
+.cont-table-wrap { overflow-x: auto; }
+.cont-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.cont-table thead th {
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid #e0e0e0;
+}
+.cont-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.12s;
+}
+.cont-table tbody tr:hover { background: #fafafa; }
+.cont-table tbody tr.is-today { background: #f0f7ff; }
+.cont-table td {
+  padding: 9px 12px;
+  color: #333;
+  vertical-align: middle;
+}
+.cont-td-name { font-weight: 700; }
+
+/* ─── 日付グループヘッダー ─── */
+.cont-date-row td {
+  background: #f0f0f0;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #555;
+  letter-spacing: 0.08em;
+  padding: 6px 12px;
+}
+
+/* ─── チップ ─── */
+.cont-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #e8e8e8;
+  color: #444;
+}
+.cont-chip--loc { background: #e8f0fe; color: #1a56cc; }
+
+/* ─── 操作ボタン ─── */
+.cont-btn-edit {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  transition: all 0.15s;
+}
+.cont-btn-edit:hover { background: #000; color: #fff; }
+.cont-btn-edit:disabled { border-color: #ddd; color: #ccc; cursor: not-allowed; }
+
+/* ─── 空状態 ─── */
+.cont-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+.cont-empty-icon { font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4; }
+
+/* ─── 編集モーダル ─── */
+.cont-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.cont-modal-overlay.open { display: flex; }
+.cont-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.cont-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.cont-modal__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
+}
+.cont-modal__close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 0 4px;
+}
+.cont-modal-save-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+}
+.cont-modal-save-btn:hover { opacity: 0.8; }
+
+/* ─── スクロールバー ─── */
+.cont-table-wrap::-webkit-scrollbar { height: 6px; }
+.cont-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.cont-table-wrap::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+/* ─── レスポンシブ ─── */
+@media (max-width: 960px) {
+  .cont-wrapper { padding: 12px 16px; }
+  .cont-header  { padding: 10px 16px; }
+}
+@media (max-width: 700px) {
+  .cont-popup-row--boxes { flex-direction: column; }
+  .cont-popup-box        { min-width: unset; }
+  .cont-popup-box-inner  { grid-template-columns: 1fr; }
+  .cont-search-input     { max-width: 100%; }
+  .cont-cancel-btn       { padding: 13px 16px; }
+}

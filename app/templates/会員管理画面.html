@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会員管理画面</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_info.css') }}">
+</head>
+<body>
+  <!-- Main Content -->
+  <main class="main">
+    <!-- LIST VIEW -->
+    <div class="view active" id="view-list">
+      <div class="page-header">
+        <div class="page-header-left">
+          <a href="/" class="btn btn-ghost top-btn">
+            <span class="icon">←</span> トップ
+          </a>
+        </div>
+        <h1 class="page-title">会員一覧</h1>
+        <div class="page-header-right">
+          <div class="total-count-badge">
+            総会員数 <span class="count-num" id="totalCount">—</span> 名
+          </div>
+          <button class="btn btn-primary" id="addFromListBtn">
+            ＋ 新規登録
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Panel -->
+      <section class="search-panel">
+        <div class="search-grid">
+          <div class="field-group">
+            <label class="field-label">氏名</label>
+            <input type="text" class="field-input" id="searchName" placeholder="氏名で検索">
+          </div>
+          <div class="field-group">
+            <label class="field-label">分類</label>
+            <select class="field-input" id="searchType">
+              <option value="">すべて</option>
+              <option value="会員">会員</option>
+              <option value="スクール">スクール</option>
+              <option value="ビジター">ビジター</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">使用機体</label>
+            <input type="text" class="field-input" id="searchGlider" placeholder="機体名で検索">
+          </div>
+          <div class="field-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="searchReglimit">
+              <span class="checkbox-text">登録期限が1ヶ月以内</span>
+            </label>
+          </div>
+          <div class="field-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="searchRepack">
+              <span class="checkbox-text">リパック日が1ヶ月以内</span>
+            </label>
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-ghost" id="searchReset">リセット</button>
+          <button class="btn btn-primary" id="searchBtn">検索</button>
+        </div>
+      </section>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>会員番号</th>
+              <th>氏名</th>
+              <th>分類</th>
+              <th>使用機体</th>
+              <th>登録期限</th>
+              <th>リパック日</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="memberTableBody">
+            <tr class="empty-row">
+              <td colspan="7">データがありません</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD / EDIT VIEW -->
+    <div class="view" id="view-add">
+      <div class="page-header">
+        <div class="page-header-left">
+          <a href="/" class="btn btn-ghost top-btn">
+            <span class="icon">←</span> トップ
+          </a>
+        </div>
+        <h1 class="page-title" id="formTitle">新規登録</h1>
+        <div class="page-header-right">
+          <button class="btn btn-ghost" id="backToList">
+            一覧に戻る
+          </button>
+        </div>
+      </div>
+      <form class="member-form" id="memberForm">
+        <input type="hidden" id="editId">
+
+        <!-- 基本情報 -->
+        <div class="form-section">
+          <h2 class="section-title">基本情報</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label required">分類</label>
+              <select class="field-input" id="f_member_type">
+                <option value="">選択してください</option>
+                <option value="会員">会員</option>
+                <option value="スクール">スクール</option>
+                <option value="ビジター">ビジター</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">会員番号</label>
+              <input type="text" class="field-input" id="f_member_number">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">氏名</label>
+              <input type="text" class="field-input" id="f_full_name" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label">ふりがな</label>
+              <input type="text" class="field-input" id="f_furigana">
+            </div>
+            <div class="field-group">
+              <label class="field-label">性別</label>
+              <select class="field-input" id="f_gender">
+                <option value="">選択</option>
+                <option value="男性">男性</option>
+                <option value="女性">女性</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">血液型</label>
+              <select class="field-input" id="f_blood_type">
+                <option value="">選択</option>
+                <option value="A">A型</option>
+                <option value="B">B型</option>
+                <option value="O">O型</option>
+                <option value="AB">AB型</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">生年月日</label>
+              <input type="date" class="field-input" id="f_birthday">
+            </div>
+            <div class="field-group">
+              <label class="field-label">体重</label>
+              <input type="text" class="field-input" id="f_weight" placeholder="例: 65kg">
+            </div>
+            <div class="field-group">
+              <label class="field-label">申込日</label>
+              <input type="date" class="field-input" id="f_application_date">
+            </div>
+            <div class="field-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="f_contract">
+                <span class="checkbox-text">請負判定</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 連絡先 -->
+        <div class="form-section">
+          <h2 class="section-title">連絡先</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">郵便番号</label>
+              <input type="text" class="field-input" id="f_zip_code" placeholder="000-0000">
+            </div>
+            <div class="field-group span-2">
+              <label class="field-label">住所</label>
+              <input type="text" class="field-input" id="f_address">
+            </div>
+            <div class="field-group">
+              <label class="field-label">携帯番号</label>
+              <input type="tel" class="field-input" id="f_mobile_phone">
+            </div>
+            <div class="field-group">
+              <label class="field-label">自宅番号</label>
+              <input type="tel" class="field-input" id="f_home_phone">
+            </div>
+            <div class="field-group">
+              <label class="field-label">メールアドレス</label>
+              <input type="email" class="field-input" id="f_email">
+            </div>
+            <div class="field-group">
+              <label class="field-label">勤務先</label>
+              <input type="text" class="field-input" id="f_company_name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">勤務先電話番号</label>
+              <input type="tel" class="field-input" id="f_company_phone">
+            </div>
+          </div>
+        </div>
+
+        <!-- 緊急連絡先 -->
+        <div class="form-section">
+          <h2 class="section-title">緊急連絡先</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">氏名</label>
+              <input type="text" class="field-input" id="f_emergency_name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">電話番号</label>
+              <input type="tel" class="field-input" id="f_emergency_phone">
+            </div>
+            <div class="field-group">
+              <label class="field-label">続柄</label>
+              <input type="text" class="field-input" id="f_relationship" placeholder="例: 配偶者">
+            </div>
+          </div>
+        </div>
+
+        <!-- コース情報 -->
+        <div class="form-section">
+          <h2 class="section-title">コース情報</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">コースタイプ</label>
+              <input type="text" class="field-input" id="f_course_type">
+            </div>
+            <div class="field-group">
+              <label class="field-label">スクールコース名</label>
+              <input type="text" class="field-input" id="f_course_name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">コース料金</label>
+              <input type="text" class="field-input" id="f_course_fee">
+            </div>
+            <div class="field-group">
+              <label class="field-label">選択理由</label>
+              <input type="text" class="field-input" id="f_course_find">
+            </div>
+          </div>
+        </div>
+
+        <!-- 機体情報 -->
+        <div class="form-section">
+          <h2 class="section-title">機体情報</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">使用機体</label>
+              <input type="text" class="field-input" id="f_glider_name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">機体カラー</label>
+              <input type="text" class="field-input" id="f_glider_color">
+            </div>
+            <div class="field-group">
+              <label class="field-label">リパック日</label>
+              <input type="month" class="field-input" id="f_repack_date">
+            </div>
+          </div>
+        </div>
+
+        <!-- フライヤー情報 -->
+        <div class="form-section">
+          <h2 class="section-title">フライヤー情報</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">フライヤー登録番号</label>
+              <input type="text" class="field-input" id="f_reg_no">
+            </div>
+            <div class="field-group">
+              <label class="field-label">登録期限</label>
+              <input type="date" class="field-input" id="f_reglimit_date">
+            </div>
+            <div class="field-group">
+              <label class="field-label">技能証</label>
+              <input type="text" class="field-input" id="f_license">
+            </div>
+            <div class="field-group">
+              <label class="field-label">フライト経験</label>
+              <input type="text" class="field-input" id="f_experience">
+            </div>
+            <div class="field-group">
+              <label class="field-label">ホームエリア</label>
+              <input type="text" class="field-input" id="f_home_area">
+            </div>
+            <div class="field-group">
+              <label class="field-label">引率者名</label>
+              <input type="text" class="field-input" id="f_leader">
+            </div>
+            <div class="field-group">
+              <label class="field-label">ビジター料金</label>
+              <input type="text" class="field-input" id="f_visitor_fee">
+            </div>
+          </div>
+        </div>
+
+        <!-- 同意・署名 -->
+        <div class="form-section">
+          <h2 class="section-title">同意・署名</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">確認日</label>
+              <input type="date" class="field-input" id="f_agreement_date">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">本人署名</label>
+              <input type="text" class="field-input" id="f_signature_name" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label">保護者氏名</label>
+              <input type="text" class="field-input" id="f_guardian_name">
+            </div>
+          </div>
+        </div>
+
+        <!-- 傷病履歴 -->
+        <div class="form-section">
+          <h2 class="section-title">傷病履歴</h2>
+          <div class="form-grid">
+            <div class="field-group span-3">
+              <textarea class="field-input" id="f_medical_history" rows="4" placeholder="傷病履歴を入力..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none">削除</button>
+          <div class="form-actions-right">
+            <button type="button" class="btn btn-ghost" id="cancelBtn">キャンセル</button>
+            <button type="submit" class="btn btn-primary" id="saveBtn">保存する</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 削除確認モーダル -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 class="modal-title">削除確認</h3>
+      <p class="modal-text">この会員データを削除してもよろしいですか？<br>この操作は元に戻せません。</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modalCancel">キャンセル</button>
+        <button class="btn btn-danger" id="modalConfirm">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app_info.js') }}"></script>
+</body>
+</html>

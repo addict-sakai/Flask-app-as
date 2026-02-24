@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>請負日報 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="../static/style.css" />
+  <link rel="stylesheet" href="../static/style_cont_tan.css" />
+</head>
+<body class="cont-page">
+
+  <!-- ヘッダー -->
+  <header class="cont-header">
+    <div><a href="/" class="cont-back-btn">← トップ</a></div>
+    <div class="cont-header-center">
+      <h1 class="cont-title">請負日報</h1>
+      <div class="cont-month-display" id="month-display">—</div>
+    </div>
+    <div>
+      <span style="color:#aaa; font-size:0.8rem;">合計 <strong id="stat-total">{{ records | length }}</strong> 件</span>
+    </div>
+  </header>
+
+  <div class="cont-wrapper">
+
+    <!-- ─── 担当者検索カード ─── -->
+    <div class="cont-card cont-card--search-top">
+      <h2 class="cont-card__title">担当者検索</h2>
+
+      <div class="cont-search-row">
+        <input type="text" id="search-input" class="cont-search-input"
+               placeholder="会員番号 または UUID（QR）" autocomplete="off" />
+        <button class="cont-search-btn" onclick="ContApp.lookup()">検索</button>
+      </div>
+      <p class="cont-search-hint">Enterキーでも検索できます</p>
+      <div id="search-error" class="cont-alert cont-alert--danger"></div>
+
+      <!-- ─── 入力ポップアップ（検索後に展開） ─── -->
+      <div id="entry-popup" class="cont-entry-popup" style="display:none;">
+
+        <!-- 担当者バナー -->
+        <div class="cont-member-banner">
+          <div class="cont-member-banner__info">
+            <span class="cont-member-banner__label">担当者</span>
+            <span class="cont-member-banner__name" id="member-name">—</span>
+            <span class="cont-member-banner__sub"  id="member-sub"></span>
+          </div>
+          <button class="cont-member-banner__clear" onclick="ContApp.clearMember()">✕ クリア</button>
+        </div>
+
+        <!-- フォーム本体 -->
+        <div class="cont-popup-body">
+
+          <!-- 行1：フライト本数 + 場所 -->
+          <div class="cont-popup-row">
+            <div class="cont-popup-group">
+              <label class="cont-label" for="flight-count">フライト本数</label>
+              <input type="number" id="flight-count" class="cont-input cont-input--sm"
+                     min="0" max="99" placeholder="0" />
+            </div>
+            <div class="cont-popup-group">
+              <label class="cont-label">場所 <span class="cont-required">必須</span></label>
+              <div class="cont-btn-group grp-location">
+                <button class="cont-opt-btn" data-val="FUJIパラ"
+                        onclick="ContApp.selectOpt(this,'grp-location')">FUJIパラ</button>
+                <button class="cont-opt-btn" data-val="Wingキッス"
+                        onclick="ContApp.selectOpt(this,'grp-location')">Wingキッス</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cont-popup-divider"></div>
+
+          <!-- 行2：機体 + ハーネス + 引継ぎ -->
+          <div class="cont-popup-row cont-popup-row--boxes">
+
+            <!-- 機体 -->
+            <div class="cont-popup-box">
+              <p class="cont-popup-box__title">機体</p>
+              <div class="cont-popup-box-inner">
+                <div class="cont-popup-group">
+                  <label class="cont-label">使用機体</label>
+                  <div class="cont-btn-group grp-glider cont-btn-group--col">
+                    <button class="cont-opt-btn" data-val="K24"
+                            onclick="ContApp.selectOpt(this,'grp-glider')">K24</button>
+                    <button class="cont-opt-btn" data-val="BIBETA6"
+                            onclick="ContApp.selectOpt(this,'grp-glider')">BIBETA6</button>
+                    <button class="cont-opt-btn" data-val="持込"
+                            onclick="ContApp.selectOpt(this,'grp-glider')">持込</button>
+                  </div>
+                </div>
+                <div class="cont-popup-group" style="margin-bottom:0;">
+                  <label class="cont-label">サイズ</label>
+                  <div class="cont-btn-group grp-size cont-btn-group--col">
+                    <button class="cont-opt-btn" data-val="SM(38)"
+                            onclick="ContApp.selectOpt(this,'grp-size')">SM(38)</button>
+                    <button class="cont-opt-btn" data-val="ML(41)"
+                            onclick="ContApp.selectOpt(this,'grp-size')">ML(41)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ハーネス -->
+            <div class="cont-popup-box">
+              <p class="cont-popup-box__title">ハーネス</p>
+              <div class="cont-popup-group">
+                <label class="cont-label">パイロットハーネス</label>
+                <div class="cont-btn-group grp-pilot-harness">
+                  <button class="cont-opt-btn" data-val="SUPAIR ワリビ"
+                          onclick="ContApp.selectOpt(this,'grp-pilot-harness')">SUPAIR ワリビ</button>
+                  <button class="cont-opt-btn" data-val="SUPAIR ワリビ2"
+                          onclick="ContApp.selectOpt(this,'grp-pilot-harness')">SUPAIR ワリビ2</button>
+                  <button class="cont-opt-btn" data-val="インディペンデンス"
+                          onclick="ContApp.selectOpt(this,'grp-pilot-harness')">インディペンデンス</button>
+                  <button class="cont-opt-btn" data-val="BIPRO 2"
+                          onclick="ContApp.selectOpt(this,'grp-pilot-harness')">BIPRO 2</button>
+                  <button class="cont-opt-btn" data-val="持込"
+                          onclick="ContApp.selectOpt(this,'grp-pilot-harness')">持込</button>
+                </div>
+              </div>
+              <div class="cont-popup-group" style="margin-bottom:0;">
+                <label class="cont-label">パッセンジャーハーネス</label>
+                <div class="cont-btn-group grp-pass-harness">
+                  <button class="cont-opt-btn" data-val="BIPAX 2"
+                          onclick="ContApp.selectOpt(this,'grp-pass-harness')">BIPAX 2</button>
+                  <button class="cont-opt-btn" data-val="インディペンデンス"
+                          onclick="ContApp.selectOpt(this,'grp-pass-harness')">インディペンデンス</button>
+                  <button class="cont-opt-btn" data-val="持込"
+                          onclick="ContApp.selectOpt(this,'grp-pass-harness')">持込</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 引継ぎ報告 -->
+            <div class="cont-popup-box cont-popup-box--report">
+              <p class="cont-popup-box__title">みんなへの引継ぎ報告事項</p>
+              <div class="cont-popup-group">
+                <label class="cont-label" for="near-miss">ヒヤリハット報告</label>
+                <textarea id="near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
+              </div>
+              <div class="cont-popup-group">
+                <label class="cont-label" for="improvement">営業改善点</label>
+                <textarea id="improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
+              </div>
+              <div class="cont-popup-group" style="margin-bottom:0;">
+                <label class="cont-label" for="damaged">機材の破損部分</label>
+                <textarea id="damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+              </div>
+            </div>
+
+          </div><!-- /.cont-popup-row--boxes -->
+
+          <!-- 登録・キャンセル -->
+          <div class="cont-action-bar">
+            <button id="register-btn" class="cont-register-btn" onclick="ContApp.register()">登録</button>
+            <button class="cont-cancel-btn" onclick="ContApp.cancelForm()">キャンセル</button>
+          </div>
+          <div id="result-msg" class="cont-result-msg"></div>
+
+        </div><!-- /.cont-popup-body -->
+      </div><!-- /#entry-popup -->
+
+    </div><!-- /.cont-card--search-top -->
+
+    <!-- ─── 当月リスト ─── -->
+    <div class="cont-card cont-card--full">
+      <h2 class="cont-card__title">当月の日報リスト（{{ today.strftime('%Y年%m月') }}）</h2>
+      <div class="cont-table-wrap">
+        <table class="cont-table">
+          <thead>
+            <tr>
+              <th>担当者</th>
+              <th>本数</th>
+              <th>場所</th>
+              <th>機体</th>
+              <th>サイズ</th>
+              <th>パイロットハーネス</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="cont-tbody">
+            {% if records %}
+              {% set sorted_records = records | sort(attribute='flight_date', reverse=True) %}
+              {% set ns = namespace(prev_date=None) %}
+              {% for r in sorted_records %}
+                {% if r.flight_date != ns.prev_date %}
+                  {% set ns.prev_date = r.flight_date %}
+                  <tr class="cont-date-row" data-date="{{ r.flight_date.strftime('%Y/%m/%d') }}">
+                    <td colspan="7">
+                      📅 {{ r.flight_date.strftime('%Y/%m/%d') }}
+                      {% if r.flight_date == today %}（今日）{% endif %}
+                    </td>
+                  </tr>
+                {% endif %}
+                <tr class="{{ 'is-today' if r.flight_date == today else '' }}"
+                    data-id="{{ r.id }}"
+                    data-near-miss="{{ r.near_miss or '' }}"
+                    data-improvement="{{ r.improvement or '' }}"
+                    data-damaged="{{ r.damaged_section or '' }}"
+                    data-pass-harness="{{ r.passenger_harness or '' }}">
+                  <td class="cont-td-name">{{ r.name or "—" }}</td>
+                  <td>{{ r.daily_flight or 0 }}</td>
+                  <td><span class="cont-chip cont-chip--loc">{{ r.takeoff_location or "—" }}</span></td>
+                  <td>{{ r.used_glider or "—" }}</td>
+                  <td>{{ r.size or "—" }}</td>
+                  <td>{{ r.pilot_harness or "—" }}</td>
+                  <td>
+                    {% if r.flight_date == today %}
+                      <button class="cont-btn-edit"
+                              data-id="{{ r.id }}"
+                              onclick="ContApp.openEditModal(+this.dataset.id)">編集</button>
+                    {% else %}
+                      <button class="cont-btn-edit" disabled>編集</button>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr id="empty-row">
+                <td colspan="7" class="cont-empty">
+                  <div class="cont-empty-icon">🪂</div>
+                  当月の記録はまだありません
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /.cont-wrapper -->
+
+  <!-- ─── 編集モーダル ─── -->
+  <div id="edit-modal-overlay" class="cont-modal-overlay">
+    <div class="cont-modal">
+      <div class="cont-modal__header">
+        <h3 class="cont-modal__title">日報を編集（当日分）</h3>
+        <button class="cont-modal__close" onclick="ContApp.closeModal()">✕</button>
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label" for="modal-flight-count">フライト本数</label>
+        <input type="number" id="modal-flight-count" class="cont-input"
+               min="0" max="99" style="width:100px;" />
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label">場所</label>
+        <div class="cont-btn-group modal-grp-location">
+          <button class="cont-opt-btn" data-val="FUJIパラ"
+                  onclick="ContApp.selectOpt(this,'modal-grp-location')">① FUJIパラ</button>
+          <button class="cont-opt-btn" data-val="Wingキッス"
+                  onclick="ContApp.selectOpt(this,'modal-grp-location')">② Wingキッス</button>
+        </div>
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label">使用機体</label>
+        <div class="cont-btn-group modal-grp-glider">
+          <button class="cont-opt-btn" data-val="K24"     onclick="ContApp.selectOpt(this,'modal-grp-glider')">① K24</button>
+          <button class="cont-opt-btn" data-val="BIBETA6" onclick="ContApp.selectOpt(this,'modal-grp-glider')">② BIBETA6</button>
+          <button class="cont-opt-btn" data-val="持込"    onclick="ContApp.selectOpt(this,'modal-grp-glider')">③ 持込</button>
+        </div>
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label">サイズ</label>
+        <div class="cont-btn-group modal-grp-size">
+          <button class="cont-opt-btn" data-val="SM(38)" onclick="ContApp.selectOpt(this,'modal-grp-size')">① SM(38)</button>
+          <button class="cont-opt-btn" data-val="ML(41)" onclick="ContApp.selectOpt(this,'modal-grp-size')">② ML(41)</button>
+        </div>
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label">パイロットハーネス</label>
+        <div class="cont-btn-group modal-grp-pilot">
+          <button class="cont-opt-btn" data-val="SUPAIR ワリビ"   onclick="ContApp.selectOpt(this,'modal-grp-pilot')">① SUPAIR ワリビ</button>
+          <button class="cont-opt-btn" data-val="SUPAIR ワリビ2"  onclick="ContApp.selectOpt(this,'modal-grp-pilot')">② SUPAIR ワリビ2</button>
+          <button class="cont-opt-btn" data-val="インディペンデンス" onclick="ContApp.selectOpt(this,'modal-grp-pilot')">③ インディペンデンス</button>
+          <button class="cont-opt-btn" data-val="BIPRO 2"        onclick="ContApp.selectOpt(this,'modal-grp-pilot')">④ BIPRO 2</button>
+          <button class="cont-opt-btn" data-val="持込"            onclick="ContApp.selectOpt(this,'modal-grp-pilot')">⑤ 持込</button>
+        </div>
+      </div>
+
+      <div class="cont-form-group">
+        <label class="cont-label">パッセンジャーハーネス</label>
+        <div class="cont-btn-group modal-grp-pass">
+          <button class="cont-opt-btn" data-val="BIPAX 2"       onclick="ContApp.selectOpt(this,'modal-grp-pass')">① BIPAX 2</button>
+          <button class="cont-opt-btn" data-val="インディペンデンス" onclick="ContApp.selectOpt(this,'modal-grp-pass')">② インディペンデンス</button>
+          <button class="cont-opt-btn" data-val="持込"           onclick="ContApp.selectOpt(this,'modal-grp-pass')">③ 持込</button>
+        </div>
+      </div>
+
+      <hr class="cont-divider" />
+
+      <div class="cont-form-group">
+        <label class="cont-label" for="modal-near-miss">ヒヤリハット報告</label>
+        <textarea id="modal-near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
+      </div>
+      <div class="cont-form-group">
+        <label class="cont-label" for="modal-improvement">営業改善点</label>
+        <textarea id="modal-improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
+      </div>
+      <div class="cont-form-group">
+        <label class="cont-label" for="modal-damaged">機材の破損部分</label>
+        <textarea id="modal-damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+      </div>
+
+      <button class="cont-modal-save-btn" onclick="ContApp.saveEdit()">保存</button>
+    </div>
+  </div>
+
+  <script src="../static/app_cont_tan.js"></script>
+</body>
+</html>
