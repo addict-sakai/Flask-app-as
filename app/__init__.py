@@ -5,7 +5,8 @@ def create_app():
     app = Flask(__name__)
 
 # 🔵 ここを追加
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:1234@localhost:5432/fujiparasystem"
+    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://fujiparasystem_user:G5ZJlhQMw7xD1Yq1uzqjoo9fu30HvKD5@dpg-d6enn2cr85hc73frbvrg-a/fujiparasystem"
+    # app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:1234@localhost:5432/fujiparasystem"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     init_db(app)
