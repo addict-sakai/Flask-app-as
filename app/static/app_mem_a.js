@@ -47,6 +47,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // ── 氏名連動 ────────────────────────────────────────────────
+  const nameInput = document.getElementById("fullName");
+  const agreeName = document.getElementById("agreeName");
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      agreeName.textContent = this.value || "　　　　　　　";
+    });
+  }
+
   // ── 住所検索機能 ──────────────────────────────────────────────
   function fetchAddress() {
     const zip1 = document.getElementById("zip1").value;
