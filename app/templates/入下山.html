@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>入下山 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="../static/style.css" />
+  <link rel="stylesheet" href="../static/style_io.css" />
+</head>
+<body class="io-page">
+
+  <!-- ヘッダー -->
+  <header class="io-header">
+    <div class="io-header-left">
+      <a href="/" class="io-back-btn">← トップ</a>
+    </div>
+    <div class="io-header-center">
+      <h1 class="io-title">入下山</h1>
+      <div class="io-date-display" id="today-display">—</div>
+    </div>
+    <div class="io-header-right">
+      <div class="io-stats">
+        <span class="io-stat io-stat--total">合計 <strong id="stat-total">0</strong></span>
+        <span class="io-stat io-stat--in">入山中 <strong id="stat-in">0</strong></span>
+        <span class="io-stat io-stat--out">下山済 <strong id="stat-out">0</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── 検索バー（リストの上） ─── -->
+  <div class="io-search-bar-wrap">
+    <div class="io-search-bar">
+      <input
+        type="text"
+        id="search-input"
+        class="io-search-input"
+        placeholder="会員番号 または UUID（QR）を入力して検索"
+        autocomplete="off"
+      />
+      <button class="io-search-btn" id="search-btn" onclick="IOApp.lookup()">検索</button>
+    </div>
+    <p class="io-search-hint">Enterキーでも検索できます</p>
+    <div id="search-error" class="io-alert io-alert--danger" style="display:none;"></div>
+  </div>
+
+  <!-- ─── リスト ─── -->
+  <div class="io-content">
+    <div class="io-card io-card--full">
+      <h2 class="io-card__title">本日の入下山リスト</h2>
+      <div class="io-table-wrap">
+        <table class="io-table" id="flight-table">
+          <thead>
+            <tr>
+              <th>氏名</th>
+              <th>分類</th>
+              <th>コース</th>
+              <th>機体</th>
+              <th>カラー</th>
+              <th>無線</th>
+              <th>入山</th>
+              <th>下山</th>
+            </tr>
+          </thead>
+          <tbody id="flight-tbody">
+            {% if records %}
+              {% for r in records %}
+              <tr class="{{ 'is-active' if not r.out_time else '' }}" data-uuid="{{ r.uuid }}">
+                <td class="io-td-name">{{ r.full_name }}</td>
+                <td>{{ r.member_class or '—' }}</td>
+                <td class="io-td-dim">{{ r.course_name or '—' }}</td>
+                <td>{{ r.glider_name or '—' }}</td>
+                <td>{{ r.glider_color or '—' }}</td>
+                <td class="io-td-mono">{{ r.radio_type or '—' }}</td>
+                <td class="io-td-mono">
+                  {% if r.in_time %}<span class="io-chip io-chip--in">{{ r.in_time.strftime('%H:%M') }}</span>{% else %}—{% endif %}
+                </td>
+                <td class="io-td-mono">
+                  {% if r.out_time %}<span class="io-chip io-chip--out">{{ r.out_time.strftime('%H:%M') }}</span>{% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr id="empty-row">
+                <td colspan="8" class="io-empty">
+                  <div class="io-empty-icon">🪂</div>
+                  本日の記録はまだありません
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 会員カード ポップアップ ─── -->
+  <div id="modal-overlay" class="io-modal-overlay" style="display:none;" onclick="IOApp.closeModal(event)">
+    <div class="io-modal" id="member-modal">
+
+      <div class="io-modal-header">
+        <h2 class="io-modal-title">会員情報</h2>
+        <button class="io-modal-close" onclick="IOApp.closeModalForce()">✕</button>
+      </div>
+
+      <div class="io-modal-body">
+
+        <div id="alerts-zone"></div>
+
+        <div class="io-member-header">
+          <div>
+            <p class="io-member-type" id="mc-type">—</p>
+            <h3 class="io-member-name" id="mc-name">—</h3>
+            <p class="io-member-meta">
+              <span id="mc-number"></span>
+              <span id="mc-course"></span>
+            </p>
+          </div>
+        </div>
+
+        <div class="io-info-grid">
+          <div class="io-info-item">
+            <span class="io-info-label">フライヤー登録番号</span>
+            <span class="io-info-value" id="mc-regno">—</span>
+          </div>
+          <div class="io-info-item">
+            <span class="io-info-label">登録期限</span>
+            <span class="io-info-value" id="mc-reglimit">—</span>
+          </div>
+          <div class="io-info-item">
+            <span class="io-info-label">技能証</span>
+            <span class="io-info-value" id="mc-license">—</span>
+          </div>
+          <div class="io-info-item">
+            <span class="io-info-label">リパック期限</span>
+            <span class="io-info-value" id="mc-repack">—</span>
+          </div>
+        </div>
+
+        <hr class="io-divider" />
+
+        <div class="io-form-row">
+          <div class="io-form-group">
+            <label class="io-label" for="glider-name">使用機体</label>
+            <input type="text" id="glider-name" class="io-input" />
+          </div>
+          <div class="io-form-group">
+            <label class="io-label" for="glider-color">機体カラー</label>
+            <input type="text" id="glider-color" class="io-input" />
+          </div>
+        </div>
+
+        <div class="io-form-group">
+          <label class="io-label">保険区分 <span class="io-required">必須</span></label>
+          <div class="io-insurance-group" id="insurance-group">
+            <button class="io-ins-btn" data-val="1日"  onclick="IOApp.selectInsurance(this)">1日</button>
+            <button class="io-ins-btn" data-val="年間" onclick="IOApp.selectInsurance(this)">年間</button>
+            <button class="io-ins-btn" data-val="個人" onclick="IOApp.selectInsurance(this)">個人</button>
+          </div>
+        </div>
+
+        <div class="io-form-group">
+          <label class="io-label" for="radio-type">無線周波数</label>
+          <input type="text" id="radio-type" class="io-input" placeholder="例: 144.000 MHz" />
+        </div>
+
+        <div class="io-action-row">
+          <button id="action-btn" class="io-action-btn io-action-btn--checkin" onclick="IOApp.doAction()" disabled>
+            ⬆ 入山
+          </button>
+          <button id="cancel-btn" class="io-action-btn io-action-btn--cancel" onclick="IOApp.closeModalForce()">
+            キャンセル
+          </button>
+        </div>
+
+        <div id="result-msg" class="io-result-msg" style="display:none;"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../static/app_io.js"></script>
+</body>
+</html>

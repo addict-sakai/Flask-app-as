@@ -1,0 +1,146 @@
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
+}
+.sheet {
+  background: #fff;
+  max-width: 900px;
+  margin: auto;
+  padding: 24px 32px;
+  border: 1px solid #000;
+}
+h1 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+.date {
+  text-align: right;
+  margin-bottom: 10px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+td, th {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+th {
+  background: #eee;
+  text-align: left;
+  width: 22%;
+}
+select {
+  font-size: 13px;   /* 文字を大きく */
+  height: 30px;      /* 高さ */
+  padding: 6px 15px; /* 内側余白 */
+}
+.small {
+  font-size: 12px;
+}
+.checkbox-group2 label {
+  margin-right: 20px;
+}
+.checkbox-group2 strong {
+  display: block;
+/*  text-align: center; */
+  font-size: 1.5em;
+}
+.rules {
+/*  border: 1px solid #000; */
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.rules strong{
+  display: block;
+/*  text-align: center; */
+  font-size: 1.5em;
+}
+.agreement {
+  border: 1px solid #000;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.agreement strong {
+  display: block;
+  text-align: center;
+  font-size: 1.5em;
+  text-decoration: underline;
+  /* margin-bottom: 10px; */
+}
+.sign {
+  margin-top: 20px;
+}
+.sign div {
+  margin-top: 10px;
+}
+input[type="text"], input[type="date"], textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 14px;
+}
+textarea {
+  min-height: 60px;
+}
+.course-form table {
+  border: none;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 900px;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+.course-form td {
+  border: none;
+  /* border: 1px solid #000; */
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.course-form .check {
+  width: 40px;
+  text-align: center;
+}
+.course-form .label_1 {
+  white-space: nowrap;
+  text-align: left;
+}
+.course-form .label_2 {
+  white-space: nowrap;
+  text-align: right;
+}
+.course-form input[type="text"] {
+  width: 100%;
+  /* border: none; */
+  outline: none;
+  font-size: 14px;
+}
+.course-form input[type="checkbox"] {
+  transform: scale(1.2);
+}
+.handwrite {
+  /* font-family: "Zen Kurenaido", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif; */
+  font-family: "Yomogi", cursive;
+  font-size: 1.1em;
+  border-bottom: 1px solid #000;
+  letter-spacing: 0.1em;
+}
+.buttons {
+  text-align: center;
+  margin-top: 30px;
+}
+.buttons button {
+  font-size: 18px;
+  padding: 10px 30px;
+  margin: 0 15px;
+  cursor: pointer;
+}

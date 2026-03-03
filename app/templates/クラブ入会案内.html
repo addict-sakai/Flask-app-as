@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>朝霧スカイクラブ入会のご案内</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_club.css') }}">
+  <script src="{{ url_for('static', filename='app_mem.js') }}"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+</head>
+
+<body>
+  <div class="page">
+    <h1>朝霧スカイクラブ入会のご案内</h1>
+
+    <div class="fee">朝霧スカイクラブ会費　（¥2,000／年）</div>
+
+    <p>
+      朝霧スカイクラブは、スポーツ安全保険に入っています。<br>
+      金額の明細は、スポーツ安全保険と他のエリア（北海道、アカイワなど）に同行する
+      インストラクターの費用などが含まれます。
+    </p>
+
+    <div class="section">
+      <div class="section-title">◎ 保険の保障内容</div>
+      <table>
+        <tr><td>死亡</td><td>2,000万円（65歳以上　600万円）</td></tr>
+        <tr><td>後遺障害</td><td>3,000万円（65歳以上　900万円）</td></tr>
+        <tr><td>入院保険金</td><td>日額　4,000円（65歳以上　1,800円）</td></tr>
+        <tr><td>通院保険金</td><td>日額　1,500円（65歳以上　1,000円）</td></tr>
+      </table>
+      <div class="note">※通院保険金の支払い限度日数は180日以内が対象で、30日が限度となります。</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">◎ 賠償責任保険　支払限度額</div>
+      <p>対人・対物賠償合算　1事故 5億円<br>（ただし、対人賠償は1人1億円）</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">◎ 突然死（急性心不全、脳内出血など）</div>
+      <p>葬祭費用　180万円</p>
+    </div>
+
+    <div class="form">
+      <div class="seal">印</div>
+      <div class="form-line">朝霧スカイクラブ入会者</div>
+      <div class="form-line">2025年 <span class="line"></span> 月 <span class="line"></span> 日　氏名 <span class="line" style="min-width:200px"></span></div>
+      <div class="form-line">生年月日　<span class="line"></span> 年 <span class="line"></span> 月 <span class="line"></span> 日</div>
+      <table>
+        <tr>
+          <th>確認日</th>
+          <td><input type="text" class="js-date"></td>
+          <th>本人署名</th>
+          <td><input type="text"></td>
+        </tr>
+        <tr>
+          <th>保護者氏名（20歳未満）</th>
+          <td colspan="3"><input type="text"></td>
+        </tr>
+      </table>
+    </div>
+    <!-- 申請・終了ボタン -->
+    <div class="btn-row">
+      <button class="btn-apply" onclick="submitClub()">申請</button>
+      <button class="btn-end"   onclick="window.location.href='/'">終了</button>
+    </div>
+
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+  <script src="{{ url_for('static', filename='app_club.js') }}"></script>
+</body>
+</html>

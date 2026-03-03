@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>フリーフライト（ビジター）申込書</title>
+      <link rel="stylesheet" href="{{ url_for('static', filename='style_vis.css') }}">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+      <!-- flatpickr -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+      <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  </head>
+
+  <body>
+    <form id="entryForm">
+      <div class="sheet">
+        <h1>フリーフライト（ビジター）申込書</h1>
+        <table>
+          <th>申込日</th>
+          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
+        </table>
+
+        <table>
+          <tr>
+            <th>氏名</th>
+            <td><input type="text" id="fullName" name="full_name"></td>
+            <th>ふりがな</th>
+            <td><input type="text" name="furigana"></td>
+          </tr>
+          <tr>
+            <th>性別</th>
+            <td>
+              <select name="gender">
+                <option value="" selected>-- 選択してください --</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </td>
+            <th>血液型</th>
+            <td>
+              <select name="blood_type">
+                <option value="" selected>-- 選択してください --</option>
+                <option value="A">Ａ</option>
+                <option value="B">Ｂ</option>
+                <option value="O">Ｏ</option>
+                <option value="AB">ＡＢ</option>
+                <option value="不明">不明</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>生年月日</th>
+            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+            <th>年齢</th>
+            <td><input type="text" id="age" readonly></td>
+          </tr>
+          <tr>
+            <th>郵便番号</th>
+            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
+                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
+            <th>体重</th>
+            <td><input type="text" id="weight" name="weight"></td>
+          </tr>
+          <tr>
+            <th>住所</th>
+            <td colspan="3"><input type="text" id="address" name="address"></td>
+          </tr>
+          <tr>
+            <th>携帯電話</th>
+            <td><input type="text" name="mobile_phone"></td>
+            <th>自宅電話</th>
+            <td><input type="text" name="home_phone"></td>
+          </tr>
+          <tr>
+            <th>緊急連絡先氏名</th>
+            <td><input type="text" name="emergency_name"></td>
+            <th>電話番号（緊急時）</th>
+            <td><input type="text" name="emergency_phone"></td>
+          </tr>
+          <tr>
+            <th>本人との続柄</th>
+            <td><input type="text" id="relationship" name="relationship"></td>
+            <th>e-mail</th>
+            <td><input type="text" id="email" name="email"></td>
+          </tr>
+          <tr>
+            <th>傷病履歴</th>
+            <td colspan="3"><textarea name="medical_history" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
+          </tr>
+        </table>
+
+        <table>
+          <tr>
+            <th>フライヤー登録No</th>
+            <td><input type="text" name="reg_no"></td>
+            <th>登録期限</th>
+            <td><input type="text" class="js-date" id="reglimit_date" name="reglimit_date"></td>
+          </tr>
+          <tr>
+            <th>技能証<br>(NP証は引率者必須)</th>
+            <!-- <td><input type="text" id="license" name="license"></td> -->
+            <td>
+              <select name="license" id="license">
+                <option value="" selected>-- 選択してください --</option>
+                <option value="A">Ａ</option>
+                <option value="B">Ｂ</option>
+                <option value="NP">ＮＰ</option>
+                <option value="P">Ｐ</option>
+                <option value="XC">ＸＣ</option>
+                <!-- <option value="T">タンデム</option> -->
+                <!-- <option value="AT">上級タンデム</option> -->
+              </select>
+            </td>
+            <th>リパック日</th>
+            <td><input type="text" class="js-date" id="repack_date" name="repack_date"></td>
+          </tr>
+          <tr>
+            <th>使用機体名</th>
+            <td><input type="text" id="glider_name" name="glider_name"></td>
+            <th>機体カラー</th>
+            <td><input type="text" id="glider_color" name="glider_color"></td>
+          </tr>
+          <tr>
+            <th>ホームエリア名</th>
+            <td><input type="text" id="home_area" name="home_area"></td>
+            <th>引率者氏名</th>
+            <td><input type="text" id="leader" name="leader"></td>
+          </tr>
+        </table>
+        <br>
+        <div class="checkbox-group1">
+          <h3>　◎ビジター　　
+          <label><input type="radio" id="weekday_fee" name="visitor_fee" value="1" required> 平日：￥３，２００　　　</label>
+          <label><input type="radio" id="holiday_fee" name="visitor_fee" value="2" required> 土日祝日：￥３，８００</label>
+        </div></h3>
+      
+        <div class="area_fee">
+          　　※・ フライトチケットは１枚￥700、１１枚綴りで￥7,000です。<br>
+          　　　・ XCに出る方は、必ず飛行計画書を提出してください。<br>
+          　　　・ ビジター料金には保険料は含まれておりません。各自で有効な保険をご利用下さい。<br>
+        </div>
+
+        <div class="checkbox-group2">
+          <h3>　◎当スクールでのフライト経験<br>
+          　　　<label><input type="radio" id="flight_exp1" name="experience" value="1" required> 初めて（経験者同行無し）</label>
+          　　<label><input type="radio" id="flight_exp2" name="experience" value="2" required> 初めて（経験者同行有り）</label><br>
+          　　　<label><input type="radio" id="flight_exp3" name="experience" value="3"> ５回未満　　　　　　　　</label>
+          　　<label><input type="radio" id="flight_exp4" name="experience" value="4"> ５回以上</label></h3>
+        </div>
+
+        <div class="rules">
+          <strong>◎エリア規定</strong>
+          　・ 「入山/下山チェック表」の記入等、受付を必ず済ませてから入場する事。<br>
+          　・ フライトはスタッフの指示に従う事。許可を受けずにフライトをしない事。<br>
+          　・ アウトサイドした場合は、被害の有無に関わらず必ず申告する事。（アウトサイド報告書を提出の事）<br>
+          　・ 山火事を出さない為に山中での喫煙及び焚火の禁止。農作物や草木／果物等の採取の禁止。<br>
+          　・ 必ずＴバックルのハーネスを使用し、レスキューセットを携帯してフライトする事。<br>
+          　・ エリア内でのパラグライダー用品/機材の売買を禁ずる。<br>
+          　・ 会員／非会員を問わず当エリアを使用しての営業の禁止。（タンデム／体験／スクール講習等）<br>
+          　・ ご購入後原則一年以内を目安にお使いください。<br>
+          　・ なお、ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
+        </div>
+        <div class="agreement">
+          <strong>参加誓約書</strong><br>
+            私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+            その結果ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し予測可能か否かに問わず
+            私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、当スクール関係者に
+            対してその他の責任追及、及び損害請求を一切致しません。又、エリア会員規定に基づき規約に違反した場合、もしくは、ＴＨＰホールディング株式会社
+            に対して不利益をもたらした場合、会員及び資格の無効化及び退会を申し渡されても異議申し立て、損害賠償請求、それらにに類似した行為を一切致しません。
+            又、エリア内（地上・上空）で撮られた写真及び映像に関して一切肖像権を主張いたしません。<br><br>
+          <table>
+            <tr>
+              <th>確認日</th>
+              <td><input type="text" class="js-date" ID="agreement_date" name="agreement_date"></td>
+              <th>本人署名</th>
+              <td><input type="text" name="signature_name"></td>
+            </tr>
+            <tr>
+              <th>保護者氏名（20歳未満）</th>
+              <td colspan="3"><input type="text" name="guardian_name"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <input type="hidden" name="member_type" value="ビジター">
+
+      <div class="buttons">
+        <button type="button" id="submitBtn">申 請</button>
+        <button type="button" id="exitBtn">終 了</button>
+      </div>
+    </form>
+  
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+    <script src="{{ url_for('static', filename='app_vis.js') }}"></script>
+  </body>
+</html>

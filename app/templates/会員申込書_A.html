@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>【Aコース】エリア会員 申込書</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem_a.css') }}">
+  <!-- <script src="{{ url_for('static', filename='app_mem_a.js') }}"></script> -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+
+<body>
+  <form id="entryForm">
+    <div class="sheet">
+      <h1>【Aコース】エリア会員 申込書</h1>
+      <table>
+        <th>申込日</th>
+        <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
+      </table>
+
+      <table>
+        <tr>
+          <th>氏名</th>
+          <td><input type="text" id="fullName" name="full_name"></td>
+          <th>ふりがな</th>
+          <td><input type="text" name="furigana"></td>
+        </tr>
+        <tr>
+          <th>性別</th>
+          <td>
+            <select name="gender">
+              <option value="" selected>-- 選択してください --</option>
+              <option value="男">男</option>
+              <option value="女">女</option>
+            </select>
+          </td>
+          <th>血液型</th>
+          <td>
+            <select name="blood_type">
+              <option value="" selected>-- 選択してください --</option>
+              <option value="A">Ａ</option>
+              <option value="B">Ｂ</option>
+              <option value="O">Ｏ</option>
+              <option value="AB">ＡＢ</option>
+              <option value="不明">不明</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th>生年月日</th>
+          <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+          <th>年齢</th>
+          <td><input type="text" id="age" readonly></td>
+        </tr>
+        <tr>
+          <th>郵便番号</th>
+          <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
+              <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
+          <th>体重（kg）</th>
+          <td><input type="text" id="weight" name="weight"></td>
+        </tr>
+        <tr>
+          <th>住所</th>
+          <td colspan="3"><input type="text" id="address" name="address"></td>
+        </tr>
+        <tr>
+          <th>携帯電話</th>
+          <td><input type="text" name="mobile_phone"></td>
+          <th>自宅電話</th>
+          <td><input type="text" name="home_phone"></td>
+        </tr>
+        <tr>
+          <th>勤務先名</th>
+          <td><input type="text" name="company_name"></td>
+          <th>電話番号（勤務先）</th>
+          <td><input type="text" name="company_phone"></td>
+        </tr>
+        <tr>
+          <th>緊急連絡先氏名</th>
+          <td><input type="text" name="emergency_name"></td>
+          <th>電話番号（緊急時）</th>
+          <td><input type="text" name="emergency_phone"></td>
+        </tr>
+        <tr>
+          <th>本人との続柄</th>
+          <td><input type="text" id="relationship" name="relationship"></td>
+          <th>e-mail</th>
+          <td><input type="text" id="email" name="email"></td>
+        </tr>
+      </table>
+
+      <div class="rules">
+        <strong>◎当スクールを何でお知りになりましたか？</strong><br>
+        <input type="text" id="course_find" name="course_find"><br><br>
+        <strong>◎Aコース入校料：¥10,000　※当日の受付料金 ¥2,100（日ごとにかかります）</strong><br><br>
+        <strong>◎エリア規定</strong><br>
+        　・ 必ず受付を済ませてから入場し、許可を受けずにフライトしない事。<br>
+        　・ フライトする時は、スタッフの指示に従う事。<br>
+        　・ 山火事を出さない為に山中での喫煙及び焚火の禁止。農作物や草木／果物等の採取の禁止。<br>
+        　・ エリア内でのパラグライダー用品及び機材の売買の禁止。<br>
+        　・ 会員／非会員を問わず当エリアを使用しての営業の禁止。（タンデム／体験／スクール講習等）<br>
+        　・ 会員がゲレンデのみを使用する場合にも、エリア管理費は必要です。<br>
+        　・ 会員がＴＨＰホールディング株式会社及びMt.FUJIPARAGULIDINGに対し、不利益をもたらす様な行為をしたと判断した場合、
+        一切の理由を問わず、会員を解約出来るものとする。（有効期限残存期間に関わらず、一切返金は致しません。）<br>
+        　・ 当社の都合により、予告無く定休日を設ける場合があることをご了承頂きます。<br>
+        　・ ご購入後原則一年以内を目安にお使いください。<br>
+        　・ なお、ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
+        　・ 初回の予約で年間保険の加入が必須となります。（4/1～3/31 ¥2,000）<br>
+        <strong>★ご参加の際の注意事項・・・・・</strong><br>
+        　　　　　<strong>アウトドアでため、気象条件の悪化等により、やむなく中止せざるを得ない場合もありますので、ご了承頂きます。</strong>
+      </div>
+
+      <div class="agreement">
+        <strong>参加誓約書</strong><br>
+        ＴＨＰホールディング株式会社　　　Mt.FUJI PARAGLIDING　殿<br><br>
+        私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+        その結果私自身に生じたいかなる障害及び損害に対しても（予測可能か不可能かを問わず）私自身が全責任を負うものとします。私及び私の家族や関係者は、
+        私に生じた障害及び損害の保障に関して《損害保険》の範囲とし、当スクール関係者に対して、その他の責任追及、及び損害賠償請求を一切致しません。
+        又、アウトドアである事を充分に理解し、汚れても差し支えの無い服装で参加し、時計／メガネ等の装着品に関しても、万一何らかの理由により破損した場合、
+        理由のいかんに関わらず損害賠償請求、及びそれに類似した行為を一切致しません。又、マナー違反など、弊社に不利益をもたらした場合、退場を申し渡されても、
+        異議申し立てや損害賠償請求、及びそれに類似した行為を、一切致しません。エリア内（上空・地上）において撮影された写真及び映像に関しても、
+        一切の肖像権を主張いたしませんれ。<br><br>
+        <table>
+          <tr>
+            <th>確認日</th>
+            <td><input type="text" class="js-date" ID="agreement_date" name="agreement_date"></td>
+            <th>本人署名</th>
+            <td><input type="text" name="signature_name"></td>
+          </tr>
+          <tr>
+            <th>保護者氏名（20歳未満）</th>
+            <td colspan="3"><input type="text" name="guardian_name"></td>
+          </tr>
+        </table>
+      </div>
+
+      <input type="hidden" name="member_type" value="スクール">
+      <input type="hidden" name="course_name" value="A">
+      <input type="hidden" name="course_fee" value="10000">
+      <input type="hidden" name="course_type" value="schooling">
+      <!-- <input type="hidden" name="member_number" value=""> -->
+
+    </div>
+
+    <div class="buttons">
+      <button type="button" id="submitBtn">申 請</button>
+      <button type="button" id="exitBtn">終 了</button>
+    </div>
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+  <script src="{{ url_for('static', filename='app_mem_a.js') }}"></script>
+</body>
+</html>

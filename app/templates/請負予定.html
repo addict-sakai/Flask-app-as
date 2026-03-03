@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>請負出勤可能予定 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="../static/style.css" />
+  <link rel="stylesheet" href="../static/style_cont_work.css" />
+</head>
+<body class="work-page">
+
+  <!-- ヘッダー -->
+  <header class="work-header">
+    <a href="/" class="work-back-btn">← トップ</a>
+    <h1 class="work-title">請負出勤可能予定</h1>
+    <div style="width:64px;"></div><!-- バランス用 -->
+  </header>
+
+  <div class="work-layout">
+
+    <!-- ─── 左カラム: 検索・操作 ─── -->
+    <aside>
+
+      <!-- 担当者検索 -->
+      <section class="work-card">
+        <h2 class="work-card__title">担当者</h2>
+        <div class="work-search-wrap">
+          <input type="text" id="search-input" class="work-search-input"
+                 placeholder="会員番号 または UUID（QR）" autocomplete="off" />
+          <button class="work-search-btn" onclick="WorkApp.lookup()">検索</button>
+        </div>
+        <p class="work-search-hint">Enterキーでも検索できます</p>
+        <div id="search-error" class="work-alert work-alert--danger"></div>
+
+        <!-- 担当者表示 -->
+        <div id="member-block" style="display:none;">
+          <p class="work-member-name" id="member-name">—</p>
+          <p class="work-member-sub"  id="member-sub"></p>
+        </div>
+      </section>
+
+      <!-- 操作ガイド -->
+      <section class="work-card">
+        <h2 class="work-card__title">操作方法</h2>
+        <div class="work-guide">
+          日付をタップするたびにステータスが切り替わります。<br>
+          <strong>未選択 → OK → NG → 未選択</strong> の順に変わります。<br><br>
+          <strong>OK</strong>：出勤可能<br>
+          <strong>NG</strong>：出勤不可<br>
+          <strong>未選択</strong>：未定（null）
+        </div>
+
+        <!-- 凡例 -->
+        <div class="work-legend">
+          <div class="work-legend-item">
+            <span class="work-legend-dot work-legend-dot--ok">OK</span> 出勤可
+          </div>
+          <div class="work-legend-item">
+            <span class="work-legend-dot work-legend-dot--ng">NG</span> 出勤不可
+          </div>
+          <div class="work-legend-item">
+            <span class="work-legend-dot work-legend-dot--none">—</span> 未定
+          </div>
+          <div class="work-legend-item">
+            <span class="work-legend-dot work-legend-dot--past">過</span> 編集不可
+          </div>
+        </div>
+
+        <!-- 登録・終了ボタン -->
+        <div class="work-btn-row">
+          <button id="save-btn" class="work-save-btn"
+                  onclick="WorkApp.save()" disabled>登録</button>
+          <!-- <button class="work-end-btn" onclick="WorkApp.end()">終了</button> -->
+        </div>
+        <div id="result-msg" class="work-result-msg"></div>
+      </section>
+
+    </aside>
+
+    <!-- ─── 右カラム: カレンダー ─── -->
+    <main>
+      <div class="work-card">
+        <h2 class="work-card__title">出勤可能予定カレンダー（当月〜3ヶ月）</h2>
+
+        <!-- 会員未選択時のメッセージ -->
+        <div id="calendar-placeholder" style="text-align:center; padding:60px 20px; color:#ccc;">
+          <div style="font-size:2.5rem; opacity:0.3; margin-bottom:12px;">📅</div>
+          担当者を検索するとカレンダーが表示されます
+        </div>
+
+        <!-- カレンダー本体（JS で描画） -->
+        <div id="calendar-area" class="work-calendar-area work-months-wrap"></div>
+      </div>
+    </main>
+
+  </div><!-- /.work-layout -->
+
+  <script src="../static/app_cont_work.js"></script>
+</body>
+</html>

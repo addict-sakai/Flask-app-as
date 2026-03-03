@@ -1,0 +1,597 @@
+/* =========================================
+   style_io.css  – 入下山管理ページ専用スタイル
+   既存の style.css を上書き・拡張
+   ========================================= */
+
+/* ─── ページ基盤 ─── */
+.io-page {
+  background: #f5f5f5;
+  padding: 0;
+  text-align: left;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── ヘッダー ─── */
+.io-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #000;
+  color: #fff;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.io-header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.io-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.15em;
+  color: #fff;
+}
+
+.io-date-display {
+  font-size: 0.78rem;
+  color: #aaa;
+  letter-spacing: 0.08em;
+}
+
+.io-back-btn {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.io-back-btn:hover {
+  color: #fff;
+  border-color: #fff;
+}
+
+/* ─── 統計バッジ ─── */
+.io-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.io-stat {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.io-stat strong { font-weight: 700; margin-left: 2px; }
+.io-stat--total { background: #333; color: #ccc; }
+.io-stat--in    { background: #1a3a6e; color: #6af; }
+.io-stat--out   { background: #3a1a0a; color: #fa8; }
+
+/* ─── レイアウト ─── */
+.io-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1;
+  align-items: start;
+}
+
+/* ─── カード ─── */
+.io-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.io-card:last-child { margin-bottom: 0; }
+.io-card--full { margin-bottom: 0; overflow: hidden; }
+
+.io-card__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ─── 検索 ─── */
+.io-search-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.io-search-input {
+  flex: 1;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #000;
+}
+.io-search-input:focus { border-color: #000; }
+.io-search-input::placeholder { color: #bbb; font-size: 0.8rem; }
+
+.io-search-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.io-search-btn:hover { opacity: 0.75; }
+
+.io-search-hint {
+  font-size: 0.72rem;
+  color: #bbb;
+  margin: 0;
+}
+
+/* ─── アラート ─── */
+.io-alert {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.io-alert--danger  { background: #fff0f0; border: 1.5px solid #ff3355; color: #cc1133; }
+.io-alert--warning { background: #fffbea; border: 1.5px solid #e6a800; color: #996600; }
+.io-alert--success { background: #f0fff4; border: 1.5px solid #00c853; color: #007a33; }
+
+/* ─── 会員ヘッダー ─── */
+.io-member-header {
+  margin-bottom: 16px;
+}
+.io-member-type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #888;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+}
+.io-member-name {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin: 0 0 4px 0;
+  color: #111;
+  line-height: 1.2;
+}
+.io-member-meta {
+  font-size: 0.78rem;
+  color: #999;
+  margin: 0;
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── 期限情報グリッド ─── */
+.io-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.io-info-item {
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.io-info-label {
+  font-size: 0.65rem;
+  color: #aaa;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.io-info-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #333;
+}
+.io-info-value.ok      { color: #00a040; }
+.io-info-value.warning { color: #cc7700; }
+.io-info-value.expired { color: #cc1133; }
+.io-info-value.none    { color: #bbb; }
+
+/* ─── 区切り ─── */
+.io-divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 16px 0;
+}
+
+/* ─── フォーム ─── */
+.io-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.io-form-group {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.io-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.io-required {
+  background: #ff3355;
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+.io-input {
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  color: #111;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.io-input:focus { border-color: #000; }
+
+/* ─── 保険ボタン ─── */
+.io-insurance-group {
+  display: flex;
+  gap: 8px;
+}
+.io-ins-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  background: #fafafa;
+  color: #666;
+  cursor: pointer;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: all 0.18s;
+  text-align: center;
+}
+.io-ins-btn:hover {
+  border-color: #000;
+  color: #000;
+}
+.io-ins-btn.selected {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+/* ─── アクションボタン ─── */
+.io-action-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 4px;
+}
+.io-action-btn--checkin {
+  background: #000;
+  color: #fff;
+}
+.io-action-btn--checkout {
+  background: #cc3300;
+  color: #fff;
+}
+.io-action-btn--done {
+  background: #eee;
+  color: #aaa;
+  cursor: not-allowed;
+}
+.io-action-btn:hover:not(:disabled) {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+.io-action-btn:disabled {
+  background: #eee;
+  color: #bbb;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── 結果メッセージ ─── */
+.io-result-msg {
+  margin-top: 10px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ─── テーブル ─── */
+.io-table-wrap {
+  overflow-x: auto;
+}
+.io-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.io-table thead th {
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+}
+.io-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.12s;
+}
+.io-table tbody tr:hover { background: #fafafa; }
+.io-table tbody tr.is-active { background: #f0f7ff; }
+.io-table td {
+  padding: 9px 12px;
+  color: #333;
+  vertical-align: middle;
+}
+.io-td-name { font-weight: 700; color: #111; }
+.io-td-dim  { color: #999; }
+.io-td-mono { font-family: "Courier New", "Menlo", monospace; font-size: 0.78rem; }
+
+/* ─── チップ ─── */
+.io-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.io-chip--ins { background: #e8f0fe; color: #1a56cc; }
+.io-chip--in  { background: #e3f6f0; color: #007a50; }
+.io-chip--out { background: #fdecea; color: #b31c1c; }
+
+/* ─── 空状態 ─── */
+.io-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+.io-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  opacity: 0.4;
+}
+
+/* ─── スクロールバー ─── */
+.io-table-wrap::-webkit-scrollbar { height: 6px; }
+.io-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.io-table-wrap::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+/* ─── レスポンシブ ─── */
+@media (max-width: 900px) {
+  .io-layout {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;
+  }
+  .io-header {
+    padding: 10px 16px;
+  }
+  .io-header-left, .io-header-right {
+    width: 100%;
+  }
+  .io-stats {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .io-info-grid { grid-template-columns: 1fr 1fr; }
+  .io-form-row  { grid-template-columns: 1fr; }
+}
+
+/* =========================================
+   追加スタイル：検索バー・モーダル・アクション行
+   ========================================= */
+
+/* ─── 検索バー（全幅・リスト上部） ─── */
+.io-search-bar-wrap {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 24px 12px;
+}
+.io-search-bar {
+  display: flex;
+  gap: 10px;
+  max-width: 600px;
+}
+.io-search-bar .io-search-input {
+  flex: 1;
+  font-size: 0.95rem;
+  padding: 12px 16px;
+}
+.io-search-bar .io-search-btn {
+  padding: 12px 24px;
+  font-size: 0.9rem;
+}
+.io-search-hint {
+  font-size: 0.72rem;
+  color: #bbb;
+  margin: 6px 0 0 0;
+}
+
+/* ─── コンテンツエリア ─── */
+.io-content {
+  padding: 20px 24px;
+  flex: 1;
+}
+
+/* ─── モーダルオーバーレイ ─── */
+.io-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.io-modal-overlay.is-visible {
+  opacity: 1;
+}
+
+/* ─── モーダル本体 ─── */
+.io-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  transform: translateY(12px);
+  transition: transform 0.22s ease;
+  overflow: hidden;
+}
+.io-modal-overlay.is-visible .io-modal {
+  transform: translateY(0);
+}
+
+.io-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+.io-modal-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0;
+}
+.io-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #aaa;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+.io-modal-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.io-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ─── アクションボタン行（横並び） ─── */
+.io-action-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ─── キャンセルボタン ─── */
+.io-action-btn--cancel {
+  background: #fff;
+  color: #666;
+  border: 1.5px solid #ddd;
+  white-space: nowrap;
+  padding: 14px 20px;
+}
+.io-action-btn--cancel:hover {
+  border-color: #999;
+  color: #333;
+  background: #f8f8f8;
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── レスポンシブ調整 ─── */
+@media (max-width: 900px) {
+  .io-search-bar-wrap {
+    padding: 12px 16px;
+  }
+  .io-content {
+    padding: 12px 16px;
+  }
+  .io-search-bar {
+    max-width: 100%;
+  }
+}
+
+/* ─── サイドバー関連（旧スタイル無効化） ─── */
+.io-layout { display: none !important; }

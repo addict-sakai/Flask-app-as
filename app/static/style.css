@@ -1,0 +1,57 @@
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: #fff;
+  margin: 0;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 40px;
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.btn {
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 20px 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn_1 {
+  background: #808080;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 20px 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn:hover {
+  opacity: 0.8;
+}
+
+
+/* スマホ対応 */
+@media (max-width: 600px) {
+  .menu {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

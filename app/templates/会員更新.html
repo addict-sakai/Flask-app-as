@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会員情報更新</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem_upd.css') }}">
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== サイドバー ===== -->
+  <aside class="sidebar">
+    <a href="/" class="sidebar-top-btn">← トップ</a>
+    <div class="sidebar-header">
+      <div class="logo-mark">▲</div>
+      <div class="logo-text">
+        <span class="logo-main">MEMBER</span>
+        <span class="logo-sub">UPDATE</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <!--
+      <a href="/members" class="nav-item">
+        <span class="nav-icon">◈</span> 会員一覧
+      </a>
+      -->
+      <a href="#" class="nav-item active">
+        <span class="nav-icon">✎</span> 会員情報更新
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== メイン ===== -->
+  <main class="main">
+
+    <!-- ページヘッダー -->
+    <div class="page-header">
+      <h1 class="page-title">会員情報更新</h1>
+    </div>
+
+    <!-- 検索パネル -->
+    <section id="searchSection">
+      <div class="search-panel">
+        <div class="section-title">会員を検索</div>
+        <div class="search-row">
+          <div class="field-group">
+            <label class="field-label">会員番号</label>
+            <input type="text" id="searchMemberNo" class="field-input" placeholder="例: M-0001">
+          </div>
+          <div class="divider-or">OR</div>
+          <div class="field-group">
+            <label class="field-label">QRコード（UUID）</label>
+            <input type="text" id="searchUuid" class="field-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-ghost" id="btnSearch">検索</button>
+        </div>
+        <div id="searchError" class="search-error hidden"></div>
+      </div>
+    </section>
+
+    <!-- 編集フォーム -->
+    <section class="hidden form-section-wrapper" id="formSection">
+      <form id="updateForm" novalidate>
+        <div class="member-form">
+
+          <!-- 分類（ラジオ） -->
+          <div class="type-band">
+            <span class="band-label">分類</span>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="member_type" value="会員"> 会員</label>
+              <label class="radio-label"><input type="radio" name="member_type" value="ビジター"> ビジター</label>
+            </div>
+          </div>
+
+          <!-- 基本情報 -->
+          <div class="form-section">
+            <h2 class="section-title">基本情報</h2>
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label required">氏名</label>
+                <input type="text" id="full_name" name="full_name" class="field-input" required>
+              </div>
+              <div class="field-group">
+                <label class="field-label">ふりがな</label>
+                <input type="text" id="furigana" name="furigana" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">性別</label>
+                <select id="gender" name="gender" class="field-input">
+                  <option value="">選択してください</option>
+                  <option value="男性">男性</option>
+                  <option value="女性">女性</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">血液型</label>
+                <select id="blood_type" name="blood_type" class="field-input">
+                  <option value="">選択してください</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="O">O</option>
+                  <option value="AB">AB</option>
+                  <option value="不明">不明</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">生年月日</label>
+                <input type="date" id="birthday" name="birthday" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">体重</label>
+                <input type="text" id="weight" name="weight" class="field-input" placeholder="例: 65kg">
+              </div>
+              <div class="field-group">
+                <label class="field-label">本人との続柄</label>
+                <input type="text" id="relationship" name="relationship" class="field-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- フライト情報 -->
+          <div class="form-section">
+            <h2 class="section-title">フライト情報</h2>
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label">使用機体</label>
+                <input type="text" id="glider_name" name="glider_name" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">機体カラー</label>
+                <input type="text" id="glider_color" name="glider_color" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">ホームエリア</label>
+                <input type="text" id="home_area" name="home_area" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">フライヤー登録番号</label>
+                <input type="text" id="reg_no" name="reg_no" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">登録期限</label>
+                <input type="date" id="reglimit_date" name="reglimit_date" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">技能証</label>
+                <input type="text" id="license" name="license" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">リパック日（年月）</label>
+                <input type="month" id="repack_date" name="repack_date" class="field-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- 連絡先 -->
+          <div class="form-section">
+            <h2 class="section-title">連絡先</h2>
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label">郵便番号</label>
+                <div class="zip-row">
+                  <input type="text" id="zip_code" name="zip_code" class="field-input" placeholder="例: 123-4567" maxlength="8">
+                  <button type="button" class="btn-zip" id="btnZip">住所検索</button>
+                </div>
+              </div>
+              <div class="field-group span-2">
+                <label class="field-label">住所</label>
+                <input type="text" id="address" name="address" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">携帯番号</label>
+                <input type="tel" id="mobile_phone" name="mobile_phone" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">自宅番号</label>
+                <input type="tel" id="home_phone" name="home_phone" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">メールアドレス</label>
+                <input type="email" id="email" name="email" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">勤務先</label>
+                <input type="text" id="company_name" name="company_name" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">勤務先電話番号</label>
+                <input type="tel" id="company_phone" name="company_phone" class="field-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- 緊急連絡先 -->
+          <div class="form-section">
+            <h2 class="section-title">緊急連絡先</h2>
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label">緊急連絡先氏名</label>
+                <input type="text" id="emergency_name" name="emergency_name" class="field-input">
+              </div>
+              <div class="field-group">
+                <label class="field-label">緊急連絡先番号</label>
+                <input type="tel" id="emergency_phone" name="emergency_phone" class="field-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- 会員情報 -->
+          <div class="form-section">
+            <h2 class="section-title">会員情報</h2>
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label required">会員番号</label>
+                <input type="text" id="member_number" name="member_number" class="field-input" required>
+                <span class="field-hint">必須・重複不可</span>
+              </div>
+              <div class="field-group span-3">
+                <label class="field-label">傷病履歴</label>
+                <textarea id="medical_history" name="medical_history" class="field-input" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- 申請ボタン -->
+          <div class="form-actions">
+            <button type="button" class="btn-submit" id="btnSubmit">申 請</button>
+          </div>
+
+        </div><!-- /.member-form -->
+      </form>
+    </section>
+
+  </main>
+</div><!-- /.app -->
+
+<!-- 確認モーダル -->
+<div class="modal-overlay hidden" id="confirmModal">
+  <div class="modal">
+    <h3 class="modal-title">変更内容の確認</h3>
+    <p class="modal-text">以下の項目を変更します。よろしいですか？</p>
+    <div class="modal-changes" id="changeList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancel">キャンセル</button>
+      <button class="btn btn-primary" id="btnConfirm">登 録</button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast hidden" id="toast"></div>
+
+<!-- <script src="app_mem_upd.js"></script> -->
+<script src="{{ url_for('static', filename='app_mem_upd.js') }}"></script></body>
+</html>

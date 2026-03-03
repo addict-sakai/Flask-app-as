@@ -1,0 +1,356 @@
+/* =========================================
+   style_cont_work.css  –  請負出勤可能予定ページ
+   既存の style.css を拡張
+   ========================================= */
+
+.work-page {
+  background: #f5f5f5;
+  padding: 0;
+  text-align: left;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── ヘッダー ─── */
+.work-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #000;
+  color: #fff;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.work-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+.work-back-btn {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.work-back-btn:hover { color: #fff; border-color: #fff; }
+
+/* ─── レイアウト ─── */
+.work-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1;
+  align-items: start;
+}
+
+/* ─── カード ─── */
+.work-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.work-card:last-child { margin-bottom: 0; }
+.work-card__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ─── 検索 ─── */
+.work-search-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.work-search-input {
+  flex: 1;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #000;
+}
+.work-search-input:focus { border-color: #000; }
+.work-search-input::placeholder { color: #bbb; font-size: 0.8rem; }
+.work-search-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.work-search-btn:hover { opacity: 0.75; }
+.work-search-hint { font-size: 0.72rem; color: #bbb; margin: 0 0 12px; }
+
+/* ─── アラート ─── */
+.work-alert {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: none;
+}
+.work-alert--danger  { background: #fff0f0; border: 1.5px solid #ff3355; color: #cc1133; }
+.work-alert--success { background: #f0fff4; border: 1.5px solid #00c853; color: #007a33; }
+.work-alert--info    { background: #f0f7ff; border: 1.5px solid #3388ff; color: #1155cc; }
+
+/* ─── 担当者表示 ─── */
+.work-member-name { font-size: 1.3rem; font-weight: 900; color: #111; margin: 0 0 4px; }
+.work-member-sub  { font-size: 0.78rem; color: #999; margin: 0 0 16px; }
+
+/* ─── 操作ガイド ─── */
+.work-guide {
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: #666;
+  line-height: 1.7;
+}
+.work-guide strong { color: #111; }
+
+/* ─── 凡例 ─── */
+.work-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.work-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #555;
+}
+.work-legend-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.work-legend-dot--ok   { background: #e8f5e9; border: 1.5px solid #43a047; color: #2e7d32; }
+.work-legend-dot--ng   { background: #fce4ec; border: 1.5px solid #e53935; color: #b71c1c; }
+.work-legend-dot--none { background: #f5f5f5; border: 1.5px solid #ddd; color: #bbb; }
+.work-legend-dot--past { background: #f0f0f0; border: 1.5px solid #ccc; color: #aaa; }
+
+/* ─── ボタン行 ─── */
+.work-btn-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 8px;
+}
+.work-save-btn {
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.work-save-btn:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
+.work-save-btn:disabled { background: #eee; color: #bbb; cursor: not-allowed; }
+
+.work-end-btn {
+  padding: 13px 18px;
+  border-radius: 10px;
+  border: 2px solid #888;
+  background: #fff;
+  color: #888;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.work-end-btn:hover { background: #555; border-color: #555; color: #fff; }
+
+.work-result-msg {
+  margin-top: 10px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+  display: none;
+}
+
+/* ─── カレンダーエリア ─── */
+.work-calendar-area { display: none; }
+.work-calendar-area.visible { display: block; }
+
+.work-months-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── 月カレンダー ─── */
+.work-month-block {}
+.work-month-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 10px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.work-month-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: #000;
+  border-radius: 2px;
+}
+
+.work-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+/* 曜日ヘッダー */
+.work-cal-dow {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 0;
+  color: #888;
+  letter-spacing: 0.05em;
+}
+.work-cal-dow--sun { color: #e53935; }
+.work-cal-dow--sat { color: #1e88e5; }
+
+/* 日付セル */
+.work-cal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 1.5px solid #e8e8e8;
+  background: #fafafa;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  transition: all 0.12s;
+  user-select: none;
+  min-height: 44px;
+}
+.work-cal-cell:hover:not(.is-past):not(.is-empty) {
+  border-color: #aaa;
+  background: #f0f0f0;
+}
+.work-cal-cell.is-empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+.work-cal-cell.is-past {
+  background: #f8f8f8;
+  cursor: default;
+  opacity: 0.5;
+}
+.work-cal-cell.is-today {
+  border-color: #000 !important;
+  border-width: 2px;
+}
+.work-cal-cell.is-sunday .work-cal-day { color: #e53935; }
+.work-cal-cell.is-saturday .work-cal-day { color: #1e88e5; }
+.work-cal-cell.is-holiday .work-cal-day { color: #e53935; }
+
+/* OK状態 */
+.work-cal-cell.status-ok {
+  background: #e8f5e9;
+  border-color: #43a047;
+}
+.work-cal-cell.status-ok .work-cal-day { color: #2e7d32; font-weight: 700; }
+
+/* NG状態 */
+.work-cal-cell.status-ng {
+  background: #fce4ec;
+  border-color: #e53935;
+}
+.work-cal-cell.status-ng .work-cal-day { color: #b71c1c; font-weight: 700; }
+
+.work-cal-day {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #333;
+}
+.work-cal-status {
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #666;
+}
+.work-cal-cell.status-ok .work-cal-status { color: #2e7d32; }
+.work-cal-cell.status-ng .work-cal-status { color: #b71c1c; }
+
+/* 祝日名ツールチップ */
+.work-cal-holiday-name {
+  font-size: 0.52rem;
+  color: #e53935;
+  line-height: 1;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+/* ─── レスポンシブ ─── */
+@media (max-width: 960px) {
+  .work-layout { grid-template-columns: 1fr; padding: 12px 16px; }
+}
+@media (max-width: 480px) {
+  .work-cal-day { font-size: 0.72rem; }
+  .work-cal-status { display: none; }
+}

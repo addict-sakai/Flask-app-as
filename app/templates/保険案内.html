@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>一日保険のご案内</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_ins.css') }}">
+    <script src="{{ url_for('static', filename='app_ins.js') }}"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+    <!-- flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  </head>
+
+  <body>
+    <form id="entryForm">
+      <div class="container">
+        <h1>【一日保険のご案内】</h1>
+        <h2>安全管理費に含まれる保険について</h2>
+
+        <p>
+          体験・タンデム・半日体験＆タンデムフライトセット、ならびにA級コースの方は、
+          「安全管理費」として一日につき1,000円承ります。
+          旅行保険加入者又は個人での保険加入者は優先的にご自身が加入している保険をご使用ください。
+        </p>
+        <p class="note">
+          （ご来場の際に必ず受付表にご記入ください。尚、ご来場されても受付等をせずに入場した場合、
+          保険金は支払われません。）
+        </p>
+
+        <div class="section-title">補償内容</div>
+        <table>
+          <tr>
+            <th>死亡・後遺障害保険金</th>
+            <td>3,000万円</td>
+          </tr>
+          <tr>
+            <th>入院保険金</th>
+            <td>日額 4,000円</td>
+          </tr>
+          <tr>
+            <th>通院保険金</th>
+            <td>日額 1,500円</td>
+          </tr>
+        </table>
+
+        <p class="note">（入院は90日、通院は180日で打ち切りになります。）</p>
+        <p class="note">（怪我の程度に応じて、後遺障害保険金額の3〜100％が支払われます。）</p>
+
+        <div class="section-title">保険金が支払われる場合</div>
+        <p>
+          Mt. FUJI PARAGLIDINGをご利用の皆様が、急激且つ偶然な外来の事故によって、
+          その体に被った傷害に対して保険金が支払われます。
+        </p>
+        <p class="note">
+          ※傷害を負われた当日または、翌日に病院へかかり、診断書がある場合とします。
+        </p>
+
+        <div class="section-title">保険金が支払われない場合</div>
+        <p>
+          受付表に全て記入し入場する等、正規の受付手続きをせずに施設を利用した場合、
+          保険金は支払われません。
+        </p>
+        <p class="note">
+          ※原因のいかんに関わらず、頸椎症候群（いわゆるむちうち症）又は腰痛で他覚症状のないものに対しては、
+          保険金は支払われません。
+        </p>
+
+        <p class="note">※次の各号に掲げる事由によって生じた傷害に対しても保険金は支払われません。</p>
+        <ul>
+          <li>A 保険契約者又は被保険者の故意。</li>
+          <li>B 保険金を受け取るべき者の故意。</li>
+          <li>C 被保険者の自殺行為、犯罪行為又は闘争行為。</li>
+          <li>D 被保険者の脳疾患、疾病又は心神喪失。</li>
+          <li>E 被保険者の妊娠による出産、早産、流産、または外科的手術、その他医療処置。</li>
+          <li>F 地震もしくは噴火、または津波によるもの。</li>
+          <li>G 戦争、外国の武力行為、革命、内乱、その他これらに類似の事変、または暴動。</li>
+        </ul>
+
+        <!-- <div class="signature">
+          <div>2025年　　月　　日（　　）</div>
+          <div>氏名　　　　　　　　　　　　印</div>
+        </div> -->
+
+        <div class="company">THPホールディングス株式会社</div>
+        <div style="text-align: center; padding: 30px; background: #f9f9f9; border-top: 1px solid #ccc;">
+            <p>内容を確認し、同意される場合は以下のボタンを押してください。</p>
+            <button id="agreeBtn" style="padding: 10px 40px; font-size: 1.2rem; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                同意して申し込む
+            </button>
+            <button onclick="window.close();" style="margin-left: 10px; padding: 10px 20px;">同意しない</button>
+        </div>
+      </div>
+    </form>
+
+    <script>
+      document.getElementById("agreeBtn").addEventListener("click", function() {
+        // 親画面（申込書）にメッセージを送信
+        if (window.opener) {
+          window.opener.postMessage("agreed", "*");
+          window.close(); // 同意したらポップアップを閉じる
+        }
+      });
+    </script>
+  </body>
+</html>
