@@ -149,7 +149,12 @@ html, body {
   font-weight: 500;
   transition: background 0.15s, color 0.15s;
   cursor: pointer;
-  user-select: none;
+/*  user-select: none; */
+}
+/* 152行目付近 */
+.your-class-name {
+  -webkit-user-select: none; /* Safari / iOS 用に追加 */
+  user-select: none;         /* 標準プロパティ */
 }
 
 .sidebar-nav .nav-item:hover {
@@ -654,3 +659,260 @@ html, body {
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* カレンダーレイアウト */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border-color); /* 枠線用 */
+    border: 1px solid var(--border-color);
+}
+
+/* 曜日の文字色（月〜金） */
+.calendar-head {
+    background: #f8f9fa;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #000
+}
+
+.calendar-day {
+    background: #fff;
+/*    background: #fff; */
+    min-height: 100px;
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.calendar-day:hover {
+    background: #f0f7ff;
+}
+
+.calendar-day.empty {
+    background: #fcfcfc;
+    cursor: default;
+}
+
+.calendar-day.today {
+    background: #fff9db;
+}
+
+/* 日付の数字の色 */
+.day-num {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #000
+}
+
+.day-content {
+    text-align: center;
+    padding-bottom: 10px;
+}
+
+.count-badge {
+    background: var(--primary-color, #007bff);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+/* 詳細モーダル内のレイアウト */
+.work-detail-split {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.detail-section {
+    flex: 1;
+}
+
+.detail-section h4 {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.detail-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+/* 詳細モーダル内の人名リスト */
+.detail-section li {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.95em;
+    color: #212529; /* ここで人名の文字色を変更 */
+    border: 1px solid #e9ecef;
+}
+
+/* 「○ 出勤可能」などの見出しの色 */
+.status-ok {
+    color: #2b8a3e; /* 出勤OKの見出し色 */
+}
+
+.status-ng {
+    color: #c92a2a; /* 出勤不可の見出し色 */
+}
+
+/* 日曜・祝日（isWeekendで判定） */
+.calendar-day:nth-child(7n+1) .day-num {
+/* .calendar-day.weekend:nth-child(7n+1) .day-num { */
+    color: #e03131; /* 赤色 */
+}
+
+/* 土曜日 */
+.calendar-day:nth-child(7n) .day-num {
+/* .calendar-day.weekend:nth-child(7n) .day-num { */
+    color: #1971c2; /* 青色 */
+}
+
+/* モーダル内のリストを綺麗に整列 */
+.detail-section ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.detail-section li {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+/* フライト状況のテーブルを行クリック可能にする */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+    background-color: rgba(0, 0, 0, 0.05); /* 既存テーマに合わせて調整してください */
+}
+
+/* 編集アイコン（見た目の統一） */
+.icon-edit {
+    color: var(--text-muted);
+    font-size: 1.1em;
+}
+.clickable-row:hover .icon-edit {
+    color: var(--accent); /* 明るい色に変化 */
+}
+/* ---- クリッカブル行 ---- */
+.data-table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.data-table tbody tr.clickable-row:hover {
+  background: var(--hover-bg, rgba(0, 120, 212, 0.08));
+}
+
+/* =========================================================
+   フライトテーブル — 合計行
+   ========================================================= */
+
+.data-table tfoot .total-row {
+  border-top: 2px solid var(--border-color, #ddd);
+  background: var(--bg-subtle, #f8f9fa); /* 背景色 */
+  color: #000;
+}
+.data-table tfoot .total-row td {
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   クリッカブル行
+   ========================================================= */
+
+.data-table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.data-table tbody tr.clickable-row:hover {
+  background: var(--hover-bg, rgba(0, 120, 212, 0.08));
+}
+
+/* =========================================================
+   出勤可否詳細 — 名前リンク・ヒント
+   ========================================================= */
+
+.modal-hint {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #999);
+  text-align: center;
+}
+
+/* =========================================================
+   引継ぎ報告事項 — カード
+   ========================================================= */
+
+.handover-cards-wrap {
+  display: flex;
+  gap: 24px;
+  padding: 32px 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.handover-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 180px;
+  padding: 28px 24px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #ddd);
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  transition: box-shadow 0.18s, transform 0.15s;
+  text-align: center;
+}
+
+.handover-card:hover {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.handover-card-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.handover-card-count {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted, #aaa);
+}
+
+.handover-card-count.has-count {
+  color: var(--danger, #e53e3e);
+}
+
+.handover-card-unit {
+  font-size: 1rem;
+  color: var(--text-secondary, #666);
+}
+
+.handover-card-hint {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted, #aaa);
+}

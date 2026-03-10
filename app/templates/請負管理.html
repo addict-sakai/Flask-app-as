@@ -48,6 +48,15 @@
             出勤可否状況
           </a>
         </li>
+        <li>
+          <a href="#"
+             class="nav-item"
+             id="nav-handover"
+             onclick="switchView('handover'); return false;">
+            <span class="sidebar-icon">📋</span>
+            引継ぎ報告事項
+          </a>
+        </li>
       </ul>
     </nav>
 
@@ -78,7 +87,7 @@
         </div>
         <div class="btn-group">
           <button class="btn btn-ghost btn-sm" id="btn-show-all" onclick="toggleShowAll()">
-            全員表示
+            フライトありのみ
           </button>
         </div>
       </div>
@@ -92,8 +101,8 @@
                 <th class="col-name">名前</th>
                 <th class="col-num center">フライト日数</th>
                 <th class="col-num center">フライト本数</th>
+                <th class="col-num center">最低保証日数</th>
                 <th class="col-amount right">合計金額</th>
-                <th class="col-action center">詳細</th>
               </tr>
             </thead>
             <tbody id="flight-status-body">
@@ -101,6 +110,7 @@
                 <td colspan="5">読み込み中…</td>
               </tr>
             </tbody>
+            <tfoot id="flight-status-foot"></tfoot>
           </table>
         </div>
       </div><!-- /.scroll-area -->
@@ -137,6 +147,30 @@
       </div><!-- /.scroll-area -->
 
     </div><!-- /#view-work -->
+
+
+    <!-- ======================================================
+         VIEW: 引継ぎ報告事項
+         ====================================================== -->
+    <div class="view-panel hidden" id="view-handover">
+
+      <!-- コントロールバー -->
+      <div class="control-bar">
+        <div class="month-nav">
+          <button class="btn btn-ghost btn-sm" onclick="handoverMonthPrev()">◀ 前月</button>
+          <span class="month-label" id="handover-month-label">—</span>
+          <button class="btn btn-ghost btn-sm" onclick="handoverMonthNext()">翌月 ▶</button>
+        </div>
+      </div>
+
+      <!-- カード一覧 -->
+      <div class="scroll-area">
+        <div id="handover-cards" class="handover-cards-wrap">
+          <p class="loading-text">読み込み中…</p>
+        </div>
+      </div>
+
+    </div><!-- /#view-handover -->
 
   </div><!-- /.main-content -->
 </div><!-- /.layout -->

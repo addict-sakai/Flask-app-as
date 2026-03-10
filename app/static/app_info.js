@@ -120,17 +120,31 @@ function renderTable(members) {
     return;
   }
 
+  // 行をクリックした時に openEditForm(id) が走るように変更
   tableBody.innerHTML = members.map(m => `
-    <tr>
+    <tr class="clickable-row" onclick="openEditForm(${m.id})">
       <td><span style="font-family:var(--font-mono);font-size:12px">${esc(m.member_number || '—')}</span></td>
       <td>${esc(m.full_name)}</td>
       <td>${renderBadge(m.member_type)}</td>
       <td>${esc(m.glider_name || '—')}</td>
       <td>${renderDate(m.reglimit_date)}</td>
       <td>${renderDate(m.repack_date)}</td>
-      <td><button class="action-btn" onclick="openEditForm(${m.id})">編集</button></td>
+      <td class="text-center"><span class="icon-edit">✎</span></td>
     </tr>
   `).join('');
+    
+//  tableBody.innerHTML = members.map(m => `
+//    <tr>
+//      <td><span style="font-family:var(--font-mono);font-size:12px">${esc(m.member_number || '—')}</span></td>
+//      <td>${esc(m.full_name)}</td>
+//      <td>${renderBadge(m.member_type)}</td>
+//      <td>${esc(m.glider_name || '—')}</td>
+//      <td>${renderDate(m.reglimit_date)}</td>
+//      <td>${renderDate(m.repack_date)}</td>
+//      <td><button class="action-btn" onclick="openEditForm(${m.id})">編集</button></td>
+//    </tr>
+//  `).join('');
+
 }
 
 function renderBadge(type) {

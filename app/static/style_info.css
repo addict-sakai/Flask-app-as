@@ -659,3 +659,22 @@ textarea.field-input {
   transform: translateY(-1px);
   box-shadow: 0 0 14px var(--accent-glow);
 }
+
+/* 行をクリック可能に見せるための設定 */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+    background-color: rgba(0, 0, 0, 0.05); /* マウスホバーで少し色を変える */
+}
+
+/* 編集ボタンの代わりのアイコン（任意） */
+.icon-edit {
+    color: var(--text-muted);
+    font-size: 1.1em;
+}
+.clickable-row:hover .icon-edit {
+    color: var(--primary-color);
+}

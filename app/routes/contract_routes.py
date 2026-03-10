@@ -411,6 +411,9 @@ def cont_info_flight_days():
             func.count(func.distinct(Contract.flight_date)).label("flight_days"),
             func.coalesce(func.sum(Contract.daily_flight), 0).label("total_flights"),
             func.coalesce(func.sum(Contract.total_amount),  0).label("total_amount"),
+            func.coalesce(
+                func.sum(db.case((Contract.mini_guarantee == True, 1), else_=0)), 0
+            ).label("mini_guarantee_days"),
         )
         .filter(
             db.extract("year",  Contract.flight_date) == year,
@@ -419,7 +422,6 @@ def cont_info_flight_days():
         .group_by(Contract.uuid)
         .all()
     )
-    # agg_map = {row.uuid: row for row in agg}
     agg_map = {str(row.uuid): row for row in agg}
 
     result = []
@@ -427,11 +429,12 @@ def cont_info_flight_days():
         uuid_str = str(m.uuid).lower()
         row = agg_map.get(uuid_str)
         result.append({
-            "uuid":          uuid_str,
-            "name":          m.full_name,
-            "flight_days":   int(row.flight_days)   if row else 0,
-            "total_flights": int(row.total_flights) if row else 0,
-            "total_amount":  int(row.total_amount)  if row else 0,
+            "uuid":               uuid_str,
+            "name":               m.full_name,
+            "flight_days":        int(row.flight_days)        if row else 0,
+            "total_flights":      int(row.total_flights)      if row else 0,
+            "total_amount":       int(row.total_amount)       if row else 0,
+            "mini_guarantee_days": int(row.mini_guarantee_days) if row else 0,
         })
 
     return jsonify({"year": year, "month": month, "data": result})
@@ -505,3 +508,86 @@ def cont_info_detail(member_uuid: str):
 @contract_bp.route("/apply_cont_info")
 def contract_info_page():
     return render_template("請負管理.html")
+
+
+# ─────────────────────────────────────────
+# API: 引継ぎ報告事項 — 件数サマリー
+# GET /api/cont_info/handover?year=YYYY&month=MM
+# ─────────────────────────────────────────
+
+_HANDOVER_FIELDS = {
+    "near_miss":       "ヒヤリハット",
+    "improvement":     "営業改善点",
+    "damaged_section": "機材破損状況",
+}
+
+
+@contract_bp.route("/api/cont_info/handover")
+def cont_info_handover():
+    """
+    当月の引継ぎ報告事項（ヒヤリハット / 営業改善点 / 機材破損状況）の
+    件数を返す。
+    """
+    year, month = _get_year_month(request)
+
+    base_q = Contract.query.filter(
+        db.extract("year",  Contract.flight_date) == year,
+        db.extract("month", Contract.flight_date) == month,
+    )
+
+    result = []
+    for field, label in _HANDOVER_FIELDS.items():
+        count = base_q.filter(
+            getattr(Contract, field) != None,
+            getattr(Contract, field) != "",
+        ).count()
+        result.append({"category": field, "label": label, "count": count})
+
+    return jsonify({"year": year, "month": month, "data": result})
+
+
+# ─────────────────────────────────────────
+# API: 引継ぎ報告事項 — カテゴリ別詳細
+# GET /api/cont_info/handover/detail?year=YYYY&month=MM&category=near_miss
+# ─────────────────────────────────────────
+
+@contract_bp.route("/api/cont_info/handover/detail")
+def cont_info_handover_detail():
+    """
+    指定カテゴリの当月レコード（内容・記入者・記入日）を返す。
+    category: near_miss | improvement | damaged_section
+    """
+    year, month = _get_year_month(request)
+    category = request.args.get("category", "")
+
+    if category not in _HANDOVER_FIELDS:
+        return jsonify({"error": "不正なカテゴリです"}), 400
+
+    records = (
+        Contract.query
+        .filter(
+            db.extract("year",  Contract.flight_date) == year,
+            db.extract("month", Contract.flight_date) == month,
+            getattr(Contract, category) != None,
+            getattr(Contract, category) != "",
+        )
+        .order_by(Contract.flight_date, Contract.id)
+        .all()
+    )
+
+    data = [
+        {
+            "date":    r.flight_date.isoformat() if r.flight_date else None,
+            "name":    r.name,
+            "content": getattr(r, category) or "",
+        }
+        for r in records
+    ]
+
+    return jsonify({
+        "year":     year,
+        "month":    month,
+        "category": category,
+        "label":    _HANDOVER_FIELDS[category],
+        "data":     data,
+    })

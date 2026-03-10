@@ -76,6 +76,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   document.getElementById("zip2").addEventListener("blur", fetchAddress);
 
+  // ── 印刷ボタン ────────────────────────────────────────────────
+  document.getElementById("printBtn").addEventListener("click", function () {
+    window.print();
+  });
+
   // ── 終了ボタン：indexへ戻る ────────────────────────────────────
   document.getElementById("exitBtn").addEventListener("click", function () {
     if (confirm("入力を終了してトップ画面に戻りますか？")) {

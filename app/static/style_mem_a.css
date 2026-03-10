@@ -141,3 +141,10 @@ textarea {
   margin: 0 15px;
   cursor: pointer;
 }
+
+/* 印刷時：ボタンを非表示、余白調整 */
+@media print {
+  .buttons { display: none; }
+  body { background: #fff; padding: 0; }
+  .sheet { border: none; padding: 16px; max-width: 100%; }
+}
