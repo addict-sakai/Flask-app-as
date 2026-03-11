@@ -50,4 +50,10 @@ def create_app():
     app.register_blueprint(work_bp)
     init_scheduler(app)   # 毎月1日0時に古いデータを自動削除
 
+    from .routes.config_routes import config_bp
+    app.register_blueprint(config_bp)
+
+    from .routes.exp_resv_routes import exp_bp
+    app.register_blueprint(exp_bp)
+
     return app

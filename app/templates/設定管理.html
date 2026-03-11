@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>設定管理画面</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_config.css') }}" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       サイドバー
+       ══════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">⛵</span>
+      <div class="brand-text">
+        <span class="brand-title">Config</span>
+        <span class="brand-sub">設定管理</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <p class="nav-label">大項目</p>
+      <ul id="categoryList" class="category-list">
+        <li class="category-item loading">読み込み中…</li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-add-category" id="btnAddCategory">
+        ＋ 大項目を追加
+      </button>
+      <a href="{{ url_for('member.index') }}" class="btn-back">
+        ← メニューに戻る
+      </a>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       メインコンテンツ
+       ══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ヘッダー -->
+    <header class="main-header">
+      <div class="header-left">
+        <h1 class="header-title" id="headerTitle">カテゴリを選択してください</h1>
+        <span class="header-badge" id="headerBadge" hidden></span>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-primary" id="btnAddMaster" disabled>
+          ＋ 項目を追加
+        </button>
+      </div>
+    </header>
+
+    <!-- トースト通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- テーブルエリア -->
+    <div class="content-area">
+      <div class="table-wrapper" id="tableWrapper">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>左のメニューから大項目を選択してください</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       モーダル：項目（master）追加・編集
+       ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="masterModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="masterModalTitle">項目を追加</h2>
+        <button class="modal-close" data-close="masterModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="masterIdField" />
+
+        <div class="form-group">
+          <label class="form-label">大項目 <span class="required">*</span></label>
+          <input type="text" id="masterCategory" class="form-input" placeholder="例: パラ" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">項目名 <span class="required">*</span></label>
+          <input type="text" id="masterItemName" class="form-input" placeholder="例: タンデム" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">種別 <span class="required">*</span></label>
+            <select id="masterValueType" class="form-select">
+              <option value="amount">金額 (amount)</option>
+              <option value="options">選択肢 (options)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">単位</label>
+            <input type="text" id="masterUnit" class="form-input" placeholder="円" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">表示順</label>
+          <input type="number" id="masterSortOrder" class="form-input" value="0" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">備考</label>
+          <textarea id="masterDescription" class="form-textarea" rows="2" placeholder="任意のメモ"></textarea>
+        </div>
+
+        <div class="form-group form-group--inline">
+          <label class="toggle-label">
+            <input type="checkbox" id="masterIsActive" class="toggle-input" checked />
+            <span class="toggle-track"></span>
+            <span class="toggle-text">有効</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="masterModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnSaveMaster">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       モーダル：値（value）管理
+       ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="valueModal">
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="valueModalTitle">値を管理</h2>
+          <p class="modal-subtitle" id="valueModalSubtitle"></p>
+        </div>
+        <button class="modal-close" data-close="valueModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="value-table-wrap">
+          <table class="value-table">
+            <thead>
+              <tr>
+                <th>値</th>
+                <th>順番</th>
+                <th>有効</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="valueTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="value-add-form">
+          <p class="value-add-title">新しい値を追加</p>
+          <input type="hidden" id="valueMasterId" />
+          <div class="value-add-row">
+            <input type="text"   id="newValue"      class="form-input" placeholder="値 *" />
+            <input type="number" id="newSortOrder"  class="form-input form-input--short" placeholder="順番" value="0" />
+            <button class="btn btn-primary" id="btnAddValue">追加</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="valueModal">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       確認ダイアログ
+       ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h2 class="modal-title">確認</h2>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage">削除しますか？</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="confirmModal">キャンセル</button>
+        <button class="btn btn-danger" id="btnConfirmOk">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app_config.js') }}"></script>
+</body>
+</html>

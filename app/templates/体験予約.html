@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>体験予約 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_resv.css') }}" />
+</head>
+<body class="exp-page">
+
+  <!-- ══════════════════════════════════════════
+       ヘッダー
+  ══════════════════════════════════════════ -->
+  <header class="exp-header">
+    <div class="exp-header-left">
+      <a href="/" class="exp-back-btn">← トップ</a>
+    </div>
+    <div class="exp-header-center">
+      <h1 class="exp-title">体験予約</h1>
+    </div>
+    <div class="exp-header-right">
+      <div class="exp-tab-group" id="mainTabGroup">
+        <button class="exp-tab active" data-type="para" id="tabPara">🪂 パラグライダー</button>
+        <button class="exp-tab"        data-type="camp" id="tabCamp">⛺ キャンプ</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       メインレイアウト
+  ══════════════════════════════════════════ -->
+  <div class="exp-layout">
+
+    <!-- ── サイドバー ──────────────────────── -->
+    <aside class="exp-sidebar">
+
+      <!-- 新規予約ボタン -->
+      <div class="sidebar-section">
+        <button class="exp-new-btn" id="btnNewResv">＋ 新規予約</button>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 日付絞り込み -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">予約日</p>
+        <input type="date" id="filterDate" class="sidebar-input" />
+        <button class="sf-btn sf-btn--clear" id="btnClearDate" style="margin-top:4px;">クリア</button>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 月ナビ -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">月別表示</p>
+        <div class="month-nav-mini">
+          <button class="sp-btn" id="btnSideMonthPrev">◀</button>
+          <span class="month-mini-label" id="sideMonthLabel">—</span>
+          <button class="sp-btn" id="btnSideMonthNext">▶</button>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- キャンセル表示 -->
+      <div class="sidebar-section">
+        <label class="check-label">
+          <input type="checkbox" id="chkShowCancel" />
+          <span class="check-mark"></span>
+          キャンセルも表示
+        </label>
+      </div>
+
+    </aside>
+
+    <!-- ── メインコンテンツ ──────────────────── -->
+    <main class="exp-main">
+
+      <!-- ─ 統計バー ─ -->
+      <div class="exp-stats-bar" id="statsBar">
+        <span class="exp-stat exp-stat--count">件数 <strong id="statCount">—</strong></span>
+        <span class="exp-stat exp-stat--amount">売上 <strong id="statAmount">—</strong> 円</span>
+        <span class="exp-stat exp-stat--label" id="statLabel">—</span>
+      </div>
+
+      <!-- ─ テーブル ─ -->
+      <div class="exp-table-wrap">
+        <table class="exp-table" id="resvTable">
+          <thead>
+            <tr id="tableHeaderRow">
+              <!-- JS で動的に変更 -->
+            </tr>
+          </thead>
+          <tbody id="resvTbody">
+            <tr>
+              <td colspan="10" class="exp-empty">
+                <div class="exp-empty-icon">🪂</div>読み込み中…
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─ カレンダー ─ -->
+      <section class="exp-calendar-section" id="calendarSection">
+        <div class="control-bar">
+          <div class="month-nav">
+            <button class="btn btn-ghost btn-sm" id="btnCalPrev">◀ 前月</button>
+            <span class="month-label" id="calMonthLabel">—</span>
+            <button class="btn btn-ghost btn-sm" id="btnCalNext">翌月 ▶</button>
+          </div>
+          <div class="cal-summary-right">
+            <span class="cal-sum-item">月間件数 <strong id="calMonthCount">—</strong> 件</span>
+            <span class="cal-sum-item">月間売上 <strong id="calMonthAmount">—</strong> 円</span>
+          </div>
+        </div>
+        <div class="calendar-grid-wrap">
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       予約モーダル（新規 / 編集）
+  ══════════════════════════════════════════ -->
+  <div class="exp-modal-overlay" id="resvOverlay" style="display:none;">
+    <div class="exp-modal" id="resvModal">
+
+      <div class="exp-modal-header">
+        <div class="exp-modal-title-wrap">
+          <span class="exp-modal-badge" id="modalBadge">パラ</span>
+          <h2 class="exp-modal-title" id="modalTitle">新規予約</h2>
+        </div>
+        <button class="modal-close-btn" id="btnModalClose">✕</button>
+      </div>
+
+      <div class="exp-modal-body" id="modalBody">
+
+        <!-- ── 共通フィールド ──────────────────── -->
+        <fieldset class="form-section">
+          <legend class="form-legend">基本情報</legend>
+          <div class="form-grid">
+
+            <div class="form-item">
+              <label class="form-label">予約日 <span class="req">*</span></label>
+              <input type="date" id="fResvDate" class="form-input" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">名前 <span class="req">*</span></label>
+              <input type="text" id="fName" class="form-input"
+                     placeholder="山田 太郎" autocomplete="off" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">電話番号</label>
+              <input type="tel" id="fPhone" class="form-input"
+                     placeholder="09012345678" autocomplete="off" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">担当</label>
+              <select id="fStaff" class="form-select"></select>
+            </div>
+
+            <div class="form-item form-item--full">
+              <label class="form-label">備考</label>
+              <textarea id="fMemo" class="form-textarea" rows="2"
+                        placeholder="備考を入力…"></textarea>
+            </div>
+
+          </div>
+        </fieldset>
+
+        <!-- ── パラグライダー体験フィールド ──── -->
+        <fieldset class="form-section" id="paraFields">
+          <legend class="form-legend">🪂 パラグライダー体験</legend>
+          <div class="form-grid">
+
+            <div class="form-item">
+              <label class="form-label">人数 <span class="req">*</span></label>
+              <input type="number" id="fPax" class="form-input" min="1" value="1" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">コース <span class="req">*</span></label>
+              <select id="fCourse" class="form-select"></select>
+            </div>
+
+            <div class="form-item" id="shortTimeWrap" style="display:none;">
+              <label class="form-label">ショート時間</label>
+              <select id="fShortTime" class="form-select"></select>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">集合時間</label>
+              <select id="fMeetingTime" class="form-select"></select>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">予約サイト</label>
+              <select id="fBookingSite" class="form-select"></select>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">支払方法</label>
+              <select id="fPayment" class="form-select"></select>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">チケット詳細</label>
+              <select id="fTicket" class="form-select"></select>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">保険料（1人分）</label>
+              <input type="number" id="fInsurance" class="form-input" min="0" value="0" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">ポイント値引</label>
+              <input type="number" id="fPoint" class="form-input" min="0" value="0" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">クーポン値引</label>
+              <input type="number" id="fCoupon" class="form-input" min="0" value="0" />
+            </div>
+
+            <div class="form-item">
+              <label class="check-label">
+                <input type="checkbox" id="fUpgrade" class="det-checkbox" />
+                <span class="det-checkbox-mark"></span>
+                UPグレード
+              </label>
+            </div>
+
+            <div class="form-item">
+              <label class="check-label">
+                <input type="checkbox" id="fShuttle" class="det-checkbox" />
+                <span class="det-checkbox-mark"></span>
+                送迎
+              </label>
+            </div>
+
+          </div>
+
+          <!-- 金額計算プレビュー -->
+          <div class="calc-preview" id="paraCalcPreview">
+            <div class="calc-row">
+              <span class="calc-label">コース金額</span>
+              <span class="calc-val" id="calcCourseAmt">—</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-label">保険料小計</span>
+              <span class="calc-val" id="calcInsAmt">—</span>
+            </div>
+            <div class="calc-row calc-row--sub">
+              <span class="calc-label">ポイント値引</span>
+              <span class="calc-val calc-neg" id="calcPointAmt">—</span>
+            </div>
+            <div class="calc-row calc-row--sub">
+              <span class="calc-label">クーポン値引</span>
+              <span class="calc-val calc-neg" id="calcCouponAmt">—</span>
+            </div>
+            <div class="calc-row calc-row--total">
+              <span class="calc-label">請求合計</span>
+              <span class="calc-val" id="calcTotal">—</span>
+            </div>
+          </div>
+
+        </fieldset>
+
+        <!-- ── キャンプフィールド ──────────────── -->
+        <fieldset class="form-section" id="campFields" style="display:none;">
+          <legend class="form-legend">⛺ キャンプ</legend>
+          <div class="form-grid">
+
+            <div class="form-item form-item--full">
+              <label class="form-label">サイト <span class="req">*</span></label>
+              <div class="radio-group" id="fSiteGroup">
+                <label class="radio-label">
+                  <input type="radio" name="site_type" value="フリーサイト①" checked />
+                  フリーサイト①（車両無し）
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="site_type" value="フリーサイト②" />
+                  フリーサイト②（車両有り）
+                </label>
+              </div>
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">大人人数</label>
+              <input type="number" id="fAdult" class="form-input" min="0" value="1" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">子供人数</label>
+              <input type="number" id="fChild" class="form-input" min="0" value="0" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">テント数</label>
+              <input type="number" id="fTent" class="form-input" min="0" value="0" />
+            </div>
+
+            <div class="form-item">
+              <label class="form-label">タープ数</label>
+              <input type="number" id="fTarp" class="form-input" min="0" value="0" />
+            </div>
+
+          </div>
+
+          <!-- 車両（フリーサイト②の場合のみ表示） -->
+          <div id="vehicleSection" style="display:none;">
+            <p class="form-sublabel">車両</p>
+            <div class="form-grid">
+
+              <div class="form-item">
+                <label class="form-label">車両１</label>
+                <select id="fV1Type" class="form-select"></select>
+              </div>
+              <div class="form-item">
+                <label class="form-label">台数</label>
+                <input type="number" id="fV1Count" class="form-input" min="0" value="0" />
+              </div>
+
+              <div class="form-item">
+                <label class="form-label">車両２</label>
+                <select id="fV2Type" class="form-select"></select>
+              </div>
+              <div class="form-item">
+                <label class="form-label">台数</label>
+                <input type="number" id="fV2Count" class="form-input" min="0" value="0" />
+              </div>
+
+              <div class="form-item">
+                <label class="form-label">車両３</label>
+                <select id="fV3Type" class="form-select"></select>
+              </div>
+              <div class="form-item">
+                <label class="form-label">台数</label>
+                <input type="number" id="fV3Count" class="form-input" min="0" value="0" />
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 金額計算プレビュー（キャンプ） -->
+          <div class="calc-preview" id="campCalcPreview">
+            <div class="calc-row">
+              <span class="calc-label">大人料金</span>
+              <span class="calc-val" id="calcAdultAmt">—</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-label">テント料金</span>
+              <span class="calc-val" id="calcTentAmt">—</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-label">タープ料金</span>
+              <span class="calc-val" id="calcTarpAmt">—</span>
+            </div>
+            <div class="calc-row" id="calcVehicleRow">
+              <span class="calc-label">車両料金</span>
+              <span class="calc-val" id="calcVehicleAmt">—</span>
+            </div>
+            <div class="calc-row calc-row--total">
+              <span class="calc-label">請求合計</span>
+              <span class="calc-val" id="calcCampTotal">—</span>
+            </div>
+          </div>
+
+        </fieldset>
+
+        <!-- ── 請求金額（編集可） ─────────────── -->
+        <fieldset class="form-section">
+          <legend class="form-legend">請求金額</legend>
+          <div class="form-grid">
+            <div class="form-item form-item--charge">
+              <label class="form-label">請求金額（円）</label>
+              <input type="number" id="fCharge" class="form-input form-input--charge"
+                     min="0" placeholder="自動計算" />
+              <button class="btn-recalc" id="btnRecalc" type="button">再計算</button>
+            </div>
+            <div class="form-item">
+              <label class="check-label">
+                <input type="checkbox" id="fCancelled" class="det-checkbox" />
+                <span class="det-checkbox-mark"></span>
+                キャンセル
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+      </div><!-- /.exp-modal-body -->
+
+      <div class="exp-modal-footer">
+        <button class="exp-btn exp-btn--ghost"   id="btnModalCancel">キャンセル</button>
+        <button class="exp-btn exp-btn--primary"  id="btnModalSave">登録</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div class="toast-zone" id="toastZone"></div>
+
+  <script src="{{ url_for('static', filename='app_exp_resv.js') }}"></script>
+</body>
+</html>

@@ -16,9 +16,12 @@ class IoFlight(db.Model):
     license        = db.Column(db.String(20))
     glider_name    = db.Column(db.String(50))
     glider_color   = db.Column(db.String(50))
-    repack_date    = db.Column(db.Date)          # リパック期限（登録日+1年）
-    insurance_type = db.Column(db.String(20))    # 1日 / 年間 / 個人
+    repack_date    = db.Column(db.Date)                                      # リパック期限（登録日+1年）
+    insurance_type = db.Column(db.String(20))                                # 1日 / 年間 / 個人
     radio_type     = db.Column(db.String(50))
     entry_date     = db.Column(db.Date, default=date.today, nullable=False)
     in_time        = db.Column(db.DateTime)
     out_time       = db.Column(db.DateTime)
+    yamachin       = db.Column(db.Boolean, nullable=False, default=False)    # 山チン判定
+    comment        = db.Column(db.String(255))                               # 備考
+

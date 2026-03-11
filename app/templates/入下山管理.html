@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>入下山管理 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_io_info.css') }}" />
+</head>
+<body class="info-page">
+
+  <!-- ══════════════════════════════════════════
+       ヘッダー
+  ══════════════════════════════════════════ -->
+  <header class="info-header">
+    <div class="info-header-left">
+      <a href="/" class="info-back-btn">← トップ</a>
+    </div>
+    <div class="info-header-center">
+      <h1 class="info-title">入下山管理</h1>
+    </div>
+    <div class="info-header-right">
+      <div class="info-stats">
+        <span class="info-stat info-stat--total">合計 <strong id="stat-total">—</strong></span>
+        <span class="info-stat info-stat--in">入山中 <strong id="stat-in">—</strong></span>
+        <span class="info-stat info-stat--out">下山済 <strong id="stat-out">—</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       メインレイアウト
+  ══════════════════════════════════════════ -->
+  <div class="info-layout">
+
+    <!-- ── サイドバー ──────────────────── -->
+    <aside class="info-sidebar">
+
+      <!-- 分類フィルター -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">分類フィルター</p>
+        <div class="sidebar-filter-group" id="classFilterGroup">
+          <button class="sf-btn active" data-filter="all">ALL</button>
+          <button class="sf-btn" data-filter="会員">会員</button>
+          <button class="sf-btn" data-filter="スクール">スクール</button>
+          <button class="sf-btn" data-filter="ビジター">ビジター</button>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 個人検索 -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">個人</p>
+        <input type="text" id="memberQueryInput" class="sidebar-input"
+               placeholder="会員番号 or QR" autocomplete="off" />
+        <div class="sidebar-period-group" id="memberPeriodGroup">
+          <button class="sp-btn" data-period="3m">3ヶ月</button>
+          <button class="sp-btn" data-period="6m">半年</button>
+          <button class="sp-btn" data-period="1y">1年</button>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 山チン -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">山チン</p>
+        <div class="sidebar-period-group">
+          <button class="sp-btn" data-type="yamachin" data-period="3m">3ヶ月</button>
+          <button class="sp-btn" data-type="yamachin" data-period="6m">半年</button>
+          <button class="sp-btn" data-type="yamachin" data-period="1y">1年</button>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 備考あり -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">備考あり</p>
+        <div class="sidebar-period-group">
+          <button class="sp-btn" data-type="comment" data-period="3m">3ヶ月</button>
+          <button class="sp-btn" data-type="comment" data-period="6m">半年</button>
+          <button class="sp-btn" data-type="comment" data-period="1y">1年</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── メインコンテンツ ──────────────── -->
+    <main class="info-main">
+
+      <!-- ─ 日別セクション ─ -->
+      <section class="daily-section" id="dailySection">
+
+        <!-- 日付ナビ（請負管理.html スタイル） -->
+        <div class="control-bar">
+          <div class="month-nav">
+            <button class="btn btn-ghost btn-sm" id="btnPrevDay">◀ 前日</button>
+            <span class="month-label" id="dateNavTitle">—</span>
+            <button class="btn btn-ghost btn-sm" id="btnNextDay" disabled>翌日 ▶</button>
+          </div>
+
+          <!-- フィルター表示ラベル（特殊フィルター時） -->
+          <div class="filter-label-bar" id="filterLabelBar" style="display:none;">
+            <span class="filter-label-text" id="filterLabelText"></span>
+          </div>
+        </div>
+
+        <!-- テーブル -->
+        <div class="info-table-wrap">
+          <table class="info-table" id="dailyTable">
+            <thead>
+              <tr>
+                <th id="col-date" style="display:none;">日付</th>
+                <th>氏名</th>
+                <th>分類</th>
+                <th>コース</th>
+                <th>機体</th>
+                <th>状態</th>
+                <th>山チン</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody id="dailyTbody">
+              <tr>
+                <td colspan="8" class="info-empty">
+                  <div class="info-empty-icon">🪂</div>
+                  読み込み中…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─ カレンダーセクション ─ -->
+      <section class="calendar-section" id="calendarSection">
+
+        <!-- 月ナビ（請負管理.html スタイル） -->
+        <div class="control-bar">
+          <div class="month-nav">
+            <button class="btn btn-ghost btn-sm" id="btnPrevMonth">◀ 前月</button>
+            <span class="month-label" id="monthNavTitle">—</span>
+            <button class="btn btn-ghost btn-sm" id="btnNextMonth">翌月 ▶</button>
+          </div>
+        </div>
+
+        <!-- 月合計バー -->
+        <div class="calendar-month-summary" id="calMonthSummary">
+          <span class="cal-summary-label" id="calSummaryLabel">合計</span>
+          <span class="cal-summary-count"><strong id="calMonthTotal">—</strong> 人</span>
+        </div>
+
+        <!-- カレンダーグリッド -->
+        <div class="calendar-grid-wrap">
+          <div class="calendar-grid" id="calendarGrid">
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       詳細モーダル
+  ══════════════════════════════════════════ -->
+  <div class="info-modal-overlay" id="detailOverlay" style="display:none;">
+    <div class="info-modal" id="detailModal">
+
+      <div class="info-modal-header">
+        <div>
+          <p class="info-modal-type" id="det-class">—</p>
+          <h2 class="info-modal-name" id="det-name">—</h2>
+        </div>
+        <button class="info-modal-close" id="btnDetailClose">✕</button>
+      </div>
+
+      <div class="info-modal-body">
+
+        <div class="det-grid">
+          <div class="det-item">
+            <span class="det-label">会員番号</span>
+            <span class="det-value" id="det-number">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">コース</span>
+            <span class="det-value" id="det-course">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">機体</span>
+            <span class="det-value" id="det-glider">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">機体カラー</span>
+            <span class="det-value" id="det-glider-color">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">保険区分</span>
+            <span class="det-value" id="det-insurance">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">無線周波数</span>
+            <span class="det-value" id="det-radio">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">技能証</span>
+            <span class="det-value" id="det-license">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">登録期限</span>
+            <span class="det-value" id="det-reglimit">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">リパック期限</span>
+            <span class="det-value" id="det-repack">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">日付</span>
+            <span class="det-value" id="det-date">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">入山</span>
+            <span class="det-value det-chip det-chip--in" id="det-in">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">下山</span>
+            <span class="det-value" id="det-out">—</span>
+          </div>
+        </div>
+
+        <hr class="det-divider" />
+
+        <div class="det-edit-section">
+          <div class="det-edit-row">
+            <label class="det-edit-label">
+              <input type="checkbox" id="detYamachin" class="det-checkbox" />
+              <span class="det-checkbox-mark"></span>
+              山チン
+            </label>
+          </div>
+          <div class="det-edit-row">
+            <label class="det-edit-label-text">備考</label>
+            <textarea id="detComment" class="det-textarea" rows="3"
+                      placeholder="備考を入力…"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-modal-footer">
+        <button class="info-btn info-btn--ghost" id="btnDetailCancel">キャンセル</button>
+        <button class="info-btn info-btn--primary" id="btnDetailSave">保存</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       カレンダー日付ポップアップ
+  ══════════════════════════════════════════ -->
+  <div class="cal-popup-overlay" id="calPopupOverlay" style="display:none;">
+    <div class="cal-popup" id="calPopup">
+
+      <div class="cal-popup-header">
+        <h3 class="cal-popup-date" id="calPopupDate">—</h3>
+        <button class="info-modal-close" id="btnCalPopupClose">✕</button>
+      </div>
+
+      <div class="cal-popup-body" id="calPopupBody">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div class="toast-zone" id="toastZone"></div>
+
+  <script src="{{ url_for('static', filename='app_io_info.js') }}"></script>
+</body>
+</html>

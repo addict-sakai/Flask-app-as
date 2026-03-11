@@ -39,12 +39,27 @@ def apply_page_club():
 # 会員管理画面表示
 @member_bp.route("/apply_info")
 def apply_page_cnt():
-    return render_template("会員管理画面.html")
+    return render_template("会員管理.html")
 
 # 会員情報更新ページ
 @member_bp.route("/apply_upd")
 def apply_page_upd():
     return render_template("会員更新.html")
+
+# 設定管理ページ
+@member_bp.route("/apply_config")
+def apply_page_config():
+    return render_template("設定管理.html")
+
+# 入下山管理ページ
+@member_bp.route("/apply_io_info")
+def apply_page_io_info():
+    return render_template("入下山管理.html")
+
+# 体験予約ページ
+@member_bp.route("/apply_exp_resv")
+def apply_page_exp_resv():
+    return render_template("体験予約.html")
 
 # =========================================
 # ヘルパー
