@@ -19,11 +19,14 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     # --- 🔵 ここまで修正 ---
 
-# from flask import Flask
-# from .db import init_db
-
-# def create_app():
-#     app = Flask(__name__)
+    # --- Pooler接続対策
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_timeout': 30,
+        'pool_size': 5,
+        'max_overflow': 2,
+    }
 
 # 🔵 ここを追加
 #    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://fujiparasystem_user:G5ZJlhQMw7xD1Yq1uzqjoo9fu30HvKD5@dpg-d6enn2cr85hc73frbvrg-a/fujiparasystem"

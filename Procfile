@@ -1,1 +1,1 @@
-web: gunicorn run:app
+web: gunicorn run:app --bing 0.0.0.0:10000
