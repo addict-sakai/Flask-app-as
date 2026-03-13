@@ -61,6 +61,11 @@ def apply_page_io_info():
 def apply_page_exp_resv():
     return render_template("体験予約.html")
 
+# 体験状況ページ
+@member_bp.route("/apply_exp_status")
+def apply_page_exp_status():
+    return render_template("体験状況.html")
+
 # =========================================
 # ヘルパー
 # =========================================
@@ -121,6 +126,8 @@ def _member_to_dict(m: Member) -> dict:
         "license":          m.license,
         "repack_date":      fd(m.repack_date),
         "contract":         bool(m.contract) if m.contract is not None else False,
+        "organization":     m.organization,
+        "updated_at":       m.updated_at.strftime("%Y-%m-%d %H:%M") if m.updated_at else None,
     }
 
 
@@ -134,6 +141,7 @@ def _apply_fields_from_json(member: Member, data: dict) -> None:
         "course_type", "course_name", "course_fee", "glider_name",
         "glider_color", "signature_name", "guardian_name", "course_find",
         "leader", "home_area", "visitor_fee", "experience", "reg_no", "license",
+        "organization",
     ]
     date_fields = [
         "application_date", "birthday", "agreement_date", "reglimit_date",
@@ -320,20 +328,41 @@ def list_members():
         query = query.filter(Member.glider_name.ilike(f"%{glider_name}%"))
 
     today = date.today()
-    one_month_later = today + timedelta(days=31)
 
+    # 登録期限：1か月以内 または 期限切れ
     if request.args.get("reglimit_soon") == "1":
         query = query.filter(
             Member.reglimit_date.isnot(None),
-            Member.reglimit_date >= today,
-            Member.reglimit_date <= one_month_later,
+            Member.reglimit_date <= today + timedelta(days=31),
         )
 
+    # リパック日：登録月を1か月目として6か月目の月末が期限
+    # 条件: (期限 - 31日) <= 今日 <= 期限
+    # 期限 = repack月 +5か月の月末
+    # 今日 <= 期限  → repack_date の +5か月末 >= 今日
+    #              → repack_date >= 今日の -5か月の1日（概算: -152日）
+    # 今日 >= 期限 - 31日 → repack月 +5か月末 <= 今日 + 31日
+    #              → repack_date <= (今日 + 31日) の -5か月の1日（概算: +31-152日 = -121日）
     if request.args.get("repack_soon") == "1":
+        # 上限: repack_date の期限(+5か月末) >= today  → repack_date の月 >= today の -5か月
+        upper_ref = today
+        upper_month = upper_ref.month - 5
+        upper_year  = upper_ref.year
+        if upper_month <= 0:
+            upper_month += 12
+            upper_year  -= 1
+        repack_upper = upper_ref.replace(year=upper_year, month=upper_month, day=1)
+        # 下限: repack_date の期限(+5か月末) <= today + 31日
+        lower_ref = today + timedelta(days=31)
+        lower_month = lower_ref.month - 5
+        lower_year  = lower_ref.year
+        if lower_month <= 0:
+            lower_month += 12
+            lower_year  -= 1
+        repack_lower = lower_ref.replace(year=lower_year, month=lower_month, day=1)
         query = query.filter(
             Member.repack_date.isnot(None),
-            Member.repack_date >= today,
-            Member.repack_date <= one_month_later,
+            Member.repack_date <= repack_upper,  # 期限切れ含む
         )
 
     members = query.order_by(Member.id.desc()).all()
@@ -408,6 +437,7 @@ def update_member(member_id):
             abort(400, description=f"会員番号 '{new_member_number}' は既に使用されています")
 
     _apply_fields_from_json(member, data)
+    member.updated_at = datetime.utcnow()
     db.session.commit()
     return jsonify(_member_to_dict(member))
 

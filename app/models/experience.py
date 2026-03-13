@@ -34,3 +34,5 @@ class Member(db.Model):
     signature_name = db.Column(db.String(100), nullable=False)  # 本人署名
     guardian_name = db.Column(db.String(100))   # 保護者氏名
     insurance_agreement = db.Column(db.Boolean, default=False, nullable=False)   # 保険同意
+    
+    resv_no = db.Column(db.String(20))   # 体験予約番号リンク

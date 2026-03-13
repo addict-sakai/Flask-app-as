@@ -1,0 +1,461 @@
+/* =========================================
+   style_cont_unified.css
+   請負管理（日報 + 出勤予定）統合ページ
+   ========================================= */
+
+/* ─── ページ ─── */
+.uni-page {
+  background: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.uni-header-sub {
+  font-size: 0.66rem;
+  color: #777;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+/* ════ ヘッダー右側エリア ════ */
+.uni-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.uni-header-stat {
+  color: #aaa;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+/* 日報登録ボタン */
+.uni-btn-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.uni-btn-report:hover:not(:disabled) { opacity: 0.8; }
+
+
+/* 予定登録ボタン */
+.uni-btn-schedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: transparent;
+  color: #7dd99a;
+  border: 1.5px solid #7dd99a;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.uni-btn-schedule:hover:not(:disabled) { background: rgba(125,217,154,0.15); }
+
+
+
+/* ════ レイアウト ════ */
+.uni-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1;
+  align-items: start;
+}
+
+
+/* ════ サイドバー ════ */
+.uni-aside {
+  position: sticky;
+  top: 72px;          /* ヘッダー分 */
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+}
+.uni-aside::-webkit-scrollbar       { width: 4px; }
+.uni-aside::-webkit-scrollbar-track  { background: transparent; }
+.uni-aside::-webkit-scrollbar-thumb  { background: #ddd; border-radius: 2px; }
+
+/* 検索inputを縦積みにする */
+.uni-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+}
+.uni-search-btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 担当者表示 */
+.uni-member-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+.uni-clear-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.72rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.uni-clear-btn:hover { border-color: #ff3355; color: #ff3355; }
+
+
+/* ════ メインコンテンツ ════ */
+.uni-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+/* ════ セクションヘッダー（月ナビ付き）════ */
+.uni-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.uni-card-title-inline {
+  margin: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+  white-space: nowrap;
+}
+
+/* 月ナビゲーション */
+.uni-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.uni-nav-btn {
+  background: none;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  color: #555;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 14px;
+  line-height: 1;
+  transition: background 0.14s;
+  display: flex;
+  align-items: center;
+}
+.uni-nav-btn:last-child {
+  border-right: none;
+  border-left: 1px solid #e0e0e0;
+}
+.uni-nav-btn:hover { background: #e0e0e0; color: #000; }
+
+.uni-month-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: 0.04em;
+  min-width: 96px;
+  text-align: center;
+  padding: 0 4px;
+}
+
+
+/* ════ 日報テーブル ════ */
+.uni-report-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+}
+.uni-report-scroll::-webkit-scrollbar       { width: 5px; }
+.uni-report-scroll::-webkit-scrollbar-track  { background: transparent; }
+.uni-report-scroll::-webkit-scrollbar-thumb  { background: #ddd; border-radius: 3px; }
+
+.uni-report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.uni-td-date {
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  color: #333;
+}
+
+
+/* ════ カレンダーセル拡張 ════ */
+.uni-cal-cell {
+  min-height: 68px !important;
+  padding: 4px 3px !important;
+  gap: 2px !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+}
+.uni-cal-grid {
+  gap: 4px;
+}
+
+/* OK人数バッジ */
+.uni-ok-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: #f0f0f0;
+  color: #bbb;
+  border: 1px solid #e0e0e0;
+  transition: all 0.12s;
+  cursor: default;
+}
+.uni-ok-badge--active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #81c784;
+  cursor: pointer;
+}
+.uni-ok-badge--active:hover {
+  background: #c8e6c9;
+  border-color: #43a047;
+  transform: scale(1.08);
+}
+
+/* 自分のステータス */
+.uni-my-status {
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.uni-my-status--ok { color: #2e7d32; }
+.uni-my-status--ng { color: #b71c1c; }
+
+/* カレンダープレースホルダー */
+.uni-cal-placeholder {
+  text-align: center;
+  padding: 60px 20px;
+  color: #ccc;
+}
+
+
+/* ════ モーダル共通 ════ */
+.uni-wide-modal {
+  width: 92%;
+  max-width: 640px;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.uni-modal-sub {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+.uni-modal-body {
+  padding-top: 4px;
+}
+.uni-modal-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 10px;
+}
+.uni-modal-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.uni-modal-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.uni-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+.uni-modal-actions .cont-modal-save-btn {
+  flex: 1;
+  margin-top: 0;
+}
+.uni-cancel-full {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+}
+
+
+/* ════ 出勤可能者ポップアップ ════ */
+.uni-members-modal {
+  max-width: 340px;
+}
+.uni-members-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+.uni-members-empty {
+  text-align: center;
+  color: #bbb;
+  padding: 24px 0;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.uni-member-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.uni-member-item:last-child { border-bottom: none; }
+.uni-member-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #43a047;
+  flex-shrink: 0;
+}
+.uni-member-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #222;
+}
+
+
+/* ════ 未保存確認モーダル ════ */
+.uni-unsaved-desc {
+  color: #555;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+.uni-unsaved-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.uni-discard-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1.5px solid #e53935;
+  background: #fff;
+  color: #e53935;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.uni-discard-btn:hover { background: #fce4ec; }
+.uni-unsaved-actions .cont-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+
+/* ════ 予定登録完了モーダル ════ */
+.uni-success-modal {
+  max-width: 360px;
+  text-align: center;
+  padding: 36px 28px;
+}
+.uni-success-icon {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+.uni-success-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #111;
+  margin: 0 0 10px;
+  letter-spacing: 0.04em;
+}
+.uni-success-desc {
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.7;
+  margin: 0 0 22px;
+  background: #f0fff4;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+
+/* ════ レスポンシブ ════ */
+@media (max-width: 960px) {
+  .uni-layout {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;
+  }
+  .uni-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+}
+
+@media (max-width: 600px) {
+  .uni-modal-cols { grid-template-columns: 1fr; }
+  .uni-cal-cell { min-height: 56px !important; }
+  .uni-ok-badge { font-size: 0.55rem; min-width: 22px; height: 16px; }
+  .work-cal-day { font-size: 0.72rem; }
+
+}

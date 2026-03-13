@@ -13,6 +13,15 @@
   </head>
 
   <body>
+    <!-- 言語切替バー -->
+    <div class="lang-bar no-print">
+      <div class="lang-switch">
+        <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
+        <button class="lang-btn" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
+      </div>
+      <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+    </div>
+
     <form id="entryForm">
       <div class="sheet">
         <h1>体験フライト申込書</h1>
@@ -24,9 +33,9 @@
         <table>
           <tr>
             <th>氏名</th>
-            <td><input type="text" id="fullName" name="full_name"></td>
-            <th>ふりがな</th>
-            <td><input type="text" name="furigana"></td>
+            <td><input type="text" id="fullName" name="full_name" class="ime-ja"></td>
+            <th>フリガナ</th>
+            <td><input type="text" id="furigana" name="furigana" class="ime-ja" placeholder="自動入力されます"></td>
           </tr>
           <tr>
             <th>性別</th>
@@ -51,48 +60,48 @@
           </tr>
           <tr>
             <th>生年月日</th>
-            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+            <td><input type="text" class="js-date" id="birthday" name="birthday" inputmode="latin"></td>
             <th>年齢</th>
-            <td><input type="text" id="age" readonly></td>
+            <td><input type="text" id="age" class="ime-latin" inputmode="numeric" readonly></td>
           </tr>
           <tr>
             <th>郵便番号</th>
             <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
                 <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
             <th>体重（kg）</th>
-            <td><input type="text" id="weight" name="weight"></td>
+            <td><input type="text" id="weight" name="weight" class="ime-latin" inputmode="decimal"></td>
           </tr>
           <tr>
             <th>住所</th>
-            <td colspan="3"><input type="text" id="address" name="address"></td>
+            <td colspan="3"><input type="text" id="address" name="address" class="ime-ja"></td>
           </tr>
           <tr>
             <th>携帯電話</th>
-            <td><input type="text" name="mobile_phone"></td>
+            <td><input type="text" name="mobile_phone" class="ime-latin" inputmode="tel"></td>
             <th>自宅電話</th>
-            <td><input type="text" name="home_phone"></td>
+            <td><input type="text" name="home_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>勤務先名</th>
-            <td><input type="text" name="company_name"></td>
+            <td><input type="text" name="company_name" class="ime-ja"></td>
             <th>電話番号（勤務先）</th>
-            <td><input type="text" name="company_phone"></td>
+            <td><input type="text" name="company_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>緊急連絡先氏名</th>
-            <td><input type="text" name="emergency_name"></td>
+            <td><input type="text" name="emergency_name" class="ime-ja"></td>
             <th>電話番号（緊急時）</th>
-            <td><input type="text" name="emergency_phone"></td>
+            <td><input type="text" name="emergency_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>本人との続柄</th>
-            <td><input type="text" id="relationship" name="relationship"></td>
+            <td><input type="text" id="relationship" name="relationship" class="ime-ja"></td>
             <th>e-mail</th>
-            <td><input type="text" id="email" name="email"></td>
+            <td><input type="text" id="email" name="email" class="ime-latin" inputmode="email"></td>
           </tr>
           <tr>
             <th>傷病履歴</th>
-            <td colspan="3"><textarea name="medical_history" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
+            <td colspan="3"><textarea name="medical_history" class="ime-ja" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
           </tr>
         </table>
 
@@ -124,7 +133,7 @@
           </tr>
           <tr>
             <th>選択項目の詳細：</th>
-            <td colspan="3"><input type="text" id="school_text" name="school_text"></td>
+            <td colspan="3"><input type="text" id="school_text" name="school_text" class="ime-ja"></td>
           </tr>
         </table>
         <p class="note">　※ 各コース安全管理費 ¥1,000 込みの値段になります。</p>
@@ -148,20 +157,20 @@
           <table>
             <tr>
               <th>確認日</th>
-              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date"></td>
+              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date" inputmode="latin"></td>
               <th>本人署名</th>
-              <td><input type="text" name="signature_name"></td>
+              <td><input type="text" name="signature_name" class="ime-ja"></td>
             </tr>
             <tr>
               <th>保護者氏名（20歳未満）</th>
-              <td colspan="3"><input type="text" name="guardian_name"></td>
+              <td colspan="3"><input type="text" name="guardian_name" class="ime-ja"></td>
               <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
             </tr>
           </table>
         </div>
-      <div class="buttons">
+      <div class="buttons no-print">
         <button type="button" id="submitBtn">申 請</button>
-        <button type="button" id="exitBtn">終 了</button>
+        <button type="button" id="exitBtn">キャンセル</button>
       </div>
     </form>
 

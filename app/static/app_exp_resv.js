@@ -9,13 +9,17 @@ const ExpApp = (() => {
      状態管理
   ════════════════════════════════════════ */
   const S = {
-    type:        "para",     // "para" | "camp"
+    type:        "para",         // "para" | "camp"
+    viewMode:    "all",          // "all" | "month" | "date" | "past"
+    sortMode:    "reception",    // "reception" | "date_asc" (ALL時のみ選択可)
+    pastRange:   "",             // "" | "3m" | "6m" | "1y"
+    filterDate:  "",             // カレンダークリック時の特定日
     calYear:     new Date().getFullYear(),
     calMonth:    new Date().getMonth() + 1,
-    filterDate:  "",
     showCancel:  false,
-    editingId:   null,       // null=新規, number=編集
-    config:      {},         // APIから取得した設定値
+    editingId:    null,
+    focusedRowId: null,
+    config:       {},
   };
 
   const TODAY = (() => {
@@ -86,6 +90,8 @@ const ExpApp = (() => {
     _bindSidebar();
     _bindCalendar();
     _bindModal();
+    _bindExpAppModal();
+    _bindKeyboard();
 
     // config 一括取得
     try {
@@ -107,9 +113,17 @@ const ExpApp = (() => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".exp-tab").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        S.type     = btn.dataset.type;
+        S.type       = btn.dataset.type;
+        S.viewMode   = "all";
         S.filterDate = "";
-        $("filterDate").value = "";
+        S.pastRange  = "";
+        S.sortMode   = "reception";
+        // ラジオをリセット
+        const recRadio = document.querySelector('input[name="sortMode"][value="reception"]');
+        if (recRadio) recRadio.checked = true;
+        document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
+        _updateViewButtons();
+        _updateSortVisibility();
         loadList();
         loadCalendar();
         _updateTableHeader();
@@ -122,38 +136,45 @@ const ExpApp = (() => {
   ════════════════════════════════════════ */
   function _bindSidebar() {
     $("btnNewResv").addEventListener("click", () => openModal(null));
+    $("btnExpApp").addEventListener("click",  openExpAppModal);
 
-    $("filterDate").addEventListener("change", () => {
-      S.filterDate = $("filterDate").value;
-      if (S.filterDate) {
-        const d = new Date(S.filterDate);
-        S.calYear  = d.getFullYear();
-        S.calMonth = d.getMonth() + 1;
-        _updateSideMonthLabel();
-      }
-      loadList();
-    });
-
-    $("btnClearDate").addEventListener("click", () => {
+    // ALL / 当月 ボタン
+    $("btnViewAll").addEventListener("click", () => {
+      S.viewMode   = "all";
       S.filterDate = "";
-      $("filterDate").value = "";
+      S.pastRange  = "";
+      _updateViewButtons();
+      _updateSortVisibility();
       loadList();
     });
 
-    $("btnSideMonthPrev").addEventListener("click", () => {
-      S.calMonth--;
-      if (S.calMonth < 1) { S.calMonth = 12; S.calYear--; }
-      _updateSideMonthLabel();
+    $("btnViewMonth").addEventListener("click", () => {
+      S.viewMode   = "month";
+      S.filterDate = "";
+      S.pastRange  = "";
+      _updateViewButtons();
+      _updateSortVisibility();
       loadList();
-      loadCalendar();
     });
 
-    $("btnSideMonthNext").addEventListener("click", () => {
-      S.calMonth++;
-      if (S.calMonth > 12) { S.calMonth = 1; S.calYear++; }
-      _updateSideMonthLabel();
-      loadList();
-      loadCalendar();
+    // ソート（ALL時のみ有効）
+    document.querySelectorAll('input[name="sortMode"]').forEach(r => {
+      r.addEventListener("change", () => {
+        S.sortMode = r.value;
+        loadList();
+      });
+    });
+
+    // 過去範囲
+    document.querySelectorAll('input[name="pastRange"]').forEach(r => {
+      r.addEventListener("change", () => {
+        S.pastRange  = r.value;
+        S.viewMode   = r.value ? "past" : "all";
+        S.filterDate = "";
+        _updateViewButtons();
+        _updateSortVisibility();
+        loadList();
+      });
     });
 
     $("chkShowCancel").addEventListener("change", () => {
@@ -161,11 +182,22 @@ const ExpApp = (() => {
       loadList();
     });
 
-    _updateSideMonthLabel();
+    _updateViewButtons();
+    _updateSortVisibility();
   }
 
-  function _updateSideMonthLabel() {
-    $("sideMonthLabel").textContent = `${S.calYear}/${String(S.calMonth).padStart(2,"0")}`;
+  function _updateViewButtons() {
+    $("btnViewAll").classList.toggle("active",   S.viewMode === "all");
+    $("btnViewMonth").classList.toggle("active", S.viewMode === "month");
+    // 過去範囲ラジオのクリア（ALL/当月ボタン押下時）
+    if (S.viewMode !== "past") {
+      document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
+    }
+  }
+
+  function _updateSortVisibility() {
+    // ソート選択はALL表示のときだけ表示
+    $("sortSection").style.display = (S.viewMode === "all") ? "" : "none";
   }
 
   /* ════════════════════════════════════════
@@ -184,7 +216,8 @@ const ExpApp = (() => {
         <th>支払</th>
         <th>請求金額</th>
         <th>担当</th>
-        <th>状態</th>
+        <th>受付申込</th>
+        <th>体験状態</th>
       `;
     } else {
       thead.innerHTML = `
@@ -197,7 +230,8 @@ const ExpApp = (() => {
         <th>タープ</th>
         <th>請求金額</th>
         <th>担当</th>
-        <th>状態</th>
+        <th>受付申込</th>
+        <th>体験状態</th>
       `;
     }
   }
@@ -207,30 +241,66 @@ const ExpApp = (() => {
   ════════════════════════════════════════ */
   async function loadList() {
     _updateTableHeader();
-    let url = `/api/exp/reservations?type=${S.type}&show_cancel=${S.showCancel ? "1" : "0"}`;
-    if (S.filterDate) {
-      url += `&date=${S.filterDate}`;
+
+    const cancel = S.showCancel ? "1" : "0";
+    let url  = `/api/exp/reservations?type=${S.type}&show_cancel=${cancel}`;
+    let label = "";
+
+    if (S.viewMode === "date" && S.filterDate) {
+      // カレンダークリック → 特定日・集合時間順
+      url   += `&date=${S.filterDate}&sort=meeting_asc`;
+      label  = S.filterDate;
+
+    } else if (S.viewMode === "month") {
+      // 当月 → 予約日昇順
+      url   += `&year=${S.calYear}&month=${S.calMonth}&sort=date_asc`;
+      label  = `${S.calYear}年${S.calMonth}月`;
+
+    } else if (S.viewMode === "past" && S.pastRange) {
+      // 過去範囲 → 予約日降順（新しい順）
+      const today  = dateToISO(TODAY);
+      const from   = _pastFromDate(S.pastRange);
+      url   += `&from_date=${from}&to_date=${today}&sort=date_asc`;
+      label  = { "3m": "過去3か月", "6m": "過去半年", "1y": "過去1年" }[S.pastRange] || "";
+
     } else {
-      url += `&year=${S.calYear}&month=${S.calMonth}`;
+      // ALL → 登録順 or 予約日順
+      const sortParam = S.sortMode === "date_asc" ? "date_asc" : "reception_desc";
+      url   += `&sort=${sortParam}`;
+      label  = "ALL";
     }
 
     try {
       const data = await apiFetch(url);
       _renderList(data.items);
-
-      // 統計
       const total  = data.items.length;
       const amount = data.items.reduce((s, r) => s + (r.charge_amount || 0), 0);
       $("statCount").textContent  = total;
       $("statAmount").textContent = amount.toLocaleString();
-      const lb = S.filterDate
-        ? S.filterDate
-        : `${S.calYear}年${S.calMonth}月`;
-      $("statLabel").textContent = lb;
-
+      $("statLabel").textContent  = label;
     } catch (e) {
       toast("一覧の取得に失敗: " + e.message, "error");
     }
+  }
+
+  function _pastFromDate(range) {
+    const d = new Date(TODAY);
+    if (range === "3m") d.setMonth(d.getMonth() - 3);
+    else if (range === "6m") d.setMonth(d.getMonth() - 6);
+    else if (range === "1y") d.setFullYear(d.getFullYear() - 1);
+    return dateToISO(d);
+  }
+
+
+  /* 申込リンク件数バッジ */
+  function _appLinkedBadge(r) {
+    const n    = r.app_count || 0;
+    const pax  = r.reservation_type === "para"
+      ? (r.para?.pax_count ?? 0)
+      : (r.camp?.adult_count ?? 0);
+    if (n === 0) return `<span class="td-chip td-chip--pending">未</span>`;
+    const cls  = n >= pax ? "td-chip--done" : "td-chip--ok";
+    return `<span class="td-chip ${cls}">${n}名</span>`;
   }
 
   function _renderList(items) {
@@ -249,9 +319,17 @@ const ExpApp = (() => {
       const tr = document.createElement("tr");
       if (r.cancelled) tr.classList.add("is-cancelled");
 
-      const badge = r.cancelled
-        ? `<span class="td-chip td-chip--cancel">キャンセル</span>`
-        : `<span class="td-chip td-chip--${r.reservation_type}">${r.reservation_type === "para" ? "受付中" : "受付中"}</span>`;
+      const statusClass = {
+        "受付未": "td-chip--pending", "受付済": "td-chip--ok",
+        "体験完了": "td-chip--done",  "キャンセル": "td-chip--cancel"
+      }[r.status] || "td-chip--pending";
+      // 申込バッジ（左）・状況バッジ（右）
+      const appCount = r.app_count || 0;
+      const appBadge = appCount > 0
+        ? `<span class="td-chip td-chip--app">${appCount}名申込済</span>`
+        : `<span class="td-chip td-chip--app-none">申込未</span>`;
+      const walkinTag = r.walk_in ? `<span class="td-chip td-chip--walkin">飛込</span>` : "";
+      const badge = `<span class="td-chip ${statusClass}">${esc(r.status || "受付未")}</span>${walkinTag}`;
 
       let cols = "";
       if (S.type === "para") {
@@ -266,6 +344,7 @@ const ExpApp = (() => {
           <td class="td-dim">${esc(p.payment_method || "—")}</td>
           <td class="td-amount">${(r.charge_amount || 0).toLocaleString()}</td>
           <td class="td-dim">${esc(r.staff || "—")}</td>
+          <td>${appBadge}</td>
           <td>${badge}</td>
         `;
       } else {
@@ -280,14 +359,29 @@ const ExpApp = (() => {
           <td>${esc(c.tarp_count ?? 0)}</td>
           <td class="td-amount">${(r.charge_amount || 0).toLocaleString()}</td>
           <td class="td-dim">${esc(r.staff || "—")}</td>
+          <td>${appBadge}</td>
           <td>${badge}</td>
         `;
       }
 
       tr.innerHTML = cols;
-      tr.addEventListener("click", () => openModal(r.id));
+      tr.dataset.id = r.id;
+
+      // シングルクリック → フォーカス
+      tr.addEventListener("click", () => {
+        document.querySelectorAll("#resvTbody tr.row-focused")
+          .forEach(el => el.classList.remove("row-focused"));
+        tr.classList.add("row-focused");
+        S.focusedRowId = r.id;
+      });
+      // ダブルクリック → 編集モーダル
+      tr.addEventListener("dblclick", () => openModal(r.id));
+
       tbody.appendChild(tr);
     });
+
+    // キーボードナビ（上下キー）
+    $("resvTbody").onkeydown = null;  // 再バインド防止
   }
 
   /* ════════════════════════════════════════
@@ -297,14 +391,16 @@ const ExpApp = (() => {
     $("btnCalPrev").addEventListener("click", () => {
       S.calMonth--;
       if (S.calMonth < 1) { S.calMonth = 12; S.calYear--; }
-      _updateSideMonthLabel();
+      S.filterDate = "";
+      if (S.viewMode === "date") { S.viewMode = "all"; _updateViewButtons(); _updateSortVisibility(); }
       loadList();
       loadCalendar();
     });
     $("btnCalNext").addEventListener("click", () => {
       S.calMonth++;
       if (S.calMonth > 12) { S.calMonth = 1; S.calYear++; }
-      _updateSideMonthLabel();
+      S.filterDate = "";
+      if (S.viewMode === "date") { S.viewMode = "all"; _updateViewButtons(); _updateSortVisibility(); }
       loadList();
       loadCalendar();
     });
@@ -377,7 +473,9 @@ const ExpApp = (() => {
 
         cell.addEventListener("click", () => {
           S.filterDate = iso;
-          $("filterDate").value = iso;
+          S.viewMode   = "date";
+          _updateViewButtons();
+          _updateSortVisibility();
           loadList();
         });
       }
@@ -397,7 +495,7 @@ const ExpApp = (() => {
     // パラ
     _fillSelect($("fCourse"),      c.para_course ?? [],   false);
     _fillSelect($("fMeetingTime"), c.para_time ?? [],     true);
-    _fillSelect($("fShortTime"),   c.para_short ?? [],    true);
+
     _fillSelect($("fBookingSite"), c.para_site ?? [],     true);
     _fillSelect($("fPayment"),     c.para_payment ?? [],  true);
     _fillSelect($("fTicket"),      c.para_ticket ?? [],   true);
@@ -406,7 +504,10 @@ const ExpApp = (() => {
     _fillSelect($("fV2Type"), c.camp_vehicle ?? [], true);
     _fillSelect($("fV3Type"), c.camp_vehicle ?? [], true);
 
-    $("fInsurance").value = 0;  // 体験の保険料はフォームで手入力
+    // 保険料は config から取得（para_insurance[0].amount）
+    const insFromCfg = (c.para_insurance && c.para_insurance[0]) ? Number(c.para_insurance[0].amount || 0) : 0;
+    $("fInsurance").dataset.configDefault = insFromCfg;
+    $("fInsurance").value = insFromCfg || 0;
 
     // コース変更 → 保険チェック / ショート表示 / 金額再計算
     $("fCourse").addEventListener("change", _onCourseChange);
@@ -460,8 +561,8 @@ const ExpApp = (() => {
   /* コース変更ハンドラ */
   function _onCourseChange() {
     const course = $("fCourse").value;
-    // ショート時間の表示制御
-    $("shortTimeWrap").style.display = (course === "ショート") ? "" : "none";
+    // ショート時間は非表示（削除済み）
+
     _calcPara();
   }
 
@@ -563,6 +664,30 @@ const ExpApp = (() => {
   /* ════════════════════════════════════════
      モーダル
   ════════════════════════════════════════ */
+  /* ────── キーボードナビ（テーブル行 上下 + Enter） ────── */
+  function _bindKeyboard() {
+    document.addEventListener("keydown", e => {
+      // モーダルが開いている間は無効
+      if ($("resvOverlay").style.display !== "none") return;
+      const rows = [...document.querySelectorAll("#resvTbody tr[data-id]")];
+      if (!rows.length) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const cur = rows.findIndex(r => r.classList.contains("row-focused"));
+        let next = e.key === "ArrowDown" ? cur + 1 : cur - 1;
+        next = Math.max(0, Math.min(rows.length - 1, next));
+        rows.forEach(r => r.classList.remove("row-focused"));
+        rows[next].classList.add("row-focused");
+        rows[next].scrollIntoView({ block: "nearest" });
+        S.focusedRowId = Number(rows[next].dataset.id);
+      }
+      if (e.key === "Enter" && S.focusedRowId) {
+        openModal(S.focusedRowId);
+      }
+    });
+  }
+
   function _bindModal() {
     $("btnModalClose").addEventListener("click",  closeModal);
     $("btnModalCancel").addEventListener("click", closeModal);
@@ -618,15 +743,17 @@ const ExpApp = (() => {
     $("fResvDate").value = "";
     $("fName").value     = "";
     $("fPhone").value    = "";
+    $("fEmail").value    = "";
     $("fStaff").value    = "";
     $("fMemo").value     = "";
     $("fCharge").value   = "";
-    $("fCancelled").checked = false;
+    $("fStatus").value = "受付未";
+    $("fWalkIn").checked = false;
     // パラ
     $("fPax").value      = 1;
     $("fCourse").value   = "";
     $("fMeetingTime").value = "";
-    $("fShortTime").value   = "";
+
     $("fBookingSite").value = "";
     $("fPayment").value     = "";
     $("fTicket").value      = "";
@@ -634,10 +761,9 @@ const ExpApp = (() => {
     $("fCoupon").value   = 0;
     $("fUpgrade").checked   = false;
     $("fShuttle").checked   = false;
-    $("shortTimeWrap").style.display = "none";
-    // 保険料の初期値
-    const c = S.config;
-    $("fInsurance").value = 0;
+
+    // 保険料の初期値（configデフォルト値）
+    $("fInsurance").value = Number($("fInsurance").dataset?.configDefault || 0);
     // キャンプ
     $("fAdult").value = 1;
     $("fChild").value = 0;
@@ -658,17 +784,19 @@ const ExpApp = (() => {
     $("fResvDate").value = data.reservation_date || "";
     $("fName").value     = data.name || "";
     $("fPhone").value    = data.phone || "";
+    $("fEmail").value    = data.email || "";
     $("fStaff").value    = data.staff || "";
     $("fMemo").value     = data.memo || "";
     $("fCharge").value   = data.charge_amount || 0;
-    $("fCancelled").checked = !!data.cancelled;
+    $("fStatus").value    = data.status   || "受付未";
+    $("fWalkIn").checked  = !!data.walk_in;
 
     if (type === "para" && data.para) {
       const p = data.para;
       $("fPax").value         = p.pax_count ?? 1;
       $("fCourse").value      = p.course || "";
       $("fMeetingTime").value = p.meeting_time || "";
-      $("fShortTime").value   = p.short_time || "";
+
       $("fBookingSite").value = p.booking_site || "";
       $("fPayment").value     = p.payment_method || "";
       $("fTicket").value      = p.ticket_detail || "";
@@ -677,7 +805,7 @@ const ExpApp = (() => {
       $("fCoupon").value      = p.coupon_discount ?? 0;
       $("fUpgrade").checked   = !!p.upgrade;
       $("fShuttle").checked   = !!p.shuttle;
-      $("shortTimeWrap").style.display = (p.course === "ショート") ? "" : "none";
+
       _calcPara();
     }
 
@@ -729,10 +857,13 @@ const ExpApp = (() => {
       reservation_date: $("fResvDate").value,
       name:             $("fName").value.trim(),
       phone:            $("fPhone").value.trim(),
+      email:            $("fEmail").value.trim(),
       staff:            $("fStaff").value,
       memo:             $("fMemo").value.trim(),
       charge_amount:    parseInt($("fCharge").value) || 0,
-      cancelled:        $("fCancelled").checked,
+      status:           $("fStatus").value,
+      walk_in:          $("fWalkIn").checked,
+      cancelled:        $("fStatus").value === "キャンセル",
     };
 
     if (type === "para") {
@@ -740,7 +871,6 @@ const ExpApp = (() => {
         pax_count:       parseInt($("fPax").value) || 1,
         course:          $("fCourse").value,
         meeting_time:    $("fMeetingTime").value,
-        short_time:      $("fShortTime").value,
         booking_site:    $("fBookingSite").value,
         payment_method:  $("fPayment").value,
         ticket_detail:   $("fTicket").value,
@@ -780,6 +910,222 @@ const ExpApp = (() => {
     } catch (e) {
       toast("保存に失敗: " + e.message, "error");
     }
+  }
+
+
+
+  /* ════════════════════════════════════════
+     体験申込 編集モーダル
+  ════════════════════════════════════════ */
+
+  /* course_exp の数値コードをコース名に変換 */
+  const COURSE_EXP_MAP = {
+    "1": "タンデム", "2": "ショート", "3": "セット",
+    "tandem": "タンデム", "short": "ショート", "set": "セット",
+  };
+  function _courseExpLabel(val) {
+    if (!val) return "—";
+    return COURSE_EXP_MAP[String(val).toLowerCase()] || val;
+  }
+
+    /* datalist 入力と保存ボタンの状態を同期 */
+  function _syncSaveBtn(inp, saveBtn) {
+    const saved = saveBtn.dataset.saved;
+    const cur   = inp.value.trim();
+    if (cur !== saved) {
+      saveBtn.textContent = "保存";
+      saveBtn.classList.remove("app-save-btn--saved");
+    } else {
+      saveBtn.textContent = "保存済";
+      saveBtn.classList.add("app-save-btn--saved");
+    }
+  }
+
+    // 体験申込モーダルの対象日
+  const AppModal = {
+    date: new Date(),
+    todayResvs: [],   // 当日予約一覧（セレクト用）
+  };
+
+  function _appDateISO() {
+    return dateToISO(AppModal.date);
+  }
+
+  function _appDateLabel() {
+    const DOW = ["日","月","火","水","木","金","土"];
+    const d = AppModal.date;
+    const todayISO = dateToISO(new Date());
+    const suffix = _appDateISO() === todayISO ? " (今日)" : "";
+    return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} (${DOW[d.getDay()]})${suffix}`;
+  }
+
+  async function openExpAppModal() {
+    AppModal.date = new Date();
+    $("expAppOverlay").style.display = "flex";
+    requestAnimationFrame(() => $("expAppOverlay").classList.add("is-visible"));
+    document.body.style.overflow = "hidden";
+    await _loadAppModal();
+  }
+
+  function closeExpAppModal() {
+    const overlay = $("expAppOverlay");
+    overlay.classList.remove("is-visible");
+    setTimeout(() => { overlay.style.display = "none"; }, 220);
+    document.body.style.overflow = "";
+  }
+
+  function _bindExpAppModal() {
+    $("btnAppClose").addEventListener("click",  closeExpAppModal);
+    $("btnAppCancel").addEventListener("click", closeExpAppModal);
+    $("expAppOverlay").addEventListener("click", e => {
+      if (e.target === $("expAppOverlay")) closeExpAppModal();
+    });
+    $("btnAppPrev").addEventListener("click", async () => {
+      AppModal.date.setDate(AppModal.date.getDate() - 1);
+      AppModal.date = new Date(AppModal.date); // 参照更新
+      await _loadAppModal();
+    });
+    $("btnAppNext").addEventListener("click", async () => {
+      AppModal.date.setDate(AppModal.date.getDate() + 1);
+      AppModal.date = new Date(AppModal.date);
+      await _loadAppModal();
+    });
+    $("btnAppToday").addEventListener("click", async () => {
+      AppModal.date = new Date();
+      await _loadAppModal();
+    });
+  }
+
+  async function _loadAppModal() {
+    $("appDateLabel").textContent = _appDateLabel();
+    $("appResultTbody").innerHTML = `<tr><td colspan="6" class="exp-empty">読み込み中…</td></tr>`;
+    $("appFooterCount").textContent = "";
+
+    const iso = _appDateISO();
+
+    try {
+      // 当日申込一覧 と 当日予約セレクト用 を並行取得
+      const [appData, resvData] = await Promise.all([
+        apiFetch(`/api/exp/experience_apps/today?date=${iso}`),
+        apiFetch(`/api/exp/today_reservations?date=${iso}&type=para`),
+      ]);
+
+      AppModal.todayResvs = resvData.items || [];
+      const items = appData.items || [];
+
+      $("appFooterCount").textContent = `${items.length} 件`;
+      _renderExpApps(items);
+
+    } catch (e) {
+      $("appResultTbody").innerHTML = `<tr><td colspan="6" class="exp-empty">取得失敗: ${esc(e.message)}</td></tr>`;
+      toast(e.message, "error");
+    }
+  }
+
+  function _renderExpApps(items) {
+    const tbody = $("appResultTbody");
+    tbody.innerHTML = "";
+
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="exp-empty">申込データなし</td></tr>`;
+      return;
+    }
+
+    items.forEach((item, idx) => {
+      const tr = document.createElement("tr");
+      const selId     = `rnoSel_${item.id}`;
+      const dlId      = `rnoList_${item.id}`;
+      const cancelId  = `rnoCancel_${item.id}`;
+      const saveId    = `rnoSave_${item.id}`;
+
+      // 予約番号 datalist
+      const dlOpts = AppModal.todayResvs.map(rv =>
+        `<option value="${esc(rv.resv_no)}">${esc(rv.name)}　${esc(rv.course)}　${rv.pax_count}名</option>`
+      ).join("");
+
+      // キャンセル済みかどうか
+      const isCancelled = (item.resv_no === "キャンセル");
+      const cancelLabel = isCancelled ? "キャンセル済" : "キャンセル";
+      const cancelCls   = isCancelled ? "app-cancel-btn app-cancel-btn--done" : "app-cancel-btn";
+
+      tr.innerHTML = `
+        <td class="td-dim">${idx + 1}</td>
+        <td class="td-name">${esc(item.full_name)}
+          <span class="td-dim" style="font-size:.75rem;display:block;">${esc(item.furigana)}</span>
+        </td>
+        <td class="td-dim" style="font-size:.75rem;">${esc(item.mobile_phone)}</td>
+        <td class="td-dim">${esc(_courseExpLabel(item.course_exp))}</td>
+        <td>
+          <input id="${selId}" list="${dlId}" class="form-input form-input--rno"
+                 value="${esc(item.resv_no || "")}" placeholder="— 未選択 —" autocomplete="off" />
+          <datalist id="${dlId}">${dlOpts}</datalist>
+        </td>
+        <td class="app-action-cell">
+          <button id="${saveId}" class="exp-btn btn-sm app-save-btn app-save-btn--saved"
+                  data-id="${item.id}" data-sel="${selId}" data-saved="${esc(item.resv_no || "")}">保存済</button>
+          <button class="${cancelCls} btn-sm"
+                  data-id="${item.id}">${cancelLabel}</button>
+        </td>
+      `;
+
+      const inp     = tr.querySelector(`#${selId}`);
+      const saveBtn = tr.querySelector(`#${saveId}`);
+
+      // ── datalist 再編集対応 ────────────────────────────────
+      // フォーカス時: 入力を一時クリア → datalist が全件表示される
+      inp.addEventListener("focus", () => {
+        inp.dataset.prevVal = inp.value;
+        inp.value = "";
+      });
+      // blur 時: 何も選択されていなければ元の値に戻す
+      inp.addEventListener("blur", () => {
+        setTimeout(() => {
+          if (!inp.value.trim()) {
+            inp.value = inp.dataset.prevVal || "";
+          }
+          // 保存ボタン状態を更新
+          _syncSaveBtn(inp, saveBtn);
+        }, 150); // setTimeout で datalist のクリックを先に処理させる
+      });
+
+      // 入力変更 → 保存ボタン状態を更新
+      inp.addEventListener("input", () => _syncSaveBtn(inp, saveBtn));
+
+      // 保存ボタン
+      saveBtn.addEventListener("click", async () => {
+        const appId   = saveBtn.dataset.id;
+        const resv_no = inp.value.trim();
+        try {
+          await apiPut(`/api/exp/experience_apps/${appId}/link`, { resv_no });
+          saveBtn.dataset.saved = resv_no;
+          saveBtn.textContent   = "保存済";
+          saveBtn.classList.add("app-save-btn--saved");
+          toast("保存しました");
+          loadList(); loadCalendar();
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+
+      // キャンセルボタン
+      tr.querySelector(".app-cancel-btn").addEventListener("click", async (e) => {
+        const appId = e.currentTarget.dataset.id;
+        const already = e.currentTarget.classList.contains("app-cancel-btn--done");
+        const newVal  = already ? "" : "キャンセル";
+        const label   = already ? "キャンセル解除" : "キャンセル";
+        if (!already && !confirm(`${item.full_name} をキャンセルにしますか？`)) return;
+        try {
+          await apiPut(`/api/exp/experience_apps/${appId}/link`, { resv_no: newVal });
+          toast(already ? "キャンセルを解除しました" : "キャンセルしました");
+          await _loadAppModal();
+          loadList(); loadCalendar();
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+
+      tbody.appendChild(tr);
+    });
   }
 
   /* ════════════════════════════════════════

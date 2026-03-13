@@ -43,10 +43,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const nameInput = document.getElementById("fullName");
   const agreeName = document.getElementById("agreeName");
+  const furiganaInput = document.getElementById("furigana");
 
   if (nameInput && agreeName) {
     nameInput.addEventListener("input", function () {
       agreeName.textContent = this.value || "　　　　　　　";
+    });
+  }
+
+  // ── ふりがな自動入力（IME composition イベント） ──────────────
+  // compositionupdate でひらがなをリアルタイムにカタカナへ変換して表示
+  // compositionend で確定分を蓄積し、次の変換に備える
+
+  if (nameInput && furiganaInput) {
+    let kanaAccum  = "";  // 確定済みカタカナ
+    let kanaComposing = ""; // 変換中ひらがな
+
+    function toKatakana(str) {
+      return str.replace(/[\u3041-\u3096]/g, function (c) {
+        return String.fromCharCode(c.charCodeAt(0) + 0x60);
+      });
+    }
+
+    nameInput.addEventListener("compositionstart", function () {
+      kanaComposing = "";
+    });
+
+    nameInput.addEventListener("compositionupdate", function (e) {
+      kanaComposing = toKatakana(e.data || "");
+      furiganaInput.value = kanaAccum + kanaComposing;
+    });
+
+    nameInput.addEventListener("compositionend", function () {
+      kanaAccum += kanaComposing;
+      kanaComposing = "";
+      furiganaInput.value = kanaAccum;
+    });
+
+    // 氏名欄がクリアされたらふりがなもリセット
+    nameInput.addEventListener("input", function (e) {
+      if (!e.isComposing && nameInput.value === "") {
+        kanaAccum = "";
+        kanaComposing = "";
+        furiganaInput.value = "";
+      }
     });
   }
 
@@ -105,13 +145,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (!form.querySelector('input[name="course_exp"]:checked')) {
+    if (!form.querySelector('[name="course_exp"]').value) {
       alert("参加されるコースを選択してください");
+      form.querySelector('[name="course_exp"]').focus();
       return;
     }
 
-    if (!form.querySelector('input[name="school_find"]:checked')) {
+    if (!form.querySelector('[name="school_find"]').value) {
       alert("当スクールを何でお知りになったか選択してください");
+      form.querySelector('[name="school_find"]').focus();
       return;
     }
 
@@ -172,7 +214,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return res.json();
       })
       .then(() => {
-        alert("保険への同意を確認し、登録を完了しました。");
+        alert("保険への同意を確認し、登録を完了しました。\nトップ画面へ戻ります。");
+        window.location.href = "/";
       })
       .catch(() => {
         alert("登録に失敗しました。管理者へ連絡してください。");

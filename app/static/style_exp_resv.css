@@ -141,6 +141,40 @@
 }
 .exp-new-btn:hover { opacity: 0.75; }
 
+/* 表示範囲ボタン */
+.view-btn-group {
+  display: flex;
+  gap: 6px;
+}
+.view-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.view-btn:hover  { border-color: #000; color: #000; }
+.view-btn.active { background: #000; border-color: #000; color: #fff; }
+
+/* 並び順・過去範囲ラジオ */
+.radio-label-sm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #444;
+  cursor: pointer;
+  padding: 3px 0;
+}
+.radio-label-sm input[type="radio"] { accent-color: #000; width: 14px; height: 14px; }
+
 .sf-btn {
   width: 100%;
   padding: 7px 10px;
@@ -252,7 +286,12 @@
   border-radius: 12px;
   overflow: hidden;
   overflow-x: auto;
+  max-height: 442px; /* thead(38px) + tbody行(40px×10行) ≒ 10行分 */
+  overflow-y: auto;
 }
+
+.exp-table-wrap::-webkit-scrollbar { width: 6px; }
+.exp-table-wrap::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
 .exp-table {
   width: 100%;
@@ -269,6 +308,9 @@
   padding: 9px 12px;
   text-align: left;
   border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 .exp-table tbody tr {
   border-bottom: 1px solid #f0f0f0;
@@ -688,4 +730,232 @@
 @media (max-width: 600px) {
   .form-grid { grid-template-columns: 1fr; }
   .exp-tab-group { display: none; }
+}
+
+/* ── 飛び込みチェック ─────────────────────────────────── */
+.check-label--walkin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #059669;
+  margin-top: 24px;
+}
+.det-checkbox-mark--walkin {
+  background: #ecfdf5;
+  border-color: #059669;
+}
+.det-checkbox:checked + .det-checkbox-mark--walkin {
+  background: #059669;
+}
+
+/* ── 状況バッジ ──────────────────────────────────────── */
+.td-chip--pending { background: #e5e7eb; color: #374151; }
+.td-chip--ok      { background: #dbeafe; color: #1e40af; }
+.td-chip--done    { background: #d1fae5; color: #065f46; }
+.td-chip--walkin  { background: #fef3c7; color: #92400e; margin-right: 4px; }
+
+/* ── 体験申込モーダル ─────────────────────────────────── */
+.exp-modal--app { max-width: 720px; }
+
+.exp-new-btn--sub {
+  background: #f0fdf4;
+  color: #059669;
+  border: 1.5px solid #059669;
+  font-size: 0.78rem;
+}
+.exp-new-btn--sub:hover { background: #059669; color: #fff; }
+
+.app-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.app-search-bar .form-input { flex: 1; }
+
+.app-hint {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.82rem;
+  padding: 20px 0;
+}
+
+.form-input--rno {
+  width: 100px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+
+/* ── 体験申込モーダル 日付ナビ ───────────────────────── */
+.app-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 8px;
+}
+
+.app-date-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #222;
+  min-width: 110px;
+  text-align: center;
+}
+
+.date-nav-btn-sm {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.date-nav-btn-sm:hover { border-color: #888; color: #111; }
+.date-nav-btn-sm--today {
+  border-color: #2563eb;
+  color: #2563eb;
+  font-weight: 700;
+}
+.date-nav-btn-sm--today:hover { background: #2563eb; color: #fff; }
+
+/* ── 申込モーダル行 ─────────────────────────────────── */
+.app-resv-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-select--rno {
+  font-size: 0.78rem;
+  padding: 4px 6px;
+  max-width: 260px;
+}
+
+.app-linked-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* ── 申込件数バッジ ─────────────────────────────────── */
+.td-chip--app      { background: #e0e7ff; color: #3730a3; font-size: 0.7rem; }
+.td-chip--app-none { background: #f3f4f6; color: #9ca3af; font-size: 0.7rem; }
+
+/* ── 申込モーダル 日付ナビ ───────────────────────────── */
+.app-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  font-size: 0.82rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.date-nav-btn-sm {
+  background: transparent;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.date-nav-btn-sm:hover { border-color: #fff; color: #fff; }
+
+.app-today-btn {
+  border-color: #6cf;
+  color: #6cf;
+}
+.app-today-btn:hover { background: #6cf; color: #111; border-color: #6cf; }
+
+/* ── 申込モーダル フッター ──────────────────────────── */
+.app-footer-count {
+  font-size: 0.82rem;
+  color: #888;
+  flex: 1;
+}
+
+/* ── 予約番号セレクト ───────────────────────────────── */
+.form-select--rno {
+  font-size: 0.78rem;
+  padding: 4px 6px;
+  min-width: 180px;
+  max-width: 240px;
+}
+
+/* ── キーボードフォーカス行 ──────────────────────────────── */
+#resvTbody tr[data-id] { cursor: pointer; }
+#resvTbody tr.row-focused {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+  background: #eff6ff !important;
+}
+
+/* ── 申込編集: 保存ボタン状態 ────────────────────────────── */
+.app-save-btn {
+  background: #1d4ed8;   /* 未保存: 濃い青 */
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  transition: background .2s, color .2s;
+}
+.app-save-btn:hover { background: #1e40af; }
+
+.app-save-btn--saved {
+  background: #dbeafe;   /* 保存済: 薄い青 */
+  color: #3b82f6;
+  font-weight: 400;
+}
+.app-save-btn--saved:hover { background: #bfdbfe; }
+
+/* ── 申込編集: キャンセルボタン ──────────────────────────── */
+.app-cancel-btn {
+  background: #fff;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.app-cancel-btn:hover { background: #fee2e2; }
+
+.app-cancel-btn--done {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+/* 操作セル: ボタンを縦並びに */
+.app-action-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+/* ── サイドバー: バッジ凡例 ──────────────────────────────── */
+.badge-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.badge-legend-note {
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+
+#appDateLabel {
+  color: #000;
 }

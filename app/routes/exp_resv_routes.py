@@ -7,8 +7,38 @@ from flask import Blueprint, render_template, request, jsonify
 from app.db import db
 from datetime import date, datetime
 from sqlalchemy import text, func, extract
+from app.models.experience import Member as ExperienceMember
 
 exp_bp = Blueprint("exp", __name__)
+
+
+# ═════════════════════════════════════════
+# 起動時マイグレーション
+# ═════════════════════════════════════════
+
+@exp_bp.record_once
+def _on_register(state):
+    with state.app.app_context():
+        for sql in [
+            # 予約ステータス（exp_status_routes と共用）
+            "ALTER TABLE exp_reservation ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT '受付未'",
+            # 飛び込みフラグ
+            "ALTER TABLE exp_reservation ADD COLUMN IF NOT EXISTS walk_in BOOLEAN DEFAULT FALSE",
+        ]:
+            try:
+                db.session.execute(text(sql))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        # 体験申込テーブルに予約番号リンク列を追加
+        try:
+            tbl = ExperienceMember.__tablename__
+            db.session.execute(text(
+                f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS resv_no VARCHAR(20) DEFAULT NULL"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
 
 # ═════════════════════════════════════════
@@ -28,6 +58,7 @@ def _resv_to_dict(r, para=None, camp=None) -> dict:
         "reservation_date": _fd(r.reservation_date),
         "name":             r.name,
         "phone":            r.phone or "",
+        "email":            r.email or "",
         "charge_amount":    r.charge_amount,
         "staff":            r.staff or "",
         "memo":             r.memo or "",
@@ -184,8 +215,8 @@ def api_exp_config():
         "para_site":      _v("体験・キャンプ共通", "予約サイト"),
         "para_payment":   _v("体験・キャンプ共通", "支払"),
         "para_ticket":    _v("体験・キャンプ共通", "チケット"),
-        # 体験の保険料は体験 config に専用項目なし → 空リストで返す（JS側でデフォルト0）
-        "para_insurance": [],
+        # 体験の保険料をconfigから取得（category='体験', item_name='保険料'）
+        "para_insurance": _v("体験", "保険料"),
         # キャンプ
         "camp_adult":    _v("キャンプ", "入場料"),          # 大人1人当たりの金額
         "camp_tent_wd":  _v("キャンプ", "テント（平日）"),
@@ -205,15 +236,15 @@ def api_exp_config():
 
 @exp_bp.route("/api/exp/reservations")
 def api_exp_list():
-    resv_type    = request.args.get("type",     "para")   # para | camp
-    year         = request.args.get("year")
-    month        = request.args.get("month")
-    resv_date    = request.args.get("date")               # YYYY-MM-DD 絞り込み
-    show_cancel  = request.args.get("show_cancel", "0")
-
-    q = db.session.execute(
-        text("SELECT 1 FROM exp_reservation LIMIT 0")     # table existence check
-    )
+    resv_type   = request.args.get("type",        "para")  # para | camp
+    year        = request.args.get("year")
+    month       = request.args.get("month")
+    resv_date   = request.args.get("date")                  # YYYY-MM-DD 特定日
+    from_date   = request.args.get("from_date")             # YYYY-MM-DD 範囲開始
+    to_date     = request.args.get("to_date")               # YYYY-MM-DD 範囲終了
+    show_cancel = request.args.get("show_cancel", "0")
+    sort        = request.args.get("sort", "reception_desc")
+    # sort: reception_desc | date_asc | meeting_asc
 
     # SQLAlchemy ORM は使わずテキストSQLで組み立て
     filters = ["r.reservation_type = :rtype"]
@@ -230,16 +261,38 @@ def api_exp_list():
         filters.append("EXTRACT(MONTH FROM r.reservation_date) = :mo")
         params["yr"] = int(year)
         params["mo"] = int(month)
+    elif from_date and to_date:
+        filters.append("r.reservation_date >= :from_date")
+        filters.append("r.reservation_date <= :to_date")
+        params["from_date"] = from_date
+        params["to_date"]   = to_date
 
     where = " AND ".join(filters)
+
+    # 並び順
+    if sort == "date_asc":
+        order = "r.reservation_date ASC, r.reservation_no ASC"
+    elif sort == "meeting_asc":
+        order = "p.meeting_time ASC NULLS LAST, r.reservation_date ASC, r.reservation_no ASC"
+    else:  # reception_desc（登録順）
+        order = "r.id DESC"
 
     rows = db.session.execute(
         text(f"""
             SELECT
                 r.id, r.reservation_type, r.reservation_no,
                 r.reception_date, r.reservation_date,
-                r.name, r.phone, r.charge_amount,
+                r.name, r.phone, r.email, r.charge_amount,
                 r.staff, r.memo, r.cancelled,
+                COALESCE(r.status, '受付未') AS status,
+                COALESCE(r.walk_in, FALSE)   AS walk_in,
+                (SELECT COUNT(*) FROM experience e
+                 WHERE e.resv_no =
+                   CASE r.reservation_type
+                     WHEN 'para' THEN 'P-' || LPAD(CAST(r.reservation_no AS VARCHAR), 4, '0')
+                     WHEN 'camp' THEN 'C-' || LPAD(CAST(r.reservation_no AS VARCHAR), 4, '0')
+                   END
+                ) AS app_count,
                 -- para
                 p.pax_count, p.course, p.meeting_time, p.short_time,
                 p.booking_site, p.payment_method,
@@ -255,7 +308,7 @@ def api_exp_list():
             LEFT JOIN exp_para_detail p ON p.reservation_id = r.id
             LEFT JOIN exp_camp_detail c ON c.reservation_id = r.id
             WHERE {where}
-            ORDER BY r.reservation_date, r.reservation_no
+            ORDER BY {order}
         """),
         params
     ).fetchall()
@@ -270,10 +323,14 @@ def api_exp_list():
             "reservation_date": r.reservation_date.isoformat() if r.reservation_date else None,
             "name":             r.name,
             "phone":            r.phone or "",
+            "email":            r.email or "",
             "charge_amount":    r.charge_amount,
             "staff":            r.staff or "",
             "memo":             r.memo or "",
             "cancelled":        r.cancelled,
+            "status":           r.status,
+            "walk_in":          r.walk_in,
+            "app_count":        int(r.app_count or 0),
         }
         if resv_type == "para":
             d["para"] = {
@@ -385,10 +442,13 @@ def api_exp_get(resv_id):
         "reservation_date": row.reservation_date.isoformat() if row.reservation_date else None,
         "name":             row.name,
         "phone":            row.phone or "",
+        "email":            row.email or "",
         "charge_amount":    row.charge_amount,
         "staff":            row.staff or "",
         "memo":             row.memo or "",
         "cancelled":        row.cancelled,
+        "status":           getattr(row, "status", "受付未") or "受付未",
+        "walk_in":          getattr(row, "walk_in", False) or False,
     }
     if row.reservation_type == "para":
         d["para"] = {
@@ -438,10 +498,12 @@ def api_exp_create():
             text("""
                 INSERT INTO exp_reservation
                   (reservation_type, reservation_no, reception_date, reservation_date,
-                   name, phone, charge_amount, staff, memo, cancelled)
+                   name, phone, email, charge_amount, staff, memo, cancelled,
+                   status, walk_in)
                 VALUES
                   (:rtype, :rno, :rec_date, :resv_date,
-                   :name, :phone, :charge, :staff, :memo, FALSE)
+                   :name, :phone, :email, :charge, :staff, :memo, FALSE,
+                   :status, :walk_in)
                 RETURNING id
             """),
             {
@@ -451,9 +513,12 @@ def api_exp_create():
                 "resv_date": data.get("reservation_date") or None,
                 "name":      data.get("name", ""),
                 "phone":     data.get("phone", ""),
+                "email":     data.get("email", ""),
                 "charge":    data.get("charge_amount", 0),
                 "staff":     data.get("staff", ""),
                 "memo":      data.get("memo", ""),
+                "status":    data.get("status", "受付未"),
+                "walk_in":   data.get("walk_in", False),
             }
         )
         row = db.session.execute(
@@ -560,20 +625,26 @@ def api_exp_update(resv_id):
                   reservation_date = :resv_date,
                   name             = :name,
                   phone            = :phone,
+                  email            = :email,
                   charge_amount    = :charge,
                   staff            = :staff,
                   memo             = :memo,
-                  cancelled        = :cancelled
+                  cancelled        = :cancelled,
+                  status           = :status,
+                  walk_in          = :walk_in
                 WHERE id = :id
             """),
             {
                 "resv_date": data.get("reservation_date") or None,
                 "name":      data.get("name", ""),
                 "phone":     data.get("phone", ""),
+                "email":     data.get("email", ""),
                 "charge":    data.get("charge_amount", 0),
                 "staff":     data.get("staff", ""),
                 "memo":      data.get("memo", ""),
                 "cancelled": data.get("cancelled", False),
+                "status":    data.get("status", "受付未"),
+                "walk_in":   data.get("walk_in", False),
                 "id":        resv_id,
             }
         )
@@ -653,3 +724,144 @@ def api_exp_update(resv_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+# ═════════════════════════════════════════
+# 当日の体験申込者一覧  GET /api/exp/experience_apps/today?date=YYYY-MM-DD
+# ═════════════════════════════════════════
+
+@exp_bp.route("/api/exp/experience_apps/today")
+def api_experience_apps_today():
+    target_date = request.args.get("date", date.today().isoformat())
+    tbl = ExperienceMember.__tablename__
+
+    # application_date が当日のものを全件取得
+    rows = db.session.execute(text(f"""
+        SELECT id, full_name, furigana, mobile_phone,
+               application_date, course_exp, resv_no
+        FROM {tbl}
+        WHERE application_date = :d
+        ORDER BY id ASC
+    """), {"d": target_date}).fetchall()
+
+    return jsonify({"date": target_date, "items": [
+        {
+            "id":           r.id,
+            "full_name":    r.full_name or "",
+            "furigana":     r.furigana or "",
+            "mobile_phone": r.mobile_phone or "",
+            "course_exp":   r.course_exp or "",
+            "resv_no":      r.resv_no or "",
+        }
+        for r in rows
+    ]})
+
+
+# ═════════════════════════════════════════
+# 当日の予約一覧（申込リンク用セレクタ）
+# GET /api/exp/today_reservations?date=YYYY-MM-DD&type=para
+# ═════════════════════════════════════════
+
+@exp_bp.route("/api/exp/today_reservations")
+def api_today_reservations():
+    target_date = request.args.get("date", date.today().isoformat())
+    resv_type   = request.args.get("type", "para")
+
+    rows = db.session.execute(text("""
+        SELECT
+            r.reservation_no,
+            r.name,
+            COALESCE(p.course, c.site_type, '') AS course,
+            COALESCE(p.pax_count, c.adult_count, 0) AS pax_count
+        FROM exp_reservation r
+        LEFT JOIN exp_para_detail p ON p.reservation_id = r.id
+        LEFT JOIN exp_camp_detail c ON c.reservation_id = r.id
+        WHERE r.reservation_date = :d
+          AND r.reservation_type = :rtype
+          AND COALESCE(r.cancelled, FALSE) = FALSE
+          AND COALESCE(r.status, '受付未') != 'キャンセル'
+        ORDER BY r.reservation_no
+    """), {"d": target_date, "rtype": resv_type}).fetchall()
+
+    prefix = "P" if resv_type == "para" else "C"
+    return jsonify({"items": [
+        {
+            "resv_no":  f"{prefix}-{str(r.reservation_no).zfill(4)}",
+            "name":     r.name or "",
+            "course":   r.course or "",
+            "pax_count": int(r.pax_count or 0),
+        }
+        for r in rows
+    ]})
+
+
+# ═════════════════════════════════════════
+# 体験申込 予約番号リンク  PUT /api/exp/experience_apps/<id>/link
+# ═════════════════════════════════════════
+
+def _resv_no_to_type_no(resv_no_str):
+    """'P-0001' → ('para', 1)  /  'C-0002' → ('camp', 2)  /  無効 → None"""
+    import re
+    if not resv_no_str:
+        return None
+    m = re.match(r'^([PC])-(\d+)$', resv_no_str.strip())
+    if not m:
+        return None
+    rtype = "para" if m.group(1) == "P" else "camp"
+    return rtype, int(m.group(2))
+
+
+def _set_resv_status(resv_no_str, new_status):
+    """予約番号文字列で exp_reservation.status を更新"""
+    parsed = _resv_no_to_type_no(resv_no_str)
+    if not parsed:
+        return
+    rtype, rno = parsed
+    db.session.execute(text("""
+        UPDATE exp_reservation SET status = :status
+        WHERE reservation_type = :rtype AND reservation_no = :rno
+    """), {"status": new_status, "rtype": rtype, "rno": rno})
+
+
+@exp_bp.route("/api/exp/experience_apps/<int:app_id>/link", methods=["PUT"])
+def api_experience_link(app_id):
+    data       = request.get_json(silent=True) or {}
+    new_resv_no = (data.get("resv_no") or "").strip()
+
+    tbl = ExperienceMember.__tablename__
+    try:
+        # 既存の resv_no を取得
+        old_row = db.session.execute(
+            text(f"SELECT resv_no FROM {tbl} WHERE id = :id"),
+            {"id": app_id}
+        ).fetchone()
+        old_resv_no = (old_row.resv_no or "").strip() if old_row else ""
+
+        # resv_no を更新
+        db.session.execute(
+            text(f"UPDATE {tbl} SET resv_no = :rno WHERE id = :id"),
+            {"rno": new_resv_no or None, "id": app_id}
+        )
+
+        # 新しい resv_no が有効な予約番号 → その予約を受付済に
+        if new_resv_no and new_resv_no != "キャンセル":
+            _set_resv_status(new_resv_no, "受付済")
+
+        # 古い resv_no が変更 or 削除された場合
+        if old_resv_no and old_resv_no != new_resv_no and old_resv_no != "キャンセル":
+            # 他に同じ resv_no を持つ申込がなければ受付未に戻す
+            remaining = db.session.execute(
+                text(f"SELECT COUNT(*) FROM {tbl} WHERE resv_no = :rno AND id != :id"),
+                {"rno": old_resv_no, "id": app_id}
+            ).scalar()
+            if (remaining or 0) == 0:
+                _set_resv_status(old_resv_no, "受付未")
+
+        db.session.commit()
+        return jsonify({"message": "紐付けを更新しました"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+# ═════════════════════════════════════════

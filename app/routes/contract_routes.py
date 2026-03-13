@@ -47,20 +47,30 @@ def _contract_to_dict(c: Contract) -> dict:
 # ページルート
 # ─────────────────────────────────────────
 
+# ─────────────────────────────────────────
+# ページルート更新（統合ページ用）
+# 既存の cont_tan_index を下記に置き換え
+# ─────────────────────────────────────────
+
 @contract_bp.route("/apply_cont_tan")
 def cont_tan_index():
-    """請負日報ページ（当月分のリストを初期描画）"""
-    today = date.today()
-    records = (
-        Contract.query
-        .filter(
-            db.extract("year",  Contract.flight_date) == today.year,
-            db.extract("month", Contract.flight_date) == today.month,
-        )
-        .order_by(Contract.flight_date, Contract.id)
-        .all()
-    )
-    return render_template("請負日報.html", records=records, today=today)
+    """請負管理ページ（日報 + 出勤予定 統合）"""
+    return render_template("請負日報.html")
+
+# @contract_bp.route("/apply_cont_tan")
+# def cont_tan_index():
+#    """請負日報ページ（当月分のリストを初期描画）"""
+#    today = date.today()
+#    records = (
+#        Contract.query
+#        .filter(
+#            db.extract("year",  Contract.flight_date) == today.year,
+#            db.extract("month", Contract.flight_date) == today.month,
+#        )
+#        .order_by(Contract.flight_date, Contract.id)
+#        .all()
+#    )
+#    return render_template("請負日報.html", records=records, today=today)
 
 
 # ─────────────────────────────────────────
@@ -79,23 +89,24 @@ def api_lookup():
     if not query:
         return jsonify({"error": "会員番号を入力してください"}), 400
 
-    # 会員番号で検索、なければUUID（QR）で検索
-    member = Member.query.filter_by(member_number=query).first()
+    # 会員番号で検索（請負担当者のみ）、なければUUID（QR）で検索
+    member = Member.query.filter_by(member_number=query, contract=True).first()
     if not member:
         try:
             uuidlib.UUID(query)   # UUID形式かチェック（不正な文字列を弾く）
             member = Member.query.filter(
-                Member.uuid.cast(db.String) == query
+                Member.uuid.cast(db.String) == query,
+                Member.contract == True
             ).first()
         except ValueError:
             pass
 
     if not member:
-        return jsonify({"error": "会員が見つかりません"}), 404
+        return jsonify({"error": "請負担当者が見つかりません"}), 404
 
     return jsonify({
         "full_name":     member.full_name,
-        "uuid":          member.uuid,
+        "uuid":          str(member.uuid).lower(),
         "member_number": member.member_number,
     })
 
@@ -374,11 +385,11 @@ def cont_info_summary():
         .group_by(Contract.uuid)
         .all()
     )
-    agg_map = {row.uuid: row for row in agg}
+    agg_map = {str(row.uuid).lower(): row for row in agg}
 
     result = []
     for m in members:
-        uuid_str = str(m.uuid)
+        uuid_str = str(m.uuid).lower()
         row = agg_map.get(uuid_str)
         result.append({
             "uuid":          uuid_str,
@@ -422,7 +433,7 @@ def cont_info_flight_days():
         .group_by(Contract.uuid)
         .all()
     )
-    agg_map = {str(row.uuid): row for row in agg}
+    agg_map = {str(row.uuid).lower(): row for row in agg}
 
     result = []
     for m in members:
@@ -453,11 +464,12 @@ def cont_info_detail(member_uuid: str):
     備考は near_miss / improvement / damaged_section を結合して返す。
     """
     year, month = _get_year_month(request)
+    member_uuid = member_uuid.lower()   # UUID 大文字/小文字を統一
 
     records = (
         Contract.query
         .filter(
-            Contract.uuid == member_uuid,
+            Contract.uuid.cast(db.String) == member_uuid,
             db.extract("year",  Contract.flight_date) == year,
             db.extract("month", Contract.flight_date) == month,
         )
@@ -591,3 +603,46 @@ def cont_info_handover_detail():
         "label":    _HANDOVER_FIELDS[category],
         "data":     data,
     })
+
+# ─────────────────────────────────────────
+# API: 個人別 月次日報一覧（統合ページ用）
+# GET /api/cont/my_reports?uuid=...&year=YYYY&month=MM
+# ─────────────────────────────────────────
+
+@contract_bp.route("/api/cont/my_reports")
+def api_my_reports():
+    """
+    指定会員の月別日報一覧を返す。
+    統合ページ（請負日報）から呼び出される。
+
+    Response JSON:
+    {
+      "year": 2026, "month": 3,
+      "records": [ { ...contract fields... }, ... ]
+    }
+    """
+    today = date.today()
+    uuid_val = (request.args.get("uuid") or "").strip().lower()
+    year  = int(request.args.get("year",  today.year))
+    month = int(request.args.get("month", today.month))
+
+    if not uuid_val:
+        return jsonify({"error": "UUIDが必要です"}), 400
+
+    records = (
+        Contract.query
+        .filter(
+            Contract.uuid.cast(db.String) == uuid_val,
+            db.extract("year",  Contract.flight_date) == year,
+            db.extract("month", Contract.flight_date) == month,
+        )
+        .order_by(Contract.flight_date.desc(), Contract.id.desc())
+        .all()
+    )
+
+    return jsonify({
+        "year":    year,
+        "month":   month,
+        "records": [_contract_to_dict(r) for r in records],
+    })
+

@@ -87,18 +87,30 @@
             <button id="agreeBtn" style="padding: 10px 40px; font-size: 1.2rem; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
                 Agree and Apply
             </button>
-            <button onclick="window.close();" style="margin-left: 10px; padding: 10px 20px;">同意しない</button>
+            <button id="disagreeBtn" style="margin-left: 10px; padding: 10px 20px; cursor: pointer;">Do not agree</button>
         </div>
       </div>
     </form>
 
     <script>
-      document.getElementById("agreeBtn").addEventListener("click", function() {
-        // 親画面（申込書）にメッセージを送信
-        if (window.opener) {
-          window.opener.postMessage("agreed", "*");
-          window.close(); // 同意したらポップアップを閉じる
+      // Agree and Apply
+      document.getElementById("agreeBtn").addEventListener("click", function () {
+        const ok = confirm(
+          "You are about to complete your application by agreeing to the insurance terms.\n\n" +
+          "You will be redirected to the top page after submission. Continue?"
+        );
+        if (ok) {
+          if (window.opener) {
+            window.opener.postMessage("agreed", "*");
+          }
+          window.close();
         }
+        // If cancelled, stay on this popup
+      });
+
+      // Do not agree → close popup and return to application form
+      document.getElementById("disagreeBtn").addEventListener("click", function () {
+        window.close();
       });
     </script>
   </body>

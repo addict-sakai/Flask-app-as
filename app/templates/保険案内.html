@@ -89,18 +89,30 @@
             <button id="agreeBtn" style="padding: 10px 40px; font-size: 1.2rem; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
                 同意して申し込む
             </button>
-            <button onclick="window.close();" style="margin-left: 10px; padding: 10px 20px;">同意しない</button>
+            <button id="disagreeBtn" style="margin-left: 10px; padding: 10px 20px; cursor: pointer;">同意しない</button>
         </div>
       </div>
     </form>
 
     <script>
-      document.getElementById("agreeBtn").addEventListener("click", function() {
-        // 親画面（申込書）にメッセージを送信
-        if (window.opener) {
-          window.opener.postMessage("agreed", "*");
-          window.close(); // 同意したらポップアップを閉じる
+      // 同意して申し込む
+      document.getElementById("agreeBtn").addEventListener("click", function () {
+        const ok = confirm(
+          "保険内容に同意のうえ申請を完了します。\n\n" +
+          "完了後はトップ画面へ戻ります。よろしいですか？"
+        );
+        if (ok) {
+          if (window.opener) {
+            window.opener.postMessage("agreed", "*");
+          }
+          window.close();
         }
+        // キャンセルの場合はポップアップに留まる
+      });
+
+      // 同意しない → ポップアップを閉じて申込フォームへ戻る
+      document.getElementById("disagreeBtn").addEventListener("click", function () {
+        window.close();
       });
     </script>
   </body>

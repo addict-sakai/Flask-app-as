@@ -105,13 +105,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (!form.querySelector('input[name="course_exp"]:checked')) {
+    if (!form.querySelector('[name="course_exp"]').value) {
       alert("Please select the course you will be attending.");
+      form.querySelector('[name="course_exp"]').focus();
       return;
     }
 
-    if (!form.querySelector('input[name="school_find"]:checked')) {
+    if (!form.querySelector('[name="school_find"]').value) {
       alert("Please select how you found out about our school.");
+      form.querySelector('[name="school_find"]').focus();
       return;
     }
 
@@ -172,7 +174,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return res.json();
       })
       .then(() => {
-        alert("Your insurance consent has been confirmed, and your registration is complete.");
+        alert("Your insurance consent has been confirmed, and your registration is complete.\nRedirecting to the top page.");
+        window.location.href = "/";
       })
       .catch(() => {
         alert("The registration has failed. Please contact the administrator.");

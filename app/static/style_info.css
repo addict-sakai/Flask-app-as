@@ -67,8 +67,6 @@ html, body {
    ビュー切り替え
    ========================================= */
 
-.view { display: none; animation: fadeUp 0.3s ease; }
-.view.active { display: block; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -99,6 +97,7 @@ html, body {
   left: 0;
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .page-header-left .btn {
@@ -342,9 +341,30 @@ textarea.field-input {
   font-weight: 500;
   letter-spacing: 0.04em;
 }
-.badge-member  { background: rgba(82,196,160,0.15);  color: var(--success);  border: 1px solid rgba(82,196,160,0.3); }
-.badge-school  { background: rgba(100,149,237,0.15); color: #6495ed;         border: 1px solid rgba(100,149,237,0.3); }
-.badge-visitor { background: var(--accent-dim);      color: var(--accent);   border: 1px solid rgba(232,197,71,0.25); }
+.badge-member    { background: rgba(82,196,160,0.15);  color: var(--success);  border: 1px solid rgba(82,196,160,0.3); }
+.badge-school    { background: rgba(100,149,237,0.15); color: #6495ed;         border: 1px solid rgba(100,149,237,0.3); }
+.badge-visitor   { background: var(--accent-dim);      color: var(--accent);   border: 1px solid rgba(232,197,71,0.25); }
+.badge-staff     { background: rgba(180,100,240,0.15); color: #c47cf0;         border: 1px solid rgba(180,100,240,0.3); }
+.badge-contract  { background: rgba(240,140,60,0.15);  color: #f08c3c;         border: 1px solid rgba(240,140,60,0.3); }
+.badge-dealer    { background: rgba(180,180,60,0.15);  color: #c8c840;         border: 1px solid rgba(180,180,60,0.3); }
+.badge-leader    { background: rgba(160,160,180,0.15); color: #a0a8c0;         border: 1px solid rgba(160,160,180,0.3); }
+
+/* 行の色分け */
+tr.row-member   { background: rgba(82,196,160,0.05); }
+tr.row-school   { background: rgba(100,149,237,0.06); }
+tr.row-visitor  { background: rgba(232,197,71,0.05); }
+tr.row-staff    { background: rgba(180,100,240,0.05); }
+tr.row-contract { background: rgba(240,140,60,0.05); }
+tr.row-dealer   { background: rgba(200,200,60,0.05); }
+tr.row-leader   { background: rgba(160,160,180,0.05); }
+
+tr.row-member:hover   { background: rgba(82,196,160,0.12) !important; }
+tr.row-school:hover   { background: rgba(100,149,237,0.12) !important; }
+tr.row-visitor:hover  { background: rgba(232,197,71,0.10) !important; }
+tr.row-staff:hover    { background: rgba(180,100,240,0.10) !important; }
+tr.row-contract:hover { background: rgba(240,140,60,0.10) !important; }
+tr.row-dealer:hover   { background: rgba(200,200,60,0.10) !important; }
+tr.row-leader:hover   { background: rgba(160,160,180,0.10) !important; }
 
 /* 日付警告 */
 .date-warning { color: var(--danger); font-weight: 500; }
@@ -598,6 +618,7 @@ textarea.field-input {
   left: 0;
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 /* 右 */
@@ -677,4 +698,208 @@ textarea.field-input {
 }
 .clickable-row:hover .icon-edit {
     color: var(--primary-color);
+}
+/* =========================================
+   日付入力：カレンダーアイコンを白に
+   ========================================= */
+input[type="date"].field-input::-webkit-calendar-picker-indicator,
+input[type="month"].field-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.7;
+}
+input[type="date"].field-input::-webkit-calendar-picker-indicator:hover,
+input[type="month"].field-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* 編集不可フィールドのスタイル */
+.field-input[readonly],
+.field-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--surface);
+}
+
+/* 登録番号プレビュー */
+.reg-no-preview {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  padding: 4px 0;
+  letter-spacing: 0.06em;
+  min-height: 20px;
+}
+
+/* 郵便番号検索ボタン */
+.zip-search-btn {
+  padding: 9px 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  font-family: var(--font-body);
+}
+.zip-search-btn:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(232,197,71,0.3);
+}
+
+/* 郵便番号+ボタンの横並びグループ */
+.zip-group {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.zip-group .field-input { flex: 1; }
+
+/* =========================================
+   固定ヘッダー＆スクロール構造
+   ========================================= */
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.main {
+  height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.view {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  animation: fadeUp 0.3s ease;
+}
+.view.active { display: flex; }
+
+/* ── 一覧ビュー ── */
+.list-fixed-area {
+  flex-shrink: 0;
+  padding: 20px 32px 0;
+  background: var(--bg);
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.list-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 32px 24px;
+}
+.list-scroll-area::-webkit-scrollbar { width: 6px; }
+.list-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.list-scroll-area::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+/* search-panel のマージン調整 */
+.list-fixed-area .search-panel {
+  margin-bottom: 0;
+}
+.list-fixed-area .page-header {
+  margin-bottom: 16px;
+}
+
+/* table-wrapper はスクロールエリア内で角丸を保持 */
+.list-scroll-area .table-wrapper {
+  margin-top: 16px;
+}
+
+/* ── 編集ビュー ── */
+.edit-fixed-header {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+  z-index: 50;
+}
+
+.edit-fixed-header .page-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.edit-fixed-header .page-header-right {
+  gap: 10px;
+}
+
+.edit-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px 40px;
+}
+.edit-scroll-area::-webkit-scrollbar { width: 6px; }
+.edit-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.edit-scroll-area::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+/* =========================================
+   登録番号分割入力
+   ========================================= */
+.reg-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reg-prefix {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.reg-input-part {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.18s;
+  text-align: center;
+}
+.reg-input-part:focus { border-color: var(--accent); background: var(--surface-3); }
+
+.reg-input-short  { width: 60px; }   /* JHF 前半2桁 */
+.reg-input-long   { width: 110px; }  /* JHF 後半6桁 */
+.reg-input-medium { width: 160px; }  /* JPA 9桁 */
+
+/* =========================================
+   日付フォーマット表示
+   ========================================= */
+.date-display {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: block;
+  opacity: 0.7;
+}
+
+/* =========================================
+   期限警告：赤文字
+   ========================================= */
+.text-danger {
+  color: var(--danger);
+  font-weight: 600;
 }

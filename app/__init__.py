@@ -59,4 +59,7 @@ def create_app():
     from .routes.exp_resv_routes import exp_bp
     app.register_blueprint(exp_bp)
 
+    from .routes.exp_status_routes import exp_status_bp
+    app.register_blueprint(exp_status_bp)
+    
     return app

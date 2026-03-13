@@ -1,5 +1,6 @@
 import uuid
 from app.db import db
+from datetime import datetime
 
 class Member(db.Model):
     __tablename__ = "members"
@@ -52,4 +53,7 @@ class Member(db.Model):
     repack_date = db.Column(db.Date)            # リパック日
 
     contract = db.Column(db.Boolean, default=False, nullable=False)   # 請負判定
+
+    organization = db.Column(db.String(10))     # 所属団体（JHF/JPA）
+    updated_at = db.Column(db.DateTime, onupdate=db.func.now())  # 更新日時
 

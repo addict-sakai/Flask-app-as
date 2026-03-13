@@ -13,6 +13,15 @@
   </head>
 
   <body>
+    <!-- 言語切替バー -->
+    <div class="lang-bar no-print">
+      <div class="lang-switch">
+        <button class="lang-btn" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
+        <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
+      </div>
+      <button class="print-btn" onclick="window.print()">🖨 Print</button>
+    </div>
+
     <form id="entryForm">
       <div class="sheet">
         <h1>Experience flight application</h1>
@@ -24,9 +33,9 @@
         <table>
           <tr>
             <th>Name</th>
-            <td><input type="text" id="fullName" name="full_name"></td>
+            <td><input type="text" id="fullName" name="full_name" class="ime-latin" inputmode="latin"></td>
             <th>Weight（kg）</th>
-            <td><input type="text" id="weight" name="weight"></td>
+            <td><input type="text" id="weight" name="weight" class="ime-latin" inputmode="decimal"></td>
           </tr>
           <tr>
             <th>Gender</th>
@@ -51,48 +60,48 @@
           </tr>
           <tr>
             <th>Birthday</th>
-            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
+            <td><input type="text" class="js-date" id="birthday" name="birthday" inputmode="latin"></td>
             <th>age</th>
-            <td><input type="text" id="age" readonly></td>
+            <td><input type="text" id="age" class="ime-latin" inputmode="numeric" readonly></td>
           </tr>
           <tr>
             <th>Post code</th>
             <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
                 <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
             <th>country</th>
-            <td><input type="text" name="furigana"></td>
+            <td><input type="text" name="furigana" class="ime-latin" inputmode="latin"></td>
           </tr>
           <tr>
             <th>Address</th>
-            <td colspan="3"><input type="text" id="address" name="address"></td>
+            <td colspan="3"><input type="text" id="address" name="address" class="ime-latin" inputmode="latin"></td>
           </tr>
           <tr>
             <th>mobile</th>
-            <td><input type="text" name="mobile_phone"></td>
+            <td><input type="text" name="mobile_phone" class="ime-latin" inputmode="tel"></td>
             <th>tel</th>
-            <td><input type="text" name="home_phone"></td>
+            <td><input type="text" name="home_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>The Office</th>
-            <td><input type="text" name="company_name"></td>
+            <td><input type="text" name="company_name" class="ime-latin" inputmode="latin"></td>
             <th>tel（office）</th>
-            <td><input type="text" name="company_phone"></td>
+            <td><input type="text" name="company_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>Emergency Contact</th>
-            <td><input type="text" name="emergency_name"></td>
+            <td><input type="text" name="emergency_name" class="ime-latin" inputmode="latin"></td>
             <th>tel（Emergency）</th>
-            <td><input type="text" name="emergency_phone"></td>
+            <td><input type="text" name="emergency_phone" class="ime-latin" inputmode="tel"></td>
           </tr>
           <tr>
             <th>Relationship to the person</th>
-            <td><input type="text" id="relationship" name="relationship"></td>
+            <td><input type="text" id="relationship" name="relationship" class="ime-latin" inputmode="latin"></td>
             <th>e-mail</th>
-            <td><input type="text" id="email" name="email"></td>
+            <td><input type="text" id="email" name="email" class="ime-latin" inputmode="email"></td>
           </tr>
           <tr>
             <th>Injury and illness history</th>
-            <td colspan="3"><textarea name="medical_history" placeholder="（Please inform us in advance if you have any medical conditions, such as a history of dislocation, a tendency for fractures, or recent fractures (within the past few weeks.)"></textarea></td>
+            <td colspan="3"><textarea name="medical_history" class="ime-latin" inputmode="latin" placeholder="（Please inform us in advance if you have any medical conditions, such as a history of dislocation, a tendency for fractures, or recent fractures (within the past few weeks.)"></textarea></td>
           </tr>
         </table>
 
@@ -161,18 +170,18 @@
           <table>
             <tr>
               <th>Date:</th>
-              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date"></td>
+              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date" inputmode="latin"></td>
               <th>Signature:</th>
-              <td><input type="text" name="signature_name"></td>
+              <td><input type="text" name="signature_name" class="ime-latin" inputmode="latin"></td>
             </tr>
             <tr>
               <th>Parent/Guardian Name (Under 20)</th>
-              <td colspan="3"><input type="text" name="guardian_name"></td>
+              <td colspan="3"><input type="text" name="guardian_name" class="ime-latin" inputmode="latin"></td>
               <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
             </tr>
           </table>
         </div>
-      <div class="buttons">
+      <div class="buttons no-print">
         <button type="button" id="submitBtn">Submit</button>
         <button type="button" id="exitBtn">Cancel</button>
       </div>

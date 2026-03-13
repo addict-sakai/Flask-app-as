@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>体験状況 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_io_info.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_status.css') }}" />
+</head>
+<body class="st-page">
+
+  <!-- ══════════════════════════════════════════
+       ヘッダー
+  ══════════════════════════════════════════ -->
+  <header class="st-header">
+    <a href="/" class="st-back-btn">← トップ</a>
+    <h1 class="st-title">体験状況</h1>
+    <div class="st-date-nav">
+      <button class="date-nav-btn" id="btnPrevDay" title="前日">◀</button>
+      <button class="date-nav-btn date-nav-today" id="btnToday">今日</button>
+      <span class="date-nav-label" id="dateLabel">—</span>
+      <button class="date-nav-btn" id="btnNextDay" title="翌日">▶</button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       メインコンテンツ（JS で動的生成）
+  ══════════════════════════════════════════ -->
+  <main class="st-main" id="stMain">
+    <div class="st-loading" id="stLoading">読み込み中…</div>
+  </main>
+
+
+  <!-- ══════════════════════════════════════════
+       飛び込み登録モーダル
+  ══════════════════════════════════════════ -->
+  <div class="st-overlay" id="walkinOverlay" style="display:none;">
+    <div class="st-modal">
+      <div class="st-modal-header">
+        <span class="st-modal-badge" id="walkinBadge">パラ</span>
+        <h2 class="st-modal-title" id="walkinTitle">飛び込み登録</h2>
+        <button class="modal-close-btn" id="btnWalkinClose">✕</button>
+      </div>
+
+      <div class="st-modal-body">
+        <div class="form-grid">
+
+          <div class="form-item">
+            <label class="form-label">名前 <span class="req">*</span></label>
+            <input type="text" id="wName" class="form-input"
+                   placeholder="山田 太郎" autocomplete="off" />
+          </div>
+
+          <div class="form-item">
+            <label class="form-label">電話番号</label>
+            <input type="tel" id="wPhone" class="form-input"
+                   placeholder="09012345678" autocomplete="off" />
+          </div>
+
+          <!-- パラ用フィールド -->
+          <div class="form-item" id="wCourseWrap">
+            <label class="form-label">コース <span class="req">*</span></label>
+            <select id="wCourse" class="form-select">
+              <option value="タンデム">タンデム</option>
+              <option value="ショート">ショート</option>
+              <option value="セット">セット</option>
+            </select>
+          </div>
+
+          <div class="form-item" id="wPaxWrap">
+            <label class="form-label">人数</label>
+            <input type="number" id="wPax" class="form-input" min="1" value="1" />
+          </div>
+
+          <div class="form-item" id="wTimeWrap">
+            <label class="form-label">集合時間</label>
+            <select id="wMeetingTime" class="form-select">
+              <option value="">—</option>
+            </select>
+          </div>
+
+          <div class="form-item">
+            <label class="form-label">担当</label>
+            <select id="wStaff" class="form-select">
+              <option value="">—</option>
+            </select>
+          </div>
+
+          <!-- キャンプ用フィールド -->
+          <div class="form-item" id="wSiteWrap" style="display:none;">
+            <label class="form-label">サイト <span class="req">*</span></label>
+            <select id="wSite" class="form-select">
+              <option value="フリーサイト①">フリーサイト①（車両無し）</option>
+              <option value="フリーサイト②">フリーサイト②（車両有り）</option>
+            </select>
+          </div>
+
+          <div class="form-item" id="wAdultWrap" style="display:none;">
+            <label class="form-label">大人人数</label>
+            <input type="number" id="wAdult" class="form-input" min="1" value="1" />
+          </div>
+
+          <div class="form-item" id="wChildWrap" style="display:none;">
+            <label class="form-label">子供人数</label>
+            <input type="number" id="wChild" class="form-input" min="0" value="0" />
+          </div>
+
+          <div class="form-item form-item--full">
+            <label class="form-label">備考</label>
+            <textarea id="wMemo" class="form-textarea" rows="2"
+                      placeholder="備考…"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="st-modal-footer">
+        <button class="exp-btn exp-btn--ghost" id="btnWalkinCancel">キャンセル</button>
+        <button class="exp-btn exp-btn--primary" id="btnWalkinSave">登録</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       詳細・編集モーダル
+  ══════════════════════════════════════════ -->
+  <div class="st-overlay" id="detailOverlay" style="display:none;">
+    <div class="st-modal st-modal--sm">
+      <div class="st-modal-header">
+        <span class="st-modal-badge" id="detailBadge">—</span>
+        <h2 class="st-modal-title" id="detailTitle">詳細</h2>
+        <button class="modal-close-btn" id="btnDetailClose">✕</button>
+      </div>
+
+      <div class="st-modal-body">
+
+        <!-- 読み取り専用の予約情報 -->
+        <div class="detail-info-grid" id="detailInfoGrid"></div>
+
+        <hr class="detail-divider" />
+
+        <!-- 編集可能フィールド -->
+        <div class="form-grid">
+
+          <div class="form-item">
+            <label class="form-label">ステータス</label>
+            <select id="dStatus" class="form-select">
+              <option value="受付未">受付未</option>
+              <option value="受付済">受付済</option>
+              <option value="体験完了">体験完了</option>
+              <option value="キャンセル">キャンセル</option>
+            </select>
+          </div>
+
+          <div class="form-item">
+            <label class="form-label">担当</label>
+            <select id="dStaff" class="form-select">
+              <option value="">—</option>
+            </select>
+          </div>
+
+          <div class="form-item form-item--full">
+            <label class="form-label">備考</label>
+            <textarea id="dMemo" class="form-textarea" rows="3"
+                      placeholder="備考…"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="st-modal-footer">
+        <button class="exp-btn exp-btn--ghost" id="btnDetailCancel">閉じる</button>
+        <button class="exp-btn exp-btn--primary" id="btnDetailSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       パイロット一覧モーダル
+  ══════════════════════════════════════════ -->
+  <div class="st-overlay" id="pilotOverlay" style="display:none;">
+    <div class="st-modal st-modal--xs">
+      <div class="st-modal-header">
+        <h2 class="st-modal-title">担当パイロット</h2>
+        <button class="modal-close-btn" id="btnPilotClose">✕</button>
+      </div>
+      <div class="st-modal-body" id="pilotBody"></div>
+      <div class="st-modal-footer">
+        <button class="exp-btn exp-btn--ghost" id="btnPilotOk">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       スクール詳細モーダル（入下山管理と同構造）
+  ══════════════════════════════════════════ -->
+  <div class="info-modal-overlay" id="schoolDetailOverlay" style="display:none;">
+    <div class="info-modal" id="schoolDetailModal">
+
+      <div class="info-modal-header">
+        <div>
+          <p class="info-modal-type" id="sch-class">—</p>
+          <h2 class="info-modal-name" id="sch-name">—</h2>
+        </div>
+        <button class="info-modal-close" id="btnSchDetailClose">✕</button>
+      </div>
+
+      <div class="info-modal-body">
+
+        <div class="det-grid">
+          <div class="det-item">
+            <span class="det-label">会員番号</span>
+            <span class="det-value" id="sch-number">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">コース</span>
+            <span class="det-value" id="sch-course">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">機体</span>
+            <span class="det-value" id="sch-glider">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">機体カラー</span>
+            <span class="det-value" id="sch-glider-color">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">保険区分</span>
+            <span class="det-value" id="sch-insurance">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">無線周波数</span>
+            <span class="det-value" id="sch-radio">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">技能証</span>
+            <span class="det-value" id="sch-license">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">登録期限</span>
+            <span class="det-value" id="sch-reglimit">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">リパック期限</span>
+            <span class="det-value" id="sch-repack">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">日付</span>
+            <span class="det-value" id="sch-date">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">入山</span>
+            <span class="det-value det-chip det-chip--in" id="sch-in">—</span>
+          </div>
+          <div class="det-item">
+            <span class="det-label">下山</span>
+            <span class="det-value" id="sch-out">—</span>
+          </div>
+        </div>
+
+        <hr class="det-divider" />
+
+        <div class="det-edit-section">
+          <div class="det-edit-row">
+            <label class="det-edit-label">
+              <input type="checkbox" id="schYamachin" class="det-checkbox" />
+              <span class="det-checkbox-mark"></span>
+              山チン
+            </label>
+          </div>
+          <div class="det-edit-row">
+            <label class="det-edit-label-text">備考</label>
+            <textarea id="schComment" class="det-textarea" rows="3"
+                      placeholder="備考を入力…"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-modal-footer">
+        <button class="info-btn info-btn--ghost" id="btnSchDetailCancel">キャンセル</button>
+        <button class="info-btn info-btn--primary" id="btnSchDetailSave">保存</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- トースト -->
+  <div class="toast-zone" id="toastZone"></div>
+
+  <script src="{{ url_for('static', filename='app_exp_status.js') }}"></script>
+</body>
+</html>

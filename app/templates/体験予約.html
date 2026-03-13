@@ -17,7 +17,7 @@
       <a href="/" class="exp-back-btn">← トップ</a>
     </div>
     <div class="exp-header-center">
-      <h1 class="exp-title">体験予約</h1>
+      <h1 class="exp-title">体験管理</h1>
     </div>
     <div class="exp-header-right">
       <div class="exp-tab-group" id="mainTabGroup">
@@ -42,23 +42,54 @@
 
       <hr class="sidebar-divider" />
 
-      <!-- 日付絞り込み -->
+      <!-- 体験申込 編集ボタン -->
       <div class="sidebar-section">
-        <p class="sidebar-label">予約日</p>
-        <input type="date" id="filterDate" class="sidebar-input" />
-        <button class="sf-btn sf-btn--clear" id="btnClearDate" style="margin-top:4px;">クリア</button>
+        <button class="exp-new-btn exp-new-btn--sub" id="btnExpApp">📋 体験申込 編集</button>
       </div>
 
       <hr class="sidebar-divider" />
 
-      <!-- 月ナビ -->
+      <!-- 表示範囲 -->
       <div class="sidebar-section">
-        <p class="sidebar-label">月別表示</p>
-        <div class="month-nav-mini">
-          <button class="sp-btn" id="btnSideMonthPrev">◀</button>
-          <span class="month-mini-label" id="sideMonthLabel">—</span>
-          <button class="sp-btn" id="btnSideMonthNext">▶</button>
+        <p class="sidebar-label">表示範囲</p>
+        <div class="view-btn-group">
+          <button class="view-btn active" id="btnViewAll">ALL</button>
+          <button class="view-btn" id="btnViewMonth">当月</button>
         </div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 並び順（ALL時のみ表示） -->
+      <div class="sidebar-section" id="sortSection">
+        <p class="sidebar-label">並び順</p>
+        <label class="radio-label-sm">
+          <input type="radio" name="sortMode" value="reception" checked />
+          登録順
+        </label>
+        <label class="radio-label-sm">
+          <input type="radio" name="sortMode" value="date_asc" />
+          予約日順
+        </label>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 過去の予約 -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">過去の予約</p>
+        <label class="radio-label-sm">
+          <input type="radio" name="pastRange" value="3m" />
+          過去3か月
+        </label>
+        <label class="radio-label-sm">
+          <input type="radio" name="pastRange" value="6m" />
+          過去半年
+        </label>
+        <label class="radio-label-sm">
+          <input type="radio" name="pastRange" value="1y" />
+          過去1年
+        </label>
       </div>
 
       <hr class="sidebar-divider" />
@@ -70,6 +101,38 @@
           <span class="check-mark"></span>
           キャンセルも表示
         </label>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- 申込状態 色分け説明 -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">受付の見方</p>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--app-none">申込未</span>
+          <span class="badge-legend-note">申込データなし</span>
+        </div>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--app">N名申込済</span>
+          <span class="badge-legend-note">申込あり</span>
+        </div>
+        <p class="sidebar-label" style="margin-top:10px;">状態の見方</p>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--pending">受付未</span>
+        </div>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--ok">受付済</span>
+        </div>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--done">体験完了</span>
+        </div>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--cancel">キャンセル</span>
+        </div>
+        <div class="badge-legend">
+          <span class="td-chip td-chip--walkin">飛込</span>
+          <span class="badge-legend-note">当日受付</span>
+        </div>
       </div>
 
     </aside>
@@ -151,6 +214,14 @@
             </div>
 
             <div class="form-item">
+              <label class="check-label check-label--walkin">
+                <input type="checkbox" id="fWalkIn" class="det-checkbox" />
+                <span class="det-checkbox-mark det-checkbox-mark--walkin"></span>
+                当日受付（飛び込み）
+              </label>
+            </div>
+
+            <div class="form-item">
               <label class="form-label">名前 <span class="req">*</span></label>
               <input type="text" id="fName" class="form-input"
                      placeholder="山田 太郎" autocomplete="off" />
@@ -165,6 +236,12 @@
             <div class="form-item">
               <label class="form-label">担当</label>
               <select id="fStaff" class="form-select"></select>
+            </div>
+
+            <div class="form-item form-item--full">
+              <label class="form-label">e-mail</label>
+              <textarea id="fEmail" class="form-textarea" rows="1"
+                     placeholder="****@fujipara.com"></textarea>
             </div>
 
             <div class="form-item form-item--full">
@@ -191,12 +268,7 @@
               <select id="fCourse" class="form-select"></select>
             </div>
 
-            <div class="form-item" id="shortTimeWrap" style="display:none;">
-              <label class="form-label">ショート時間</label>
-              <select id="fShortTime" class="form-select"></select>
-            </div>
-
-            <div class="form-item">
+<div class="form-item">
               <label class="form-label">集合時間</label>
               <select id="fMeetingTime" class="form-select"></select>
             </div>
@@ -223,12 +295,12 @@
 
             <div class="form-item">
               <label class="form-label">ポイント値引</label>
-              <input type="number" id="fPoint" class="form-input" min="0" value="0" />
+              <input type="number" id="fPoint" class="form-input" min="0" placeholder="0" />
             </div>
 
             <div class="form-item">
               <label class="form-label">クーポン値引</label>
-              <input type="number" id="fCoupon" class="form-input" min="0" value="0" />
+              <input type="number" id="fCoupon" class="form-input" min="0" placeholder="0" />
             </div>
 
             <div class="form-item">
@@ -379,7 +451,7 @@
 
         <!-- ── 請求金額（編集可） ─────────────── -->
         <fieldset class="form-section">
-          <legend class="form-legend">請求金額</legend>
+          <legend class="form-legend">請求金額・状況</legend>
           <div class="form-grid">
             <div class="form-item form-item--charge">
               <label class="form-label">請求金額（円）</label>
@@ -388,11 +460,13 @@
               <button class="btn-recalc" id="btnRecalc" type="button">再計算</button>
             </div>
             <div class="form-item">
-              <label class="check-label">
-                <input type="checkbox" id="fCancelled" class="det-checkbox" />
-                <span class="det-checkbox-mark"></span>
-                キャンセル
-              </label>
+              <label class="form-label">状況</label>
+              <select id="fStatus" class="form-select">
+                <option value="受付未">受付未</option>
+                <option value="受付済">受付済</option>
+                <option value="体験完了">体験完了</option>
+                <option value="キャンセル">キャンセル</option>
+              </select>
             </div>
           </div>
         </fieldset>
@@ -404,6 +478,57 @@
         <button class="exp-btn exp-btn--primary"  id="btnModalSave">登録</button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       体験申込 編集モーダル
+  ══════════════════════════════════════════ -->
+  <div class="exp-modal-overlay" id="expAppOverlay" style="display:none;">
+    <div class="exp-modal exp-modal--app">
+
+      <div class="exp-modal-header">
+        <div class="exp-modal-title-wrap">
+          <span class="exp-modal-badge">申込</span>
+          <h2 class="exp-modal-title">体験申込 編集</h2>
+        </div>
+        <div class="app-date-nav">
+          <button class="date-nav-btn-sm" id="btnAppPrev">◀</button>
+          <span id="appDateLabel">—</span>
+          <button class="date-nav-btn-sm" id="btnAppNext">▶</button>
+          <button class="date-nav-btn-sm app-today-btn" id="btnAppToday">今日</button>
+        </div>
+        <button class="modal-close-btn" id="btnAppClose">✕</button>
+      </div>
+
+      <div class="exp-modal-body">
+
+        <!-- 申込一覧テーブル -->
+        <div class="exp-table-wrap">
+          <table class="exp-table" id="appResultTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>名前</th>
+                <th>電話</th>
+                <th>コース</th>
+                <th>予約番号</th>
+                <th>保存 / キャンセル</th>
+              </tr>
+            </thead>
+            <tbody id="appResultTbody">
+              <tr><td colspan="6" class="exp-empty">読み込み中…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="app-hint" id="appHint" style="display:none;"></p>
+      </div>
+
+      <div class="exp-modal-footer">
+        <span class="app-footer-count" id="appFooterCount">—</span>
+        <button class="exp-btn exp-btn--ghost" id="btnAppCancel">閉じる</button>
+      </div>
     </div>
   </div>
 

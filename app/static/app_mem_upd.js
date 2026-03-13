@@ -1,15 +1,12 @@
 /**
- * app_mem_upd.js
- * 会員情報更新ページ クライアントスクリプト
+ * app_mem_upd.js  会員情報更新
  */
-
 "use strict";
 
-// ============================================================
-// 定数・設定
-// ============================================================
+/* =========================================
+   定数
+   ========================================= */
 
-// フィールド日本語名マッピング
 const FIELD_LABELS = {
   member_type:     "分類",
   full_name:       "氏名",
@@ -18,55 +15,135 @@ const FIELD_LABELS = {
   blood_type:      "血液型",
   birthday:        "生年月日",
   weight:          "体重",
-  zip_code:        "郵便番号",
-  address:         "住所",
-  mobile_phone:    "携帯番号",
-  home_phone:      "自宅番号",
-  company_name:    "勤務先",
-  company_phone:   "勤務先電話番号",
-  emergency_name:  "緊急連絡先氏名",
-  emergency_phone: "緊急連絡先番号",
-  email:           "メールアドレス",
-  member_number:   "会員番号",
-  medical_history: "傷病履歴",
   relationship:    "本人との続柄",
   glider_name:     "使用機体",
   glider_color:    "機体カラー",
   home_area:       "ホームエリア",
+  organization:    "所属団体",
   reg_no:          "フライヤー登録番号",
   reglimit_date:   "登録期限",
   license:         "技能証",
   repack_date:     "リパック日",
+  zip_code:        "郵便番号",
+  address:         "住所",
+  mobile_phone:    "携帯番号",
+  home_phone:      "自宅番号",
+  email:           "メールアドレス",
+  company_name:    "勤務先",
+  company_phone:   "勤務先電話番号",
+  emergency_name:  "緊急連絡先氏名",
+  emergency_phone: "緊急連絡先番号",
+  medical_history: "傷病履歴",
 };
 
-// 対象フィールド一覧（表示・編集対象）
-const EDIT_FIELDS = Object.keys(FIELD_LABELS);
+// 編集対象フィールド（member_number は編集不可なので除外、reg_no はhidden経由）
+const EDIT_FIELDS = Object.keys(FIELD_LABELS).filter(k => k !== "reg_no");
 
-// ============================================================
-// 状態管理
-// ============================================================
-let originalData = {};  // 取得時のデータ（変更検知用）
+/* =========================================
+   状態
+   ========================================= */
+let originalData = {};
 let currentMemberId = null;
 
-// ============================================================
-// DOM取得ヘルパー
-// ============================================================
-const $ = (id) => document.getElementById(id);
-const formSection  = $("formSection");
-const searchSection = $("searchSection");
-const searchError  = $("searchError");
-const confirmModal = $("confirmModal");
-const changeList   = $("changeList");
-const toast        = $("toast");
+/* =========================================
+   DOM
+   ========================================= */
+const $ = id => document.getElementById(id);
 
-// ============================================================
-// 初期化
-// ============================================================
+/* =========================================
+   登録番号ユーティリティ
+   JHF: JA{2桁}O-{6桁}  例: JA12O-003456
+   JPA: JP{9桁}          例: JP000001234
+   ========================================= */
+function parseRegNo(org, raw) {
+  if (!raw) return { jhf1: "", jhf2: "", jpa: "" };
+  if (org === "JHF") {
+    const m = raw.match(/^JA(\d{2})O-(\d{6})$/);
+    if (m) return { jhf1: m[1], jhf2: m[2], jpa: "" };
+  }
+  if (org === "JPA") {
+    const m = raw.match(/^JP(\d{9})$/);
+    if (m) return { jhf1: "", jhf2: "", jpa: m[1] };
+  }
+  return { jhf1: "", jhf2: "", jpa: "" };
+}
+
+function buildRegNo(org) {
+  if (org === "JHF") {
+    const v1 = ($("f_reg_jhf1").value || "").trim();
+    const v2 = ($("f_reg_jhf2").value || "").trim();
+    if (!v1 && !v2) return null;
+    return `JA${v1.padStart(2,"0")}O-${v2.padStart(6,"0")}`;
+  }
+  if (org === "JPA") {
+    const v = ($("f_reg_jpa").value || "").trim();
+    if (!v) return null;
+    return `JP${v.padStart(9,"0")}`;
+  }
+  return null;
+}
+
+function updateRegPreview() {
+  const org = ($("organization").value || "");
+  const built = buildRegNo(org);
+  $("regNoPreview").textContent = built ? `→ ${built}` : "";
+  $("reg_no").value = built || "";
+  // 変更チェック
+  if ((built || "") !== (originalData["reg_no"] || "")) {
+    [$("f_reg_jhf1"), $("f_reg_jhf2"), $("f_reg_jpa")].forEach(el => {
+      if (el) el.classList.add("changed");
+    });
+  } else {
+    [$("f_reg_jhf1"), $("f_reg_jhf2"), $("f_reg_jpa")].forEach(el => {
+      if (el) el.classList.remove("changed");
+    });
+  }
+}
+
+function switchRegUI(org) {
+  $("regInputNone").style.display = (org === "")    ? "" : "none";
+  $("regInputJHF").style.display  = (org === "JHF") ? "flex" : "none";
+  $("regInputJPA").style.display  = (org === "JPA") ? "flex" : "none";
+  updateRegPreview();
+}
+
+function bindRegInputEvents() {
+  $("f_reg_jhf1").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g,"").slice(0,2);
+    if (e.target.value.length >= 2) $("f_reg_jhf2").focus();
+    updateRegPreview();
+  });
+  $("f_reg_jhf2").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g,"").slice(0,6);
+    updateRegPreview();
+  });
+  $("f_reg_jhf2").addEventListener("blur", e => {
+    const v = e.target.value.trim();
+    if (v.length > 0 && v.length < 6) { e.target.value = v.padStart(6,"0"); updateRegPreview(); }
+  });
+  $("f_reg_jpa").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g,"").slice(0,9);
+    updateRegPreview();
+  });
+  $("f_reg_jpa").addEventListener("blur", e => {
+    const v = e.target.value.trim();
+    if (v.length > 0 && v.length <= 4) { e.target.value = v.padStart(9,"0"); updateRegPreview(); }
+  });
+  $("organization").addEventListener("change", e => {
+    switchRegUI(e.target.value);
+    markChanged("organization");
+  });
+}
+
+/* =========================================
+   初期化
+   ========================================= */
 document.addEventListener("DOMContentLoaded", () => {
   $("btnSearch").addEventListener("click", handleSearch);
   $("btnZip").addEventListener("click", handleZipSearch);
   $("btnSubmit").addEventListener("click", handleSubmitClick);
-  $("btnCancel").addEventListener("click", closeModal);
+  $("btnCancel").addEventListener("click", handleCancel);
+  $("btnModalCancel").addEventListener("click", closeModal);
   $("btnConfirm").addEventListener("click", handleConfirm);
 
   // Enterキー検索
@@ -74,14 +151,12 @@ document.addEventListener("DOMContentLoaded", () => {
     el.addEventListener("keydown", e => { if (e.key === "Enter") handleSearch(); });
   });
 
-  // 郵便番号入力変化時の自動ハイフン挿入
+  // 郵便番号自動ハイフン
   $("zip_code").addEventListener("input", e => {
-    let v = e.target.value.replace(/[^0-9]/g, "");
-    if (v.length > 3) v = v.slice(0, 3) + "-" + v.slice(3, 7);
+    let v = e.target.value.replace(/[^0-9]/g,"");
+    if (v.length > 3) v = v.slice(0,3) + "-" + v.slice(3,7);
     e.target.value = v;
   });
-
-  // 郵便番号変更時に自動住所検索
   $("zip_code").addEventListener("change", () => {
     const val = $("zip_code").value.trim();
     if (/^\d{3}-\d{4}$/.test(val)) autoFillAddress(val);
@@ -91,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
   EDIT_FIELDS.forEach(key => {
     const el = getFieldEl(key);
     if (!el) return;
-    const evt = (el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.type === "date" || el.type === "month") ? "change" : "input";
+    const evt = ["SELECT","TEXTAREA"].includes(el.tagName) || ["date","month"].includes(el.type) ? "change" : "input";
     el.addEventListener(evt, () => markChanged(key));
   });
 
@@ -99,11 +174,28 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('input[name="member_type"]').forEach(r => {
     r.addEventListener("change", () => markChanged("member_type"));
   });
+
+  // モーダル背景クリック
+  $("confirmModal").addEventListener("click", e => {
+    if (e.target === $("confirmModal")) closeModal();
+  });
+
+  bindRegInputEvents();
 });
 
-// ============================================================
-// 検索
-// ============================================================
+/* =========================================
+   キャンセル（フォームリセット）
+   ========================================= */
+function handleCancel() {
+  if (currentMemberId) {
+    // 再ロードして元の値に戻す
+    loadFormById(currentMemberId);
+  }
+}
+
+/* =========================================
+   検索
+   ========================================= */
 async function handleSearch() {
   const memberNo = $("searchMemberNo").value.trim();
   const uuid     = $("searchUuid").value.trim();
@@ -117,51 +209,45 @@ async function handleSearch() {
   $("btnSearch").disabled = true;
 
   try {
-    let url;
-    if (memberNo) {
-      url = `/api/members/by-member-number/${encodeURIComponent(memberNo)}`;
-    } else {
-      url = `/api/members/by-uuid/${encodeURIComponent(uuid)}`;
-    }
-
+    const url = memberNo
+      ? `/api/members/by-member-number/${encodeURIComponent(memberNo)}`
+      : `/api/members/by-uuid/${encodeURIComponent(uuid)}`;
     const res = await fetch(url);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `ステータス ${res.status}`);
     }
-    const data = await res.json();
-    loadForm(data);
+    loadForm(await res.json());
   } catch (e) {
     showSearchError("会員が見つかりませんでした: " + e.message);
   } finally {
-    $("btnSearch").textContent = "検 索";
+    $("btnSearch").textContent = "検索";
     $("btnSearch").disabled = false;
   }
 }
 
-// ============================================================
-// フォームへデータをロード
-// ============================================================
+async function loadFormById(id) {
+  const res = await fetch(`/api/members/${id}`);
+  if (res.ok) loadForm(await res.json());
+}
+
+/* =========================================
+   フォームへデータをロード
+   ========================================= */
 function loadForm(data) {
   currentMemberId = data.id;
   originalData = {};
 
-  // 全フィールドをセット
   EDIT_FIELDS.forEach(key => {
-    let value = (data[key] === null || data[key] === undefined) ? "" : String(data[key]);
-
-    // repack_date は YYYY-MM-DD → YYYY-MM へ
-    if (key === "repack_date" && value.length === 10) {
-      value = value.slice(0, 7);
-    }
-
+    let value = (data[key] == null) ? "" : String(data[key]);
+    if (key === "repack_date" && value.length === 10) value = value.slice(0,7);
     const el = getFieldEl(key);
-    if (el) {
-      el.value = value;
-      el.classList.remove("changed");
-    }
+    if (el) { el.value = value; el.classList.remove("changed"); }
     originalData[key] = value;
   });
+
+  // member_number（表示のみ）
+  $("member_number").value = data.member_number || "";
 
   // member_type ラジオ
   const mtype = data.member_type || "";
@@ -170,133 +256,140 @@ function loadForm(data) {
   });
   originalData["member_type"] = mtype;
 
-  formSection.classList.remove("hidden");
-  formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 登録番号
+  originalData["reg_no"] = data.reg_no || "";
+  const org = data.organization || "";
+  switchRegUI(org);
+  if (org && data.reg_no) {
+    const parsed = parseRegNo(org, data.reg_no);
+    if (org === "JHF") { $("f_reg_jhf1").value = parsed.jhf1; $("f_reg_jhf2").value = parsed.jhf2; }
+    if (org === "JPA") { $("f_reg_jpa").value = parsed.jpa; }
+    updateRegPreview();
+  } else {
+    $("f_reg_jhf1").value = $("f_reg_jhf2").value = $("f_reg_jpa").value = "";
+    $("reg_no").value = "";
+    $("regNoPreview").textContent = "";
+  }
+
+  $("formSection").classList.remove("hidden");
+  $("formSection").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ============================================================
-// フィールド要素取得
-// ============================================================
+/* =========================================
+   フィールド要素取得
+   ========================================= */
 function getFieldEl(key) {
-  if (key === "member_type") return null; // ラジオは別管理
+  if (key === "member_type") return null;
+  if (key === "reg_no") return $("reg_no");
   return $(key) || null;
 }
 
-// ============================================================
-// 変更マーク
-// ============================================================
+/* =========================================
+   変更マーク
+   ========================================= */
 function markChanged(key) {
   const el = getFieldEl(key);
   if (!el) return;
-  if (getCurrentValue(key) !== originalData[key]) {
-    el.classList.add("changed");
-  } else {
-    el.classList.remove("changed");
-  }
+  el.classList.toggle("changed", getCurrentValue(key) !== (originalData[key] || ""));
 }
 
-// ============================================================
-// 現在値取得
-// ============================================================
+/* =========================================
+   現在値取得
+   ========================================= */
 function getCurrentValue(key) {
   if (key === "member_type") {
     const checked = document.querySelector('input[name="member_type"]:checked');
     return checked ? checked.value : "";
   }
+  if (key === "reg_no") {
+    return buildRegNo($("organization").value || "") || "";
+  }
   const el = getFieldEl(key);
   return el ? el.value : "";
 }
 
-// ============================================================
-// 郵便番号 → 住所 自動入力
-// ============================================================
+/* =========================================
+   郵便番号検索
+   ========================================= */
 async function handleZipSearch() {
-  const val = $("zip_code").value.trim();
-  if (!val) return;
-  await autoFillAddress(val);
+  await autoFillAddress($("zip_code").value.trim());
 }
 
 async function autoFillAddress(zip) {
-  const digits = zip.replace(/-/g, "");
+  const digits = zip.replace(/-/g,"");
   if (digits.length !== 7) return;
   try {
-    const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`);
+    const res  = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`);
     const json = await res.json();
-    if (json.results && json.results.length > 0) {
+    if (json.results?.length) {
       const r = json.results[0];
-      const addr = r.address1 + r.address2 + r.address3;
-      $("address").value = addr;
+      $("address").value = r.address1 + r.address2 + r.address3;
       markChanged("address");
     } else {
       showToast("住所が見つかりませんでした", true);
     }
-  } catch {
-    showToast("住所検索に失敗しました", true);
-  }
+  } catch { showToast("住所検索に失敗しました", true); }
 }
 
-// ============================================================
-// 申請ボタン → 変更差分を確認ポップアップ
-// ============================================================
+/* =========================================
+   申請ボタン → 変更差分モーダル
+   ========================================= */
 function handleSubmitClick() {
-  // バリデーション
-  const fullName = $("full_name").value.trim();
-  if (!fullName) {
+  if (!currentMemberId) {
+    showToast("先に会員を検索してください", true);
+    return;
+  }
+  if (!$("full_name").value.trim()) {
     $("full_name").focus();
     showToast("氏名は必須です", true);
     return;
   }
-  const memberNo = $("member_number").value.trim();
-  if (!memberNo) {
-    $("member_number").focus();
-    showToast("会員番号は必須です", true);
-    return;
-  }
 
-  // 差分収集
+  // 登録番号を hidden に反映
+  const org = $("organization").value || "";
+  $("reg_no").value = buildRegNo(org) || "";
+
+  // 差分収集（reg_no を含めて確認）
+  const allFields = [...EDIT_FIELDS, "reg_no"];
   const changes = [];
-  EDIT_FIELDS.forEach(key => {
+  allFields.forEach(key => {
     const current  = getCurrentValue(key);
     const original = originalData[key] || "";
     if (current !== original) {
-      changes.push({ key, label: FIELD_LABELS[key], oldVal: original, newVal: current });
+      changes.push({ key, label: FIELD_LABELS[key] || key, oldVal: original, newVal: current });
     }
   });
 
-  if (changes.length === 0) {
-    showToast("変更された項目がありません");
-    return;
-  }
+  if (!changes.length) { showToast("変更された項目がありません"); return; }
 
-  // ポップアップ描画
-  changeList.innerHTML = "";
+  $("changeList").innerHTML = "";
   changes.forEach(c => {
     const row = document.createElement("div");
     row.className = "change-row";
     row.innerHTML = `
-      <span class="change-key">${escapeHtml(c.label)}</span>
-      <span class="change-old">${escapeHtml(c.oldVal || "（未設定）")}</span>
+      <span class="change-key">${esc(c.label)}</span>
+      <span class="change-old">${esc(c.oldVal || "（未設定）")}</span>
       <span class="change-arrow">→</span>
-      <span class="change-value">${escapeHtml(c.newVal || "（削除）")}</span>
-    `;
-    changeList.appendChild(row);
+      <span class="change-value">${esc(c.newVal || "（削除）")}</span>`;
+    $("changeList").appendChild(row);
   });
 
-  confirmModal.classList.remove("hidden");
+  $("confirmModal").classList.remove("hidden");
 }
 
-// ============================================================
-// 確認OK → 更新送信
-// ============================================================
+/* =========================================
+   確認OK → 更新送信
+   ========================================= */
 async function handleConfirm() {
   closeModal();
   if (!currentMemberId) return;
 
-  // 送信データ構築
   const payload = {};
   EDIT_FIELDS.forEach(key => {
     payload[key] = getCurrentValue(key) || null;
   });
+  // 登録番号は hidden から
+  payload.reg_no = $("reg_no").value || null;
 
   $("btnSubmit").disabled = true;
   $("btnSubmit").textContent = "送信中…";
@@ -307,66 +400,55 @@ async function handleConfirm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `ステータス ${res.status}`);
     }
-
-    const updated = await res.json();
-
-    // 会員番号重複エラー対応はサーバー側でチェック
-    loadForm(updated);  // 保存後に再ロード（originalData更新）
+    loadForm(await res.json());
     showToast("✓ 変更を登録しました");
   } catch (e) {
     showToast("登録に失敗しました: " + e.message, true);
   } finally {
     $("btnSubmit").disabled = false;
-    $("btnSubmit").textContent = "申 請";
+    $("btnSubmit").textContent = "更新申請";
   }
 }
 
-// ============================================================
-// モーダル閉じる
-// ============================================================
+/* =========================================
+   モーダル
+   ========================================= */
 function closeModal() {
-  confirmModal.classList.add("hidden");
+  $("confirmModal").classList.add("hidden");
 }
 
-// モーダル背景クリックで閉じる
-confirmModal?.addEventListener("click", e => {
-  if (e.target === confirmModal) closeModal();
-});
-
-// ============================================================
-// トースト表示
-// ============================================================
+/* =========================================
+   トースト
+   ========================================= */
 function showToast(message, isError = false) {
-  toast.textContent = message;
-  toast.classList.remove("hidden", "error");
-  if (isError) toast.classList.add("error");
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.add("hidden"), 3500);
+  const t = $("toast");
+  t.textContent = message;
+  t.classList.remove("hidden","error");
+  if (isError) t.classList.add("error");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add("hidden"), 3500);
 }
 
-// ============================================================
-// エラー表示
-// ============================================================
+/* =========================================
+   エラー表示
+   ========================================= */
 function showSearchError(msg) {
-  searchError.textContent = msg;
-  searchError.classList.remove("hidden");
+  $("searchError").textContent = msg;
+  $("searchError").classList.remove("hidden");
 }
 function hideSearchError() {
-  searchError.classList.add("hidden");
+  $("searchError").classList.add("hidden");
 }
 
-// ============================================================
-// HTMLエスケープ
-// ============================================================
-function escapeHtml(str) {
+/* =========================================
+   HTMLエスケープ
+   ========================================= */
+function esc(str) {
   return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
