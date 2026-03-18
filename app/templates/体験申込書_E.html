@@ -19,7 +19,11 @@
         <button class="lang-btn" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
         <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
       </div>
-      <button class="print-btn" onclick="window.print()">🖨 Print</button>
+      <div class="action-btns">
+        <button type="button" id="submitBtn" class="submit-btn">Submit</button>
+        <button type="button" id="exitBtn" class="exit-btn">Cancel</button>
+        <button class="print-btn" onclick="window.print()">🖨 Print</button>
+      </div>
     </div>
 
     <form id="entryForm">
@@ -181,10 +185,7 @@
             </tr>
           </table>
         </div>
-      <div class="buttons no-print">
-        <button type="button" id="submitBtn">Submit</button>
-        <button type="button" id="exitBtn">Cancel</button>
-      </div>
+
     </form>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

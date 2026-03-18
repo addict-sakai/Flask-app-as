@@ -7,7 +7,9 @@ def create_app():
 
     # --- 🔵 ここから修正 ---
     # 1. あなたのローカルPostgreSQL設定
-    LOCAL_DB_URL = "postgresql://postgres:1234@localhost:5432/fujiparasystem"
+    # LOCAL_DB_URL = "postgresql://postgres:1234@localhost:5432/fujiparasystem"
+    # LOCAL_DB_URL = "postgresql://postgres:1234@127.0.0.1:5433/fujiparasystem"
+    LOCAL_DB_URL = "postgresql://postgres:1234@localhost:5433/fujiparasystem"
     
     # 2. Render上の環境変数 DATABASE_URL を取得。なければローカル用を使う
     database_url = os.environ.get('DATABASE_URL', LOCAL_DB_URL)

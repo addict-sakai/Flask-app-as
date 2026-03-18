@@ -2,7 +2,81 @@ body {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
   background: #f7f7f7;
   margin: 0;
-  padding: 40px 0;
+  padding: 0;
+}
+
+/* ══ ナビゲーションヘッダー ══════════════════════════════════ */
+.lang-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1a1a;
+  padding: 10px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.lang-switch { display: flex; gap: 8px; flex-wrap: wrap; }
+.lang-btn {
+  padding: 6px 14px;
+  border: 1.5px solid #555;
+  border-radius: 20px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lang-btn:hover { border-color: #fff; color: #fff; }
+.lang-btn--active { background: #fff; border-color: #fff; color: #1a1a1a; }
+.action-btns { display: flex; align-items: center; gap: 8px; }
+.submit-btn {
+  padding: 6px 18px;
+  border: 1.5px solid #4caf50;
+  border-radius: 20px;
+  background: transparent;
+  color: #4caf50;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.submit-btn:hover { background: #4caf50; color: #fff; }
+.exit-btn {
+  padding: 6px 18px;
+  border: 1.5px solid #888;
+  border-radius: 20px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.exit-btn:hover { border-color: #fff; color: #fff; }
+.print-btn {
+  padding: 6px 16px;
+  border: 1.5px solid #4a9eff;
+  border-radius: 20px;
+  background: transparent;
+  color: #4a9eff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.print-btn:hover { background: #4a9eff; color: #fff; }
+
+/* ══ 印刷スタイル ════════════════════════════════════════ */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .page { box-shadow: none; padding: 16px; }
 }
 .page {
   width: 800px;

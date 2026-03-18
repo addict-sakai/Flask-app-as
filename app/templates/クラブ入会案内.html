@@ -13,6 +13,20 @@
 </head>
 
 <body>
+  <!-- ナビゲーションヘッダー -->
+  <div class="lang-bar no-print">
+    <div class="lang-switch">
+      <button class="lang-btn" onclick="location.href='/apply'">会員申込</button>
+      <button class="lang-btn" onclick="location.href='/apply_a'">Aコース</button>
+      <button class="lang-btn" onclick="location.href='/apply_v'">ビジター</button>
+      <button class="lang-btn lang-btn--active" onclick="location.href='/apply_club'">クラブ入会</button>
+    </div>
+    <div class="action-btns">
+      <button class="submit-btn" onclick="submitClub()">申 請</button>
+      <button class="exit-btn" onclick="window.location.href='/'">終 了</button>
+      <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+    </div>
+  </div>
   <div class="page">
     <h1>朝霧スカイクラブ入会のご案内</h1>
 
@@ -63,12 +77,6 @@
         </tr>
       </table>
     </div>
-    <!-- 申請・終了ボタン -->
-    <div class="btn-row">
-      <button class="btn-apply" onclick="submitClub()">申請</button>
-      <button class="btn-end"   onclick="window.location.href='/'">終了</button>
-    </div>
-
   </div>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>

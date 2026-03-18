@@ -61,9 +61,44 @@ document.addEventListener("DOMContentLoaded", function () {
   // ── 氏名連動 ────────────────────────────────────────────────
   const nameInput = document.getElementById("fullName");
   const agreeName = document.getElementById("agreeName");
+  const furiganaInput = document.getElementById("furigana");
   if (nameInput) {
     nameInput.addEventListener("input", function () {
       agreeName.textContent = this.value || "　　　　　　　";
+    });
+  }
+
+  // ── フリガナ自動入力（IME compositionイベント） ──────────────
+  if (nameInput && furiganaInput) {
+    let kanaAccum = "";
+    let kanaComposing = "";
+
+    function toKatakana(str) {
+      return str.replace(/[\u3041-\u3096]/g, function (c) {
+        return String.fromCharCode(c.charCodeAt(0) + 0x60);
+      });
+    }
+    function isKanaOnly(str) {
+      return /^[\u3040-\u30FF\u30FC\s]*$/.test(str);
+    }
+
+    nameInput.addEventListener("compositionstart", function () {
+      kanaComposing = "";
+    });
+    nameInput.addEventListener("compositionupdate", function (e) {
+      const data = e.data || "";
+      if (isKanaOnly(data)) kanaComposing = toKatakana(data);
+      furiganaInput.value = kanaAccum + kanaComposing;
+    });
+    nameInput.addEventListener("compositionend", function () {
+      kanaAccum += kanaComposing;
+      kanaComposing = "";
+      furiganaInput.value = kanaAccum;
+    });
+    nameInput.addEventListener("input", function (e) {
+      if (!e.isComposing && nameInput.value === "") {
+        kanaAccum = ""; kanaComposing = ""; furiganaInput.value = "";
+      }
     });
   }
 

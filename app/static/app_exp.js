@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (nameInput && furiganaInput) {
     let kanaAccum  = "";  // 確定済みカタカナ
-    let kanaComposing = ""; // 変換中ひらがな
+    let kanaComposing = ""; // 変換中カタカナ（ひらがな読み）
 
     function toKatakana(str) {
       return str.replace(/[\u3041-\u3096]/g, function (c) {
@@ -65,12 +65,21 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
+    // ひらがな・カタカナ・長音のみ含むか判定（漢字等はNG）
+    function isKanaOnly(str) {
+      return /^[\u3040-\u30FF\u30FC\s]*$/.test(str);
+    }
+
     nameInput.addEventListener("compositionstart", function () {
       kanaComposing = "";
     });
 
     nameInput.addEventListener("compositionupdate", function (e) {
-      kanaComposing = toKatakana(e.data || "");
+      const data = e.data || "";
+      // ひらがな・カタカナのみの場合だけ更新（漢字候補になったら保持）
+      if (isKanaOnly(data)) {
+        kanaComposing = toKatakana(data);
+      }
       furiganaInput.value = kanaAccum + kanaComposing;
     });
 

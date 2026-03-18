@@ -19,7 +19,11 @@
         <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
         <button class="lang-btn" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
       </div>
-      <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+      <div class="action-btns">
+        <button type="button" id="submitBtn" class="submit-btn">申 請</button>
+        <button type="button" id="exitBtn" class="exit-btn">キャンセル</button>
+        <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+      </div>
     </div>
 
     <form id="entryForm">
@@ -168,10 +172,7 @@
             </tr>
           </table>
         </div>
-      <div class="buttons no-print">
-        <button type="button" id="submitBtn">申 請</button>
-        <button type="button" id="exitBtn">キャンセル</button>
-      </div>
+
     </form>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

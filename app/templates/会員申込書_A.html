@@ -12,6 +12,20 @@
 </head>
 
 <body>
+  <!-- ナビゲーションヘッダー -->
+  <div class="lang-bar no-print">
+    <div class="lang-switch">
+      <button class="lang-btn" onclick="location.href='/apply'">会員申込</button>
+      <button class="lang-btn lang-btn--active" onclick="location.href='/apply_a'">Aコース</button>
+      <button class="lang-btn" onclick="location.href='/apply_v'">ビジター</button>
+      <button class="lang-btn" onclick="location.href='/apply_club'">クラブ入会</button>
+    </div>
+    <div class="action-btns">
+      <button type="button" id="submitBtn" class="submit-btn">申 請</button>
+      <button type="button" id="printBtn" class="print-btn">🖨 印刷</button>
+      <button type="button" id="exitBtn" class="exit-btn">終 了</button>
+    </div>
+  </div>
   <form id="entryForm">
     <div class="sheet">
       <h1>【Aコース】エリア会員 申込書</h1>
@@ -24,8 +38,8 @@
         <tr>
           <th>氏名</th>
           <td><input type="text" id="fullName" name="full_name"></td>
-          <th>ふりがな</th>
-          <td><input type="text" name="furigana"></td>
+          <th>フリガナ</th>
+          <td><input type="text" id="furigana" name="furigana" placeholder="自動入力されます"></td>
         </tr>
         <tr>
           <th>性別</th>
@@ -144,11 +158,6 @@
 
     </div>
 
-    <div class="buttons">
-      <button type="button" id="submitBtn">申 請</button>
-      <button type="button" id="printBtn">印 刷</button>
-      <button type="button" id="exitBtn">終 了</button>
-    </div>
   </form>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
