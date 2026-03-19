@@ -12,6 +12,7 @@ const ExpApp = (() => {
     type:        "para",         // "para" | "camp"
     viewMode:    "all",          // "all" | "month" | "date" | "past"
     sortMode:    "reception",    // "reception" | "date_asc" (ALL時のみ選択可)
+    monthSortMode: "date_asc",   // 当月・過去表示時のソート: "date_asc" | "date_desc"
     pastRange:   "",             // "" | "3m" | "6m" | "1y"
     filterDate:  "",             // カレンダークリック時の特定日
     calYear:     new Date().getFullYear(),
@@ -20,6 +21,7 @@ const ExpApp = (() => {
     editingId:    null,
     focusedRowId: null,
     config:       {},
+    calDays:      {},   // カレンダーデータキャッシュ（パイロット情報含む）
   };
 
   const TODAY = (() => {
@@ -103,6 +105,9 @@ const ExpApp = (() => {
 
     loadList();
     loadCalendar();
+    loadUnlinkedCount();
+    // 30秒ごとにリアルタイム更新
+    setInterval(loadUnlinkedCount, 30000);
   }
 
   /* ════════════════════════════════════════
@@ -117,13 +122,12 @@ const ExpApp = (() => {
         S.viewMode   = "all";
         S.filterDate = "";
         S.pastRange  = "";
-        S.sortMode   = "reception";
-        // ラジオをリセット
-        const recRadio = document.querySelector('input[name="sortMode"][value="reception"]');
-        if (recRadio) recRadio.checked = true;
+        S.sortMode      = "reception";
+        S.monthSortMode = "date_asc";
         document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
         _updateViewButtons();
         _updateSortVisibility();
+        _updateMonthSortButtons();
         loadList();
         loadCalendar();
         _updateTableHeader();
@@ -136,15 +140,35 @@ const ExpApp = (() => {
   ════════════════════════════════════════ */
   function _bindSidebar() {
     $("btnNewResv").addEventListener("click", () => openModal(null));
-    $("btnExpApp").addEventListener("click",  openExpAppModal);
+    $("btnExpApp").addEventListener("click", () => {
+      if (!$("btnExpApp").disabled) openExpAppModal();
+    });
 
     // ALL / 当月 ボタン
+    // 当日ボタン
+    const btnViewToday = document.getElementById("btnViewToday");
+    if (btnViewToday) {
+      btnViewToday.addEventListener("click", () => {
+        S.viewMode   = "date";
+        S.filterDate = dateToISO(TODAY);
+        S.pastRange  = "";
+        _updateViewButtons();
+        _updateSortVisibility();
+        _updateMonthSortButtons();
+        _updatePilotBtn();
+        _focusCalendarToday();
+        loadList();
+      });
+    }
+
     $("btnViewAll").addEventListener("click", () => {
       S.viewMode   = "all";
       S.filterDate = "";
       S.pastRange  = "";
       _updateViewButtons();
       _updateSortVisibility();
+      _updateMonthSortButtons();
+      _focusCalendarToday();
       loadList();
     });
 
@@ -154,6 +178,8 @@ const ExpApp = (() => {
       S.pastRange  = "";
       _updateViewButtons();
       _updateSortVisibility();
+      _updateMonthSortButtons();
+      _focusCalendarToday();
       loadList();
     });
 
@@ -173,6 +199,8 @@ const ExpApp = (() => {
         S.filterDate = "";
         _updateViewButtons();
         _updateSortVisibility();
+        _updateMonthSortButtons();
+        _focusCalendarToday();
         loadList();
       });
     });
@@ -184,20 +212,180 @@ const ExpApp = (() => {
 
     _updateViewButtons();
     _updateSortVisibility();
+    _updateMonthSortButtons();
+
+    // パイロットボタン
+    const pilotBtn = document.getElementById("btnStatsPilot");
+    if (pilotBtn) {
+      pilotBtn.addEventListener("click", () => {
+        const dayData = S.calDays[S.filterDate] || {};
+        const names   = dayData.pilot_names || [];
+        _showPilotPopup(pilotBtn, names, S.filterDate);
+      });
+    }
+
+    // ソートボタン（ALL: sortMode、当月・過去: monthSortMode）
+    ["btnSortReception","btnSortDateAsc","btnSortDateDesc"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        const sort = btn.dataset.sort;
+        if (S.viewMode === "all") {
+          S.sortMode = sort;
+        } else {
+          S.monthSortMode = sort;
+        }
+        _updateMonthSortButtons();
+        loadList();
+      });
+    });
   }
 
   function _updateViewButtons() {
+    const todayISO = dateToISO(TODAY);
+    const btnToday = document.getElementById("btnViewToday");
+    if (btnToday) btnToday.classList.toggle("active", S.viewMode === "date" && S.filterDate === todayISO);
     $("btnViewAll").classList.toggle("active",   S.viewMode === "all");
     $("btnViewMonth").classList.toggle("active", S.viewMode === "month");
-    // 過去範囲ラジオのクリア（ALL/当月ボタン押下時）
     if (S.viewMode !== "past") {
       document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
     }
   }
 
   function _updateSortVisibility() {
-    // ソート選択はALL表示のときだけ表示
-    $("sortSection").style.display = (S.viewMode === "all") ? "" : "none";
+    // sortSection は削除済みのため何もしない
+  }
+
+  /* カレンダーを当日の月へ移動し、当日セルを選択状態にする */
+  function _focusCalendarToday() {
+    if (S.calYear !== TODAY.getFullYear() || S.calMonth !== TODAY.getMonth() + 1) {
+      S.calYear  = TODAY.getFullYear();
+      S.calMonth = TODAY.getMonth() + 1;
+      loadCalendar();
+    } else {
+      document.querySelectorAll(".cal-day--selected")
+        .forEach(el => el.classList.remove("cal-day--selected"));
+      document.querySelectorAll(".cal-day--today")
+        .forEach(el => el.classList.add("cal-day--selected"));
+    }
+  }
+
+    /* ソートボタングループの表示・アクティブ状態を更新（ALL / 当月 / 過去） */
+  function _updateMonthSortButtons() {
+    const group   = document.getElementById("statsSortGroup");
+    const recBtn  = document.getElementById("btnSortReception");
+    if (!group) return;
+
+    const showGroup = (S.viewMode === "all" || S.viewMode === "month" || S.viewMode === "past");
+    group.style.display = showGroup ? "" : "none";
+    if (!showGroup) return;
+
+    // 「登録順」ボタンは ALL のみ表示
+    if (recBtn) recBtn.style.display = (S.viewMode === "all") ? "" : "none";
+
+    // アクティブ状態を更新
+    const activeSort = (S.viewMode === "all") ? S.sortMode : S.monthSortMode;
+    ["btnSortReception","btnSortDateAsc","btnSortDateDesc"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.classList.toggle("active", btn.dataset.sort === activeSort);
+    });
+  }
+
+  /* ════════════════════════════════════════
+     ② 未リンク人数（当日・予約番号 null）
+  ════════════════════════════════════════ */
+  async function loadUnlinkedCount() {
+    try {
+      const iso  = dateToISO(TODAY);
+      const data = await apiFetch(`/api/exp/experience_apps/today?date=${iso}`);
+      const items = data.items || [];
+      const count = items.filter(it => !it.resv_no || it.resv_no.trim() === "").length;
+      _renderUnlinkedBadge(count);
+    } catch (e) {
+      // 取得失敗時は何も変えない
+    }
+  }
+
+  function _renderUnlinkedBadge(count) {
+    const wrap  = document.getElementById("unlinkedWrap");
+    const badge = document.getElementById("unlinkedBadge");
+    const btn   = document.getElementById("btnExpApp");
+    if (!wrap || !badge || !btn) return;
+
+    wrap.style.display = "";
+    if (count > 0) {
+      badge.textContent = `未リンク ${count} 名`;
+      badge.className   = "unlinked-badge unlinked-badge--warn";
+      btn.disabled      = false;
+      btn.style.opacity = "";
+      btn.style.cursor  = "";
+    } else {
+      badge.textContent = "未リンク 0 名";
+      badge.className   = "unlinked-badge unlinked-badge--zero";
+      btn.disabled      = true;
+      btn.style.opacity = "0.45";
+      btn.style.cursor  = "not-allowed";
+    }
+  }
+
+  /* ════════════════════════════════════════
+     ⑥ 指定日モード：パイロットボタン制御
+  ════════════════════════════════════════ */
+  function _updatePilotBtn() {
+    const btn = document.getElementById("btnStatsPilot");
+    if (!btn) return;
+    if (S.viewMode === "date" && S.filterDate) {
+      const dayData = S.calDays[S.filterDate] || {};
+      const pc = dayData.pilot_count || 0;
+      btn.textContent  = `🧑‍✈️ ${pc}名`;
+      btn.style.display = "";
+    } else {
+      btn.style.display = "none";
+    }
+  }
+
+  function _showPilotPopup(anchor, names, dateStr) {
+    // 既存ポップアップを削除
+    document.querySelectorAll(".pilot-popup").forEach(el => el.remove());
+
+    const pop = document.createElement("div");
+    pop.className = "pilot-popup";
+
+    const title = document.createElement("div");
+    title.className   = "pilot-popup-title";
+    title.textContent = `🧑‍✈️ 出勤可能パイロット（${dateStr}）`;
+    pop.appendChild(title);
+
+    if (names.length === 0) {
+      const empty = document.createElement("div");
+      empty.className   = "pilot-popup-empty";
+      empty.textContent = "登録なし";
+      pop.appendChild(empty);
+    } else {
+      names.forEach(name => {
+        const item = document.createElement("div");
+        item.className   = "pilot-popup-item";
+        item.textContent = name;
+        pop.appendChild(item);
+      });
+    }
+
+    // ボタンの真下に表示
+    const rect = anchor.getBoundingClientRect();
+    pop.style.top  = (rect.bottom + 6) + "px";
+    pop.style.left = rect.left + "px";
+    document.body.appendChild(pop);
+
+    // 外クリックで閉じる
+    setTimeout(() => {
+      document.addEventListener("click", function handler(e) {
+        if (!pop.contains(e.target) && e.target !== anchor) {
+          pop.remove();
+          document.removeEventListener("click", handler);
+        }
+      });
+    }, 0);
   }
 
   /* ════════════════════════════════════════
@@ -252,32 +440,43 @@ const ExpApp = (() => {
       label  = S.filterDate;
 
     } else if (S.viewMode === "month") {
-      // 当月 → 予約日昇順
-      url   += `&year=${S.calYear}&month=${S.calMonth}&sort=date_asc`;
+      // 当月 → monthSortMode に従う
+      const sp = S.monthSortMode === "date_desc" ? "date_desc" : "date_asc";
+      url   += `&year=${S.calYear}&month=${S.calMonth}&sort=${sp}`;
       label  = `${S.calYear}年${S.calMonth}月`;
 
     } else if (S.viewMode === "past" && S.pastRange) {
-      // 過去範囲 → 予約日降順（新しい順）
+      // 過去範囲 → monthSortMode に従う
       const today  = dateToISO(TODAY);
       const from   = _pastFromDate(S.pastRange);
-      url   += `&from_date=${from}&to_date=${today}&sort=date_asc`;
+      const sp     = S.monthSortMode === "date_desc" ? "date_desc" : "date_asc";
+      url   += `&from_date=${from}&to_date=${today}&sort=${sp}`;
       label  = { "3m": "過去3か月", "6m": "過去半年", "1y": "過去1年" }[S.pastRange] || "";
 
     } else {
-      // ALL → 登録順 or 予約日順
-      const sortParam = S.sortMode === "date_asc" ? "date_asc" : "reception_desc";
+      // ALL → sortMode に従う
+      let sortParam = "reception_desc";
+      if (S.sortMode === "date_asc")  sortParam = "date_asc";
+      if (S.sortMode === "date_desc") sortParam = "date_desc";
       url   += `&sort=${sortParam}`;
       label  = "ALL";
     }
 
     try {
       const data = await apiFetch(url);
-      _renderList(data.items);
-      const total  = data.items.length;
-      const amount = data.items.reduce((s, r) => s + (r.charge_amount || 0), 0);
+      let items = data.items || [];
+      // ALLモードは「体験完了」を非表示
+      if (S.viewMode === "all") {
+        items = items.filter(r => r.status !== "体験完了");
+      }
+      _renderList(items);
+      const total  = items.length;
+      const amount = items.reduce((s, r) => s + (r.charge_amount || 0), 0);
       $("statCount").textContent  = total;
       $("statAmount").textContent = amount.toLocaleString();
       $("statLabel").textContent  = label;
+      _updateMonthSortButtons();
+      _updatePilotBtn();
     } catch (e) {
       toast("一覧の取得に失敗: " + e.message, "error");
     }
@@ -367,15 +566,14 @@ const ExpApp = (() => {
       tr.innerHTML = cols;
       tr.dataset.id = r.id;
 
-      // シングルクリック → フォーカス
+      // シングルクリック → 編集モーダル
       tr.addEventListener("click", () => {
         document.querySelectorAll("#resvTbody tr.row-focused")
           .forEach(el => el.classList.remove("row-focused"));
         tr.classList.add("row-focused");
         S.focusedRowId = r.id;
+        openModal(r.id);
       });
-      // ダブルクリック → 編集モーダル
-      tr.addEventListener("dblclick", () => openModal(r.id));
 
       tbody.appendChild(tr);
     });
@@ -414,7 +612,9 @@ const ExpApp = (() => {
       );
       $("calMonthCount").textContent  = data.month_count ?? "—";
       $("calMonthAmount").textContent = (data.month_amount ?? 0).toLocaleString();
-      _renderCalendar(data.days);
+      S.calDays = data.days || {};
+      _renderCalendar(S.calDays);
+      _updatePilotBtn();
     } catch (e) {
       toast("カレンダー取得に失敗: " + e.message, "error");
     }
@@ -451,13 +651,17 @@ const ExpApp = (() => {
       const dayData = days[iso];
       const isToday = iso === todayISO;
 
+      const isSelected = (iso === S.filterDate);
+
       const cell = document.createElement("div");
       cell.className = [
         "cal-day",
-        dayData  ? "cal-day--active" : "",
-        isToday  ? "cal-day--today"  : "",
-        dow === 0 ? "cal-day--sun"   : "",
-        dow === 6 ? "cal-day--sat"   : "",
+        "cal-day--clickable",                          // 全日付クリック可能
+        dayData  ? "cal-day--active"   : "",
+        isToday  ? "cal-day--today"    : "",
+        isSelected ? "cal-day--selected" : "",
+        dow === 0 ? "cal-day--sun"     : "",
+        dow === 6 ? "cal-day--sat"     : "",
       ].filter(Boolean).join(" ");
 
       const numEl = document.createElement("div");
@@ -465,20 +669,39 @@ const ExpApp = (() => {
       numEl.textContent = d;
       cell.appendChild(numEl);
 
+      // 予約件数バッジ（予約あり日のみ）
       if (dayData && dayData.count > 0) {
         const badge = document.createElement("div");
         badge.className   = `cal-badge${S.type === "camp" ? " cal-badge--camp" : ""}`;
         badge.textContent = `${dayData.count}件`;
         cell.appendChild(badge);
-
-        cell.addEventListener("click", () => {
-          S.filterDate = iso;
-          S.viewMode   = "date";
-          _updateViewButtons();
-          _updateSortVisibility();
-          loadList();
-        });
       }
+
+      // パイロット出勤可能人数バッジ（パラタブのみ）
+      if (S.type === "para") {
+        const pc = dayData ? (dayData.pilot_count || 0) : 0;
+        if (pc > 0) {
+          const pb = document.createElement("div");
+          pb.className   = "cal-pilot-badge";
+          pb.textContent = `✈${pc}`;
+          cell.appendChild(pb);
+        }
+      }
+
+      // 全日付クリックで指定日表示（予約なしでも可）
+      cell.addEventListener("click", () => {
+        // 選択中フォーカスを更新
+        document.querySelectorAll(".cal-day--selected")
+          .forEach(el => el.classList.remove("cal-day--selected"));
+        cell.classList.add("cal-day--selected");
+
+        S.filterDate = iso;
+        S.viewMode   = "date";
+        _updateViewButtons();
+        _updateSortVisibility();
+        _updatePilotBtn();
+        loadList();
+      });
 
       grid.appendChild(cell);
     }
@@ -1101,7 +1324,7 @@ const ExpApp = (() => {
           saveBtn.textContent   = "保存済";
           saveBtn.classList.add("app-save-btn--saved");
           toast("保存しました");
-          loadList(); loadCalendar();
+          loadList(); loadCalendar(); loadUnlinkedCount();
         } catch (err) {
           toast(err.message, "error");
         }
@@ -1118,7 +1341,7 @@ const ExpApp = (() => {
           await apiPut(`/api/exp/experience_apps/${appId}/link`, { resv_no: newVal });
           toast(already ? "キャンセルを解除しました" : "キャンセルしました");
           await _loadAppModal();
-          loadList(); loadCalendar();
+          loadList(); loadCalendar(); loadUnlinkedCount();
         } catch (err) {
           toast(err.message, "error");
         }

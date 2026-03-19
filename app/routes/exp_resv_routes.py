@@ -272,6 +272,8 @@ def api_exp_list():
     # 並び順
     if sort == "date_asc":
         order = "r.reservation_date ASC, r.reservation_no ASC"
+    elif sort == "date_desc":
+        order = "r.reservation_date DESC, r.reservation_no DESC"
     elif sort == "meeting_asc":
         order = "p.meeting_time ASC NULLS LAST, r.reservation_date ASC, r.reservation_no ASC"
     else:  # reception_desc（登録順）
@@ -400,11 +402,46 @@ def api_exp_calendar():
     month_amount = 0
     for r in rows:
         days[r.reservation_date.isoformat()] = {
-            "count":  r.cnt,
-            "amount": int(r.total_amount or 0),
+            "count":       r.cnt,
+            "amount":      int(r.total_amount or 0),
+            "pilot_count": 0,
+            "pilot_names": [],
         }
         month_count  += r.cnt
         month_amount += int(r.total_amount or 0)
+
+    # パイロット出勤可能人数を追加
+    # work_contract テーブルから当月 OK のパイロットを取得
+    try:
+        pilot_rows = db.session.execute(
+            text("""
+                SELECT wc.work_date,
+                       m.full_name AS pilot_name
+                FROM work_contract wc
+                JOIN members m ON CAST(m.uuid AS VARCHAR) = wc.uuid
+                WHERE EXTRACT(YEAR  FROM wc.work_date) = :yr
+                  AND EXTRACT(MONTH FROM wc.work_date) = :mo
+                  AND UPPER(wc.status) = 'OK'
+                  AND m.contract = TRUE
+                ORDER BY wc.work_date, m.full_name
+            """),
+            {"yr": year, "mo": month}
+        ).fetchall()
+
+        for pr in pilot_rows:
+            iso = pr.work_date.isoformat()
+            if iso not in days:
+                days[iso] = {
+                    "count":       0,
+                    "amount":      0,
+                    "pilot_count": 0,
+                    "pilot_names": [],
+                }
+            days[iso]["pilot_names"].append(pr.pilot_name or "")
+            days[iso]["pilot_count"] = len(days[iso]["pilot_names"])
+
+    except Exception:
+        pass  # work_contract 未存在時は無視
 
     return jsonify({
         "year": year, "month": month,

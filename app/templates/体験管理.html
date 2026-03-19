@@ -45,6 +45,9 @@
       <!-- 体験申込 編集ボタン -->
       <div class="sidebar-section">
         <button class="exp-new-btn exp-new-btn--sub" id="btnExpApp">📋 体験申込 編集</button>
+        <div class="unlinked-wrap" id="unlinkedWrap" style="display:none;">
+          <span class="unlinked-badge" id="unlinkedBadge"></span>
+        </div>
       </div>
 
       <hr class="sidebar-divider" />
@@ -53,25 +56,12 @@
       <div class="sidebar-section">
         <p class="sidebar-label">表示範囲</p>
         <div class="view-btn-group">
+          <button class="view-btn" id="btnViewToday">当日</button>
           <button class="view-btn active" id="btnViewAll">ALL</button>
           <button class="view-btn" id="btnViewMonth">当月</button>
         </div>
       </div>
 
-      <hr class="sidebar-divider" />
-
-      <!-- 並び順（ALL時のみ表示） -->
-      <div class="sidebar-section" id="sortSection">
-        <p class="sidebar-label">並び順</p>
-        <label class="radio-label-sm">
-          <input type="radio" name="sortMode" value="reception" checked />
-          登録順
-        </label>
-        <label class="radio-label-sm">
-          <input type="radio" name="sortMode" value="date_asc" />
-          予約日順
-        </label>
-      </div>
 
       <hr class="sidebar-divider" />
 
@@ -144,6 +134,12 @@
       <div class="exp-stats-bar" id="statsBar">
         <span class="exp-stat exp-stat--count">件数 <strong id="statCount">—</strong></span>
         <span class="exp-stat exp-stat--amount">売上 <strong id="statAmount">—</strong> 円</span>
+        <div class="stats-sort-group" id="statsSortGroup" style="display:none;">
+          <button class="stats-sort-btn" id="btnSortReception" data-sort="reception">登録順</button>
+          <button class="stats-sort-btn" id="btnSortDateAsc"   data-sort="date_asc" >予約日昇順</button>
+          <button class="stats-sort-btn" id="btnSortDateDesc"  data-sort="date_desc">予約日降順</button>
+        </div>
+        <button class="stats-pilot-btn" id="btnStatsPilot" style="display:none;">🧑‍✈️ —名</button>
         <span class="exp-stat exp-stat--label" id="statLabel">—</span>
       </div>
 

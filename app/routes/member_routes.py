@@ -59,7 +59,7 @@ def apply_page_io_info():
 # 体験予約ページ
 @member_bp.route("/apply_exp_resv")
 def apply_page_exp_resv():
-    return render_template("体験予約.html")
+    return render_template("体験管理.html")
 
 # 体験状況ページ
 @member_bp.route("/apply_exp_status")
