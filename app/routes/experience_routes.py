@@ -105,3 +105,55 @@ def apply_experience():
 @experience_bp.route("/api/apply_exp_e", methods=["POST"])
 def apply_experience_e():
     return _register_experience()
+
+# 🔵 体験コース選択肢取得API（configデータから動的取得）
+@experience_bp.route("/api/exp_course_options")
+def get_exp_course_options():
+    """
+    config_master の category='体験' かつ value_type='options' の項目から
+    item_name に「コース」を含むレコードの config_values を返す。
+    該当が複数あれば最初の1件を使用。
+    """
+    from sqlalchemy import text
+    try:
+        # コース選択肢を持つ master を取得
+        master = db.session.execute(text("""
+            SELECT id, item_name, unit
+            FROM config_master
+            WHERE category = '体験'
+              AND value_type = 'options'
+              AND item_name LIKE '%コース%'
+              AND is_active = true
+            ORDER BY sort_order, id
+            LIMIT 1
+        """)).fetchone()
+
+        if not master:
+            return jsonify({"options": []})
+
+        # その master に紐づく値一覧を取得
+        values = db.session.execute(text("""
+            SELECT id, value, label, sort_order
+            FROM config_values
+            WHERE master_id = :mid
+              AND is_active = true
+            ORDER BY sort_order, id
+        """), {"mid": master.id}).fetchall()
+
+        options = [
+            {
+                "value": str(v.id),          # DBのconfig_values.id を送信値に
+                "label": v.label if v.label else v.value,  # 表示ラベル
+                "price": v.value              # 値（金額テキスト等）
+            }
+            for v in values
+        ]
+
+        return jsonify({
+            "item_name": master.item_name,
+            "unit": master.unit,
+            "options": options
+        })
+
+    except Exception as e:
+        return jsonify({"options": [], "error": str(e)}), 500

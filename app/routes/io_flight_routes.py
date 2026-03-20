@@ -64,8 +64,10 @@ def _record_to_dict(r: IoFlight) -> dict:
         "in_time":        r.in_time.strftime("%H:%M") if r.in_time else None,
         "out_time":       r.out_time.strftime("%H:%M") if r.out_time else None,
         "status":         "下山済" if r.out_time else "入山中",
-        "yamachin":       r.yamachin,
-        "comment":        r.comment or "",
+        "yamachin":           r.yamachin,
+        "comment":            r.comment or "",
+        "entrance_fee_paid":   r.entrance_fee_paid,
+        "yamachin_confirmed": r.yamachin_confirmed,
     }
 
 
@@ -373,6 +375,10 @@ def api_io_update_record(record_id):
         record.yamachin = bool(data["yamachin"])
     if "comment" in data:
         record.comment = data["comment"] or None
+    if "entrance_fee_paid" in data:
+        record.entrance_fee_paid = bool(data["entrance_fee_paid"])
+    if "yamachin_confirmed" in data:
+        record.yamachin_confirmed = bool(data["yamachin_confirmed"])
 
     db.session.commit()
     return jsonify({"message": "更新しました", "record": _record_to_dict(record)})

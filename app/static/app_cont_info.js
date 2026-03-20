@@ -37,8 +37,62 @@ const yen   = (n)  => `¥${fmt(n)}`;
 const DAYS  = ["日","月","火","水","木","金","土"];
 
 function weekday(dateStr) { return DAYS[new Date(dateStr).getDay()]; }
-function isWeekend(dateStr) { const d = new Date(dateStr).getDay(); return d === 0 || d === 6; }
-function isToday(dateStr)   { return dateStr === TODAY.toISOString().slice(0, 10); }
+function isSaturday(dateStr) { return new Date(dateStr).getDay() === 6; }
+function isSunday(dateStr)   { return new Date(dateStr).getDay() === 0; }
+function isWeekend(dateStr)  { return isSaturday(dateStr) || isSunday(dateStr); }
+function isToday(dateStr)    { return dateStr === TODAY.toISOString().slice(0, 10); }
+
+/* ---- 日本の祝日判定 ---- */
+function isHoliday(dateStr) {
+  // 固定祝日
+  const fixed = [
+    "01-01", // 元日
+    "02-11", // 建国記念の日
+    "02-23", // 天皇誕生日
+    "04-29", // 昭和の日
+    "05-03", // 憲法記念日
+    "05-04", // みどりの日
+    "05-05", // こどもの日
+    "08-11", // 山の日
+    "11-03", // 文化の日
+    "11-23", // 勤労感謝の日
+  ];
+  const mmdd = dateStr.slice(5); // "MM-DD"
+  if (fixed.includes(mmdd)) return true;
+
+  // 移動祝日（ハッピーマンデー等）
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const mo = d.getMonth() + 1; // 1-12
+  const day = d.getDate();
+  const dow = d.getDay(); // 0=日
+
+  // 成人の日: 1月第2月曜
+  if (mo === 1  && dow === 1 && day >= 8  && day <= 14) return true;
+  // 海の日: 7月第3月曜
+  if (mo === 7  && dow === 1 && day >= 15 && day <= 21) return true;
+  // 敬老の日: 9月第3月曜
+  if (mo === 9  && dow === 1 && day >= 15 && day <= 21) return true;
+  // スポーツの日: 10月第2月曜
+  if (mo === 10 && dow === 1 && day >= 8  && day <= 14) return true;
+
+  // 春分の日（近似式）
+  const shunbun = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  if (mo === 3 && day === shunbun) return true;
+
+  // 秋分の日（近似式）
+  const shubun = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  if (mo === 9 && day === shubun) return true;
+
+  // 振替休日（祝日が日曜→翌月曜）
+  if (dow === 1) { // 月曜
+    const prev = new Date(d); prev.setDate(day - 1);
+    const prevStr = prev.toISOString().slice(0, 10);
+    if (isHoliday(prevStr)) return true;
+  }
+
+  return false;
+}
 
 function statusIcon(status) {
   if (!status) return `<span class="status-null" title="未入力">　</span>`;
@@ -72,7 +126,7 @@ function switchView(view) {
     work:     "📆 出勤可否状況",
     handover: "📋 引継ぎ報告事項",
   };
-  $("topbar-title").textContent = titles[view] || "";
+  const titleEl = $("topbar-title"); if (titleEl) titleEl.textContent = titles[view] || "";
 
   /* 初回ロード */
   if (view === "flight")   loadFlightStatus();
@@ -287,9 +341,10 @@ async function loadWorkContract() {
       
       const cls = [
         "calendar-day",
-        isWeekend(dateStr) ? "weekend" : "",
+        isSaturday(dateStr) ? "saturday" : "",
+        (isSunday(dateStr) || isHoliday(dateStr)) ? "sunday" : "",
         isToday(dateStr) ? "today" : ""
-      ].join(" ");
+      ].filter(c => c).join(" ");
 
       // マスの中身
       html += `

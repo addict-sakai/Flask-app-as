@@ -17,5 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
 // ── 申請ボタン ──────────────────────────────────────────
 function submitClub() {
   // 必要に応じてバリデーション・送信処理をここに追加
-  alert("申請を受け付けました。...");
+  alert("申請を受け付けました。");
+  window.location.href = "/apply_flyer";
 }

@@ -8,26 +8,28 @@
 </head>
 <body>
 
-<div class="layout">
+<!-- ============================================================
+     グローバルヘッダー（全幅・黒）
+     ============================================================ -->
+<header class="global-header">
+  <div class="global-header-left">
+    <a href="/apply_staff_manage" class="btn-back-header">← 管理メニュー</a>
+  </div>
+  <div class="global-header-center">
+    <span class="global-title">請負管理</span>
+  </div>
+  <div class="global-header-right"></div>
+</header>
+
+<!-- ============================================================
+     ボディラッパー（サイドバー＋メイン）
+     ============================================================ -->
+<div class="body-wrapper">
 
   <!-- ============================================================
        Sidebar
        ============================================================ -->
   <aside class="sidebar">
-
-    <!-- ロゴ -->
-    <div class="sidebar-logo">
-      ⚙ FujiPara System
-    </div>
-
-    <!-- トップボタン -->
-    <div class="sidebar-top-area">
-      <a href="/" class="btn-top-link">
-        <span class="btn-top-icon">←</span> トップ
-      </a>
-    </div>
-
-    <!-- ナビ（2項目） -->
     <nav class="sidebar-nav-wrap">
       <ul class="sidebar-nav">
         <li>
@@ -59,7 +61,6 @@
         </li>
       </ul>
     </nav>
-
   </aside><!-- /.sidebar -->
 
 
@@ -67,11 +68,6 @@
        Main
        ============================================================ -->
   <div class="main-content">
-
-    <!-- Topbar -->
-    <header class="topbar">
-      <span class="topbar-title" id="topbar-title">✈ フライト状況</span>
-    </header>
 
     <!-- ======================================================
          VIEW: フライト状況
@@ -85,6 +81,7 @@
           <span class="month-label" id="rep-month-label">—</span>
           <button class="btn btn-ghost btn-sm" onclick="repMonthNext()">翌月 ▶</button>
         </div>
+        <span class="view-title">✈ フライト状況</span>
         <div class="btn-group">
           <button class="btn btn-ghost btn-sm" id="btn-show-all" onclick="toggleShowAll()">
             フライトありのみ
@@ -130,12 +127,12 @@
           <span class="month-label" id="wc-month-label">—</span>
           <button class="btn btn-ghost btn-sm" id="wc-next-btn" onclick="wcMonthNext()">翌月 ▶</button>
         </div>
+        <span class="view-title">📆 出勤可否状況</span>
         <!-- 凡例 -->
         <div class="legend">
           <span><span class="status-ok">○</span> 出勤可</span>
           <span><span class="status-ng">×</span> 出勤不可</span>
           <span><span class="status-null">　</span> 未入力</span>
-          <!-- <span><span class="status-null">△</span> 未入力</span> -->
         </div>
       </div>
 
@@ -161,6 +158,8 @@
           <span class="month-label" id="handover-month-label">—</span>
           <button class="btn btn-ghost btn-sm" onclick="handoverMonthNext()">翌月 ▶</button>
         </div>
+        <span class="view-title">📋 引継ぎ報告事項</span>
+        <div></div><!-- 右側スペーサー -->
       </div>
 
       <!-- カード一覧 -->
@@ -173,7 +172,7 @@
     </div><!-- /#view-handover -->
 
   </div><!-- /.main-content -->
-</div><!-- /.layout -->
+</div><!-- /.body-wrapper -->
 
 
 <!-- ============================================================

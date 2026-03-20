@@ -14,7 +14,7 @@
   ══════════════════════════════════════════ -->
   <header class="info-header">
     <div class="info-header-left">
-      <a href="/" class="info-back-btn">← トップ</a>
+      <a href="/apply_staff_manage" class="info-back-btn">← 管理メニュー</a>
     </div>
     <div class="info-header-center">
       <h1 class="info-title">入下山管理</h1>
@@ -118,13 +118,14 @@
                 <th>コース</th>
                 <th>機体</th>
                 <th>状態</th>
+                <th>入山料</th>
                 <th>山チン</th>
                 <th>備考</th>
               </tr>
             </thead>
             <tbody id="dailyTbody">
               <tr>
-                <td colspan="8" class="info-empty">
+                <td colspan="9" class="info-empty">
                   <div class="info-empty-icon">🪂</div>
                   読み込み中…
                 </td>
@@ -233,11 +234,23 @@
         <hr class="det-divider" />
 
         <div class="det-edit-section">
+          <div class="det-edit-row det-edit-row--confirm">
+            <label class="det-edit-label det-edit-label--entrance">
+              <input type="checkbox" id="detEntranceFeePaid" class="det-checkbox det-checkbox--entrance" />
+              <span class="det-checkbox-mark"></span>
+              入山料 入金確認
+            </label>
+            <label class="det-edit-label det-edit-label--yamachin-conf">
+              <input type="checkbox" id="detYamachinConfirmed" class="det-checkbox det-checkbox--yamachin" />
+              <span class="det-checkbox-mark det-checkbox-mark--yamachin"></span>
+              山チン 入金確認
+            </label>
+          </div>
           <div class="det-edit-row">
             <label class="det-edit-label">
               <input type="checkbox" id="detYamachin" class="det-checkbox" />
-              <span class="det-checkbox-mark"></span>
-              山チン
+              <span class="det-checkbox-mark det-checkbox-mark--yamachin"></span>
+              山チン対象
             </label>
           </div>
           <div class="det-edit-row">

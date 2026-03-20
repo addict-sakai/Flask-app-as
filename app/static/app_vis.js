@@ -136,9 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("exitBtn").addEventListener("click", function () {
     if (confirm("入力画面を終了して、トップページへ戻りますか？")) {
-      // window.close() の代わりに location.href を使用します
-      window.location.href = "/"; 
-      // Flaskなどのルート設定が index.html なら "/" または "/index" に変更してください
+      location.href = "/apply_flyer";
     }
   });
 
@@ -212,8 +210,8 @@ document.addEventListener("DOMContentLoaded", function () {
           alert("DBエラー：\n" + data.message);
           return;
         }
-      alert("登録完了しました。トップページに戻ります。");
-        window.location.href = "/"; // 登録成功後に自動遷移        alert("登録完了しました。");
+      alert("登録完了しました。フライヤー申請ページに戻ります。");
+        window.location.href = "/apply_flyer";
       })
       .catch((err) => {
         alert("登録に失敗しました。管理者へ連絡してください。");

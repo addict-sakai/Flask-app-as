@@ -108,6 +108,10 @@ const ExpApp = (() => {
     loadUnlinkedCount();
     // 30秒ごとにリアルタイム更新
     setInterval(loadUnlinkedCount, 30000);
+
+    // スタッフ管理画面からの遷移：?id=XX で予約編集モーダルを直接開く
+    const _openId = new URLSearchParams(location.search).get("id");
+    if (_openId) openModal(Number(_openId));
   }
 
   /* ════════════════════════════════════════

@@ -2,6 +2,71 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+  // ── 体験コース選択肢をconfigから動的ロード ──────────────────────
+
+  async function loadCourseOptions() {
+    const sel = document.getElementById("courseExpSelect");
+    if (!sel) return;
+
+    try {
+      const res = await fetch("/api/exp_course_options");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+
+      sel.innerHTML = ""; // 既存optionをクリア
+
+      // デフォルト空選択肢
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = "-- 選択してください --";
+      sel.appendChild(blank);
+
+      if (data.options && data.options.length > 0) {
+        data.options.forEach(function (opt) {
+          const o = document.createElement("option");
+          o.value = opt.value;
+          // ラベルがあればラベル、なければ値をそのまま表示
+          o.textContent = opt.label || opt.price;
+          sel.appendChild(o);
+        });
+      } else {
+        // configにデータがない場合のフォールバック
+        const fallback = [
+          { value: "1", text: "ショートフライト体験" },
+          { value: "2", text: "タンデムフライト" },
+          { value: "3", text: "ショート＋タンデム セット" },
+        ];
+        fallback.forEach(function (f) {
+          const o = document.createElement("option");
+          o.value = f.value;
+          o.textContent = f.text;
+          sel.appendChild(o);
+        });
+      }
+    } catch (e) {
+      // エラー時はフォールバック選択肢を表示
+      sel.innerHTML = "";
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = "-- 選択してください --";
+      sel.appendChild(blank);
+      const fallback = [
+        { value: "1", text: "ショートフライト体験" },
+        { value: "2", text: "タンデムフライト" },
+        { value: "3", text: "ショート＋タンデム セット" },
+      ];
+      fallback.forEach(function (f) {
+        const o = document.createElement("option");
+        o.value = f.value;
+        o.textContent = f.text;
+        sel.appendChild(o);
+      });
+      console.warn("コース選択肢の取得に失敗しました:", e);
+    }
+  }
+
+  loadCourseOptions();
+
   // ── flatpickr 初期化 ──────────────────────────────────────────
 
   flatpickr("#application_date", {

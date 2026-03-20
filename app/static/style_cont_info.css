@@ -1,6 +1,6 @@
 /* =========================================================
    style_cont_info.css  –  請負管理ページ スタイル
-   ダークテーマ + サイドバーレイアウト
+   ホワイトテーマ + グローバルヘッダー + サイドバーレイアウト
    ========================================================= */
 
 /* ---- Reset ---- */
@@ -12,22 +12,23 @@
 
 /* ---- Variables ---- */
 :root {
-  --bg-base:        #0d1117;
-  --bg-surface:     #161b22;
-  --bg-elevated:    #1f2937;
-  --bg-hover:       #273244;
-  --border:         #30363d;
-  --accent:         #58a6ff;
-  --accent-hover:   #79bcff;
-  --accent-dim:     #1a3558;
-  --success:        #3fb950;
-  --danger:         #f85149;
-  --warning:        #d29922;
-  --text-primary:   #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted:     #4a535d;
-  --sidebar-w:      220px;
-  --topbar-h:       52px;
+  --bg-base:        #f5f6f8;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #f0f2f5;
+  --bg-hover:       #e4e7ed;
+  --border:         #c9d0dc;
+  --border-light:   #e4e7ed;
+  --accent:         #2563eb;
+  --accent-hover:   #1d4ed8;
+  --accent-dim:     #dbeafe;
+  --success:        #059669;
+  --danger:         #dc2626;
+  --warning:        #d97706;
+  --text-primary:   #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted:     #9ca3af;
+  --sidebar-w:      200px;
+  --global-header-h: 52px;
   --controlbar-h:   52px;
 }
 
@@ -39,17 +40,82 @@ html, body {
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
-  overflow: hidden;   /* body 自体はスクロールしない */
+  overflow: hidden;
 }
 
 /* ================================================================
-   LAYOUT: サイドバー + メイン
+   LAYOUT: グローバルヘッダー + ボディラッパー
    ================================================================ */
 
-.layout {
+body {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  flex-direction: column;
+}
+
+/* ================================================================
+   GLOBAL HEADER（全幅・黒）
+   ================================================================ */
+
+.global-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: var(--global-header-h);
+  padding: 0 20px;
+  background: #111111;
+  flex-shrink: 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.global-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.global-header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-header-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-back-header {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #d1d5db;
+  text-decoration: none;
+  border: 1px solid #3a3a3a;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-back-header:hover {
+  background: #2a2a2a;
+  color: #f9fafb;
+  border-color: #555;
+}
+
+.global-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f9fafb;
+  letter-spacing: 0.04em;
+}
+
+/* ================================================================
+   BODY WRAPPER（サイドバー＋メイン）
+   ================================================================ */
+
+.body-wrapper {
+  display: flex;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -67,66 +133,11 @@ html, body {
   overflow: hidden;
 }
 
-/* ロゴ */
-.sidebar-logo {
-  padding: 16px 20px 14px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--accent);
-  border-bottom: 1px solid var(--border);
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-/* トップボタンエリア */
-.sidebar-top-area {
-  padding: 12px 12px 8px;
-  flex-shrink: 0;
-}
-
-.btn-top-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 9px 14px;
-  border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.btn-top-link:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.btn-top-icon {
-  font-size: 14px;
-}
-
-/* 区切り線 */
-.sidebar-top-area::after {
-  content: "";
-  display: block;
-  margin-top: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* ナビエリア */
+/* ナビ */
 .sidebar-nav-wrap {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 8px 16px;
+  padding: 12px 8px;
 }
 
 .sidebar-nav {
@@ -149,12 +160,6 @@ html, body {
   font-weight: 500;
   transition: background 0.15s, color 0.15s;
   cursor: pointer;
-/*  user-select: none; */
-}
-/* 152行目付近 */
-.your-class-name {
-  -webkit-user-select: none; /* Safari / iOS 用に追加 */
-  user-select: none;         /* 標準プロパティ */
 }
 
 .sidebar-nav .nav-item:hover {
@@ -185,24 +190,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* ---- Topbar ---- */
-.topbar {
-  height: var(--topbar-h);
-  flex-shrink: 0;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-}
-
-.topbar-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.02em;
+  background: var(--bg-base);
 }
 
 /* ================================================================
@@ -225,19 +213,19 @@ html, body {
 .control-bar {
   height: var(--controlbar-h);
   flex-shrink: 0;
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0 20px;
-  gap: 16px;
+  gap: 0;
 }
 
 .month-nav {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .month-label {
@@ -248,10 +236,21 @@ html, body {
   text-align: center;
 }
 
+/* 各ビュータイトル（翌月ボタンの右・センター） */
+.view-title {
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
 .btn-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 /* 凡例 */
@@ -261,6 +260,7 @@ html, body {
   gap: 16px;
   font-size: 12px;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .legend span {
@@ -269,11 +269,12 @@ html, body {
   gap: 5px;
 }
 
-/* ---- Scroll Area（テーブルをここでスクロール） ---- */
+/* ---- Scroll Area ---- */
 .scroll-area {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
+  background: var(--bg-base);
 }
 
 /* ================================================================
@@ -282,6 +283,7 @@ html, body {
 
 .table-wrap {
   min-width: 100%;
+  background: var(--bg-surface);
 }
 
 .data-table {
@@ -289,13 +291,12 @@ html, body {
   border-collapse: collapse;
 }
 
-/* ヘッダー（固定） */
 .data-table thead th {
   position: sticky;
   top: 0;
   z-index: 10;
   background: var(--bg-elevated);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -308,9 +309,8 @@ html, body {
 .data-table thead th.center { text-align: center; }
 .data-table thead th.right  { text-align: right; }
 
-/* ボディ */
 .data-table tbody tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   transition: background 0.1s;
 }
 
@@ -332,7 +332,6 @@ html, body {
 .data-table tbody td.center { text-align: center; }
 .data-table tbody td.right  { text-align: right; }
 
-/* 列幅 */
 .col-name   { min-width: 120px; }
 .col-num    { width: 110px; }
 .col-amount { width: 130px; }
@@ -391,7 +390,7 @@ html, body {
   top: 0;
   z-index: 10;
   background: var(--bg-elevated);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -418,7 +417,7 @@ html, body {
 }
 
 .wc-table tbody tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   transition: background 0.1s;
 }
 
@@ -429,6 +428,7 @@ html, body {
   padding: 9px 10px;
   vertical-align: middle;
   white-space: nowrap;
+  color: var(--text-primary);
 }
 
 .wc-table td.date-col {
@@ -451,7 +451,7 @@ html, body {
 
 /* 週末行 */
 .wc-table tr.weekend td {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .wc-table tr.weekend:hover td {
@@ -460,7 +460,7 @@ html, body {
 
 /* 今日の行 */
 .wc-table tr.today-row td {
-  background: rgba(88, 166, 255, 0.07);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .wc-table tr.today-row td.date-col {
@@ -490,6 +490,7 @@ html, body {
   transition: all 0.15s;
   white-space: nowrap;
   background: none;
+  color: var(--text-primary);
 }
 
 .btn-ghost {
@@ -516,7 +517,7 @@ html, body {
 
 .btn-primary {
   background: var(--accent);
-  color: #0d1117;
+  color: #ffffff;
   border-color: var(--accent);
 }
 
@@ -532,7 +533,7 @@ html, body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 500;
   align-items: center;
   justify-content: center;
@@ -551,7 +552,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
@@ -616,7 +617,7 @@ html, body {
 
 .modal-body thead th {
   background: var(--bg-elevated);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -634,7 +635,7 @@ html, body {
 .modal-body thead th.right  { text-align: right; }
 
 .modal-body tbody tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   transition: background 0.1s;
 }
 
@@ -660,205 +661,49 @@ html, body {
 ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* カレンダーレイアウト */
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    background: var(--border-color); /* 枠線用 */
-    border: 1px solid var(--border-color);
-}
-
-/* 曜日の文字色（月〜金） */
-.calendar-head {
-    background: #f8f9fa;
-    padding: 10px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.5em;
-    color: #000
-}
-
-.calendar-day {
-    background: #fff;
-/*    background: #fff; */
-    min-height: 100px;
-    padding: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.calendar-day:hover {
-    background: #f0f7ff;
-}
-
-.calendar-day.empty {
-    background: #fcfcfc;
-    cursor: default;
-}
-
-.calendar-day.today {
-    background: #fff9db;
-}
-
-/* 日付の数字の色 */
-.day-num {
-    font-weight: bold;
-    font-size: 1.2em;
-    color: #000
-}
-
-.day-content {
-    text-align: center;
-    padding-bottom: 10px;
-}
-
-.count-badge {
-    background: var(--primary-color, #007bff);
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.85em;
-}
-
-/* 詳細モーダル内のレイアウト */
-.work-detail-split {
-    display: flex;
-    gap: 20px;
-    padding: 20px;
-}
-
-.detail-section {
-    flex: 1;
-}
-
-.detail-section h4 {
-    border-bottom: 2px solid #eee;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-}
-
-.detail-section ul {
-    list-style: none;
-    padding: 0;
-}
-
-/* 詳細モーダル内の人名リスト */
-.detail-section li {
-    padding: 8px 12px;
-    margin-bottom: 4px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 0.95em;
-    color: #212529; /* ここで人名の文字色を変更 */
-    border: 1px solid #e9ecef;
-}
-
-/* 「○ 出勤可能」などの見出しの色 */
-.status-ok {
-    color: #2b8a3e; /* 出勤OKの見出し色 */
-}
-
-.status-ng {
-    color: #c92a2a; /* 出勤不可の見出し色 */
-}
-
-/* 日曜・祝日（isWeekendで判定） */
-.calendar-day:nth-child(7n+1) .day-num {
-/* .calendar-day.weekend:nth-child(7n+1) .day-num { */
-    color: #e03131; /* 赤色 */
-}
-
-/* 土曜日 */
-.calendar-day:nth-child(7n) .day-num {
-/* .calendar-day.weekend:nth-child(7n) .day-num { */
-    color: #1971c2; /* 青色 */
-}
-
-/* モーダル内のリストを綺麗に整列 */
-.detail-section ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.detail-section li {
-    padding: 8px 12px;
-    margin-bottom: 4px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 0.95em;
-}
-/* フライト状況のテーブルを行クリック可能にする */
-.clickable-row {
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.clickable-row:hover {
-    background-color: rgba(0, 0, 0, 0.05); /* 既存テーマに合わせて調整してください */
-}
-
-/* 編集アイコン（見た目の統一） */
-.icon-edit {
-    color: var(--text-muted);
-    font-size: 1.1em;
-}
-.clickable-row:hover .icon-edit {
-    color: var(--accent); /* 明るい色に変化 */
-}
-/* ---- クリッカブル行 ---- */
-.data-table tbody tr.clickable-row {
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.data-table tbody tr.clickable-row:hover {
-  background: var(--hover-bg, rgba(0, 120, 212, 0.08));
-}
-
-/* =========================================================
+/* ================================================================
    フライトテーブル — 合計行
-   ========================================================= */
+   ================================================================ */
 
 .data-table tfoot .total-row {
-  border-top: 2px solid var(--border-color, #ddd);
-  background: var(--bg-subtle, #f8f9fa); /* 背景色 */
-  color: #000;
-}
-.data-table tfoot .total-row td {
-  padding: 10px 12px;
-  font-size: 0.95rem;
+  border-top: 2px solid var(--border);
+  background: var(--bg-elevated);
 }
 
-/* =========================================================
+.data-table tfoot .total-row td {
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ================================================================
    クリッカブル行
-   ========================================================= */
+   ================================================================ */
 
 .data-table tbody tr.clickable-row {
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .data-table tbody tr.clickable-row:hover {
-  background: var(--hover-bg, rgba(0, 120, 212, 0.08));
+  background: var(--bg-hover);
 }
 
-/* =========================================================
-   出勤可否詳細 — 名前リンク・ヒント
-   ========================================================= */
+/* ================================================================
+   出勤可否詳細 — ヒント
+   ================================================================ */
 
 .modal-hint {
   margin: 12px 0 0;
   font-size: 0.8rem;
-  color: var(--text-muted, #999);
+  color: var(--text-muted);
   text-align: center;
 }
 
-/* =========================================================
+/* ================================================================
    引継ぎ報告事項 — カード
-   ========================================================= */
+   ================================================================ */
 
 .handover-cards-wrap {
   display: flex;
@@ -877,42 +722,229 @@ html, body {
   min-width: 180px;
   padding: 28px 24px 20px;
   border-radius: 12px;
-  border: 1px solid var(--border-color, #ddd);
-  background: var(--card-bg, #fff);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.15s;
   text-align: center;
 }
 
 .handover-card:hover {
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
 .handover-card-label {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--text-primary);
 }
 
 .handover-card-count {
   font-size: 3rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--text-muted, #aaa);
+  color: var(--text-muted);
 }
 
 .handover-card-count.has-count {
-  color: var(--danger, #e53e3e);
+  color: var(--danger);
 }
 
 .handover-card-unit {
   font-size: 1rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .handover-card-hint {
   margin-top: 8px;
   font-size: 0.75rem;
-  color: var(--text-muted, #aaa);
+  color: var(--text-muted);
+}
+
+/* ================================================================
+   詳細モーダル内レイアウト
+   ================================================================ */
+
+.work-detail-split {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.detail-section {
+  flex: 1;
+}
+
+.detail-section h4 {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.detail-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.detail-section li {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  font-size: 0.95em;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+/* ================================================================
+   編集アイコン
+   ================================================================ */
+
+.icon-edit {
+  color: var(--text-muted);
+  font-size: 1.1em;
+}
+
+.clickable-row:hover .icon-edit {
+  color: var(--accent);
+}
+
+/* ================================================================
+   出勤可否カレンダー
+   ================================================================ */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 16px;
+  background: var(--bg-base);
+}
+
+/* 曜日ヘッダー */
+.calendar-head {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 0;
+  letter-spacing: 0.06em;
+}
+
+/* 日付マス（共通） */
+.calendar-day {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  min-height: 64px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calendar-day:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+/* 空マス */
+.calendar-day.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* 土曜：青枠 */
+.calendar-day.saturday {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.calendar-day.saturday .day-num {
+  color: #1d4ed8;
+}
+
+.calendar-day.saturday:hover {
+  background: #dbeafe;
+  border-color: #1d4ed8;
+}
+
+/* 日曜・祝日：赤枠 */
+.calendar-day.sunday {
+  border-color: #ef4444;
+  background: #fff5f5;
+}
+
+.calendar-day.sunday .day-num {
+  color: #dc2626;
+}
+
+.calendar-day.sunday:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+/* 今日 */
+.calendar-day.today {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: var(--accent-dim);
+}
+
+.calendar-day.today .day-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 土曜かつ今日 */
+.calendar-day.saturday.today {
+  background: #dbeafe;
+  border-color: #1d4ed8;
+  border-width: 2px;
+}
+
+/* 日曜・祝日かつ今日 */
+.calendar-day.sunday.today {
+  background: #fee2e2;
+  border-color: #dc2626;
+  border-width: 2px;
+}
+
+/* 日付数字 */
+.day-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* 日付マスのコンテンツ */
+.day-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+/* 出勤可人数バッジ */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  white-space: nowrap;
 }

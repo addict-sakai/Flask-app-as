@@ -41,6 +41,16 @@ def apply_page_club():
 def apply_page_cnt():
     return render_template("会員管理.html")
 
+# フライヤー申請メニューページ
+@member_bp.route("/apply_flyer")
+def apply_page_flyer():
+    return render_template("フライヤー申請.html")
+
+# 冬季会員申込書ページ
+@member_bp.route("/apply_winter")
+def apply_page_winter():
+    return render_template("冬季会員申込書.html")
+
 # 会員情報更新ページ
 @member_bp.route("/apply_upd")
 def apply_page_upd():
@@ -65,6 +75,11 @@ def apply_page_exp_resv():
 @member_bp.route("/apply_exp_status")
 def apply_page_exp_status():
     return render_template("体験状況.html")
+
+# スタッフ管理ページ
+@member_bp.route("/apply_staff_manage")
+def apply_page_staff_manage():
+    return render_template("スタッフ.html")
 
 # =========================================
 # ヘルパー

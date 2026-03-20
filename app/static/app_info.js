@@ -494,4 +494,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("f_member_type").addEventListener("change", e => {
     $("f_contract").checked = (e.target.value === "請負");
   });
+
+  // スタッフ管理画面からの遷移：?id=XX で会員編集画面を直接開く
+  const _openId = new URLSearchParams(location.search).get("id");
+  if (_openId) openEdit(_openId);
 });

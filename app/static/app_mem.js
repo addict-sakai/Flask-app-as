@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ── flatpickr 初期化 ──────────────────────────────────────────
   flatpickr("#application_date", {
-    locale: "ja", altInput: true, altFormat: "Y年m月d日", dateFormat: "Y-m-d", maxDate: "today",
+    locale: "ja", altInput: true, altFormat: "Y年m月d日", dateFormat: "Y-m-d",
   });
 
   flatpickr("#agreement_date", {
@@ -145,9 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ── 終了ボタン（indexへ戻る） ───────────────────────────────
   document.getElementById("exitBtn").addEventListener("click", function () {
-    if (confirm("入力を終了してトップ画面に戻りますか？")) {
-      window.location.href = "/"; 
-    }
+    location.href = "/apply_flyer";
   });
 
   // ── 申請ボタン（バリデーション & 送信） ──────────────────────
@@ -170,8 +168,8 @@ document.addEventListener("DOMContentLoaded", function () {
       return res.json();
     })
     .then(data => {
-      alert("登録完了しました。トップページに戻ります。");
-      window.location.href = "/"; // indexへ戻る
+      alert("登録完了しました。フライヤー申請ページに戻ります。");
+      window.location.href = "/apply_flyer";
     })
     .catch(err => {
       alert("登録に失敗しました。管理者へ連絡してください。");

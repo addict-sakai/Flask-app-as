@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>スタッフ管理 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="../static/style_staff_manage.css" />
+</head>
+<body>
+
+  <!-- ===== グローバルヘッダー（全幅・黒） ===== -->
+  <header class="global-header">
+    <div class="global-header-left">
+      <a href="/" class="back-btn">← トップ</a>
+    </div>
+    <div class="global-header-center">
+      <span class="site-name">Mt.FUJI PARAGLIDING</span>
+      <span class="divider">|</span>
+      <span class="page-name">スタッフ管理</span>
+    </div>
+    <div class="global-header-right">
+      <div class="header-date" id="headerDate"></div>
+    </div>
+  </header>
+
+  <!-- ===== ボディラッパー（サイドバー＋メイン） ===== -->
+  <div class="body-wrapper">
+
+    <!-- ===== サイドバー（白） ===== -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <a href="/apply_info"       class="nav-btn">個人情報管理</a>
+        <a href="/apply_cont_info"  class="nav-btn">請負管理</a>
+        <a href="/apply_io_info"    class="nav-btn">入下山管理</a>
+        <a href="/apply_exp_resv"   class="nav-btn">体験管理</a>
+        <a href="/apply_exp_status" class="nav-btn">体験状況</a>
+        <a href="/apply_config"     class="nav-btn">設定管理</a>
+      </nav>
+    </aside>
+
+    <!-- ===== メインエリア ===== -->
+    <div class="main-wrapper">
+      <main class="main-content">
+
+        <!-- ① フライヤー申請（未処理） -->
+        <section class="dash-card" id="flyerSection">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon">✈</span>
+              <h2 class="card-title">フライヤー申請（未処理）</h2>
+            </div>
+            <div class="sub-badges" id="flyerSubCounts"></div>
+            <span class="badge" id="flyerCount">—</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>申込日</th>
+                  <th>氏名</th>
+                  <th>分類</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody id="flyerTableBody">
+                <tr><td colspan="4" class="empty-row">読み込み中…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ② 体験予約（未処理） -->
+        <section class="dash-card" id="expSection">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon">🪂</span>
+              <h2 class="card-title">体験予約（未処理）</h2>
+            </div>
+            <span class="badge badge--right" id="expCount">—</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>予約日</th>
+                  <th>受付日</th>
+                  <th>氏名</th>
+                  <th>種別</th>
+                  <th>TEL</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody id="expTableBody">
+                <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ③ 入山申請（入金確認） -->
+        <section class="dash-card" id="paySection">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon">⛰</span>
+              <h2 class="card-title">入山申請（入金確認）</h2>
+            </div>
+            <div class="pay-counts">
+              <span class="pay-count-item">
+                入山料未確認：<strong id="entranceCount">—</strong>件
+              </span>
+              <span class="pay-count-sep">/</span>
+              <span class="pay-count-item yamachin-label">
+                山チン未確認：<strong id="yamachinCount">—</strong>件
+              </span>
+            </div>
+            <span class="badge" id="payCount">—</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>氏名</th>
+                  <th>会員番号</th>
+                  <th>分類</th>
+                  <th>種別</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody id="payTableBody">
+                <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div><!-- /.main-wrapper -->
+  </div><!-- /.body-wrapper -->
+
+  <!-- 確認モーダル -->
+  <div class="modal-overlay" id="confirmModal" style="display:none;">
+    <div class="modal-box">
+      <h3 class="modal-title" id="confirmModalTitle">入金確認</h3>
+      <p id="confirmModalText"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeConfirmModal()">キャンセル</button>
+        <button class="btn-ok"     onclick="doConfirmPayment()">確認済みにする</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../static/app_staff_manage.js"></script>
+</body>
+</html>

@@ -322,7 +322,7 @@ const InfoApp = (() => {
     if (!records || records.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="info-empty">
+          <td colspan="9" class="info-empty">
             <div class="info-empty-icon">🪂</div>
             記録がありません
           </td>
@@ -341,6 +341,10 @@ const InfoApp = (() => {
         ? `<span class="mark-yamachin">⚠</span>`
         : `<span class="mark-none">—</span>`;
 
+      const nyuzanMark = r.entrance_fee_paid
+        ? `<span class="mark-nyuzan mark-nyuzan--paid">✔</span>`
+        : `<span class="mark-nyuzan mark-nyuzan--unpaid">未</span>`;
+
       const commentMark = r.comment
         ? `<span class="mark-comment">💬</span>`
         : `<span class="mark-none">—</span>`;
@@ -356,6 +360,7 @@ const InfoApp = (() => {
         <td class="info-td-dim">${esc(r.course_name ?? "—")}</td>
         <td>${esc(r.glider_name ?? "—")}</td>
         <td>${statusChip}</td>
+        <td>${nyuzanMark}</td>
         <td>${yamachinMark}</td>
         <td>${commentMark}</td>
       `;
@@ -410,8 +415,10 @@ const InfoApp = (() => {
       ? `<span class="det-chip det-chip--out">${esc(r.out_time)}</span>`
       : `<span style="color:#ccc;">未下山</span>`;
 
-    $("detYamachin").checked = !!r.yamachin;
-    $("detComment").value    = r.comment ?? "";
+    $("detEntranceFeePaid").checked   = !!r.entrance_fee_paid;
+    $("detYamachinConfirmed").checked = !!r.yamachin_confirmed;
+    $("detYamachin").checked          = !!r.yamachin;
+    $("detComment").value             = r.comment ?? "";
 
     const overlay = $("detailOverlay");
     overlay.style.display = "flex";
@@ -430,8 +437,10 @@ const InfoApp = (() => {
   async function saveDetail() {
     if (!S.editingId) return;
     const payload = {
-      yamachin: $("detYamachin").checked,
-      comment:  $("detComment").value.trim(),
+      entrance_fee_paid:   $("detEntranceFeePaid").checked,
+      yamachin_confirmed: $("detYamachinConfirmed").checked,
+      yamachin:           $("detYamachin").checked,
+      comment:            $("detComment").value.trim(),
     };
     try {
       await apiPut(`/api/io/info/record/${S.editingId}`, payload);

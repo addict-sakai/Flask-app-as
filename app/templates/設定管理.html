@@ -12,65 +12,76 @@
 <body>
 
   <!-- ══════════════════════════════════════════
-       サイドバー
+       全幅ヘッダー
        ══════════════════════════════════════════ -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <span class="brand-icon">⛵</span>
-      <div class="brand-text">
-        <span class="brand-title">Config</span>
-        <span class="brand-sub">設定管理</span>
-      </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <p class="nav-label">大項目</p>
-      <ul id="categoryList" class="category-list">
-        <li class="category-item loading">読み込み中…</li>
-      </ul>
-    </nav>
-
-    <div class="sidebar-footer">
-      <button class="btn-add-category" id="btnAddCategory">
-        ＋ 大項目を追加
-      </button>
-      <a href="{{ url_for('member.index') }}" class="btn-back">
-        ← メニューに戻る
+  <header class="global-header">
+    <div class="global-header-left">
+      <a href="/apply_staff_manage" class="btn-back-header">
+        ← 管理メニュー
       </a>
     </div>
-  </aside>
+    <div class="global-header-center">
+      <!-- <span class="global-brand-icon">⛵</span> -->
+      <!-- <div> -->
+        <span class="global-brand-title">設定管理</span>
+        <!-- <span class="global-brand-sub">設定管理</span>
+      </div> -->
+    </div>
+    <div class="global-header-right"></div>
+  </header>
 
   <!-- ══════════════════════════════════════════
-       メインコンテンツ
+       ボディ（サイドバー＋メイン）
        ══════════════════════════════════════════ -->
-  <main class="main">
+  <div class="body-wrapper">
 
-    <!-- ヘッダー -->
-    <header class="main-header">
-      <div class="header-left">
-        <h1 class="header-title" id="headerTitle">カテゴリを選択してください</h1>
-        <span class="header-badge" id="headerBadge" hidden></span>
-      </div>
-      <div class="header-right">
-        <button class="btn btn-primary" id="btnAddMaster" disabled>
-          ＋ 項目を追加
+    <!-- サイドバー -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <p class="nav-label">大項目</p>
+        <ul id="categoryList" class="category-list">
+          <li class="category-item loading">読み込み中…</li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-add-category" id="btnAddCategory">
+          ＋ 大項目を追加
         </button>
       </div>
-    </header>
+    </aside>
 
-    <!-- トースト通知 -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- メインコンテンツ -->
+    <main class="main">
 
-    <!-- テーブルエリア -->
-    <div class="content-area">
-      <div class="table-wrapper" id="tableWrapper">
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <p>左のメニューから大項目を選択してください</p>
+      <!-- サブヘッダー -->
+      <header class="main-header">
+        <div class="header-left">
+          <h1 class="header-title" id="headerTitle">カテゴリを選択してください</h1>
+          <span class="header-badge" id="headerBadge" hidden></span>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-primary" id="btnAddMaster" disabled>
+            ＋ 項目を追加
+          </button>
+        </div>
+      </header>
+
+      <!-- トースト通知 -->
+      <div class="toast-container" id="toastContainer"></div>
+
+      <!-- テーブルエリア -->
+      <div class="content-area">
+        <div class="table-wrapper" id="tableWrapper">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>左のメニューから大項目を選択してください</p>
+          </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
+
+  </div><!-- /.body-wrapper -->
 
   <!-- ══════════════════════════════════════════
        モーダル：項目（master）追加・編集

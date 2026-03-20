@@ -318,6 +318,23 @@
 .status-chip--out { background: #fdecea; color: #b31c1c; }
 
 /* 山チン・備考マーク */
+
+/* 入山料マーク */
+.mark-nyuzan {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.mark-nyuzan--paid {
+  background: #e3f6f0;
+  color: #007a50;
+}
+.mark-nyuzan--unpaid {
+  background: #fdecea;
+  color: #b31c1c;
+  font-size: 0.7rem;
+}
 .mark-yamachin { color: #cc3300; font-size: 0.85rem; }
 .mark-comment  { color: #1a56cc; font-size: 0.85rem; }
 .mark-none     { color: #ddd; }
@@ -749,6 +766,39 @@
 }
 .toast-msg--success { background: #f0fff4; border-left: 3px solid #00c853; color: #007a33; }
 .toast-msg--error   { background: #fff0f0; border-left: 3px solid #ff3355; color: #cc1133; }
+
+/* ── 入金確認チェックボックス行 ──────────────────────────── */
+.det-edit-row--confirm {
+  flex-direction: row;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.det-edit-label--entrance {
+  color: #2e7d32;
+}
+
+.det-edit-label--yamachin-conf {
+  color: #d63031;
+}
+
+.det-checkbox--entrance:checked + .det-checkbox-mark {
+  background: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+}
+
+.det-checkbox-mark--yamachin {
+  /* override: 山チン系は赤 */
+}
+.det-checkbox--yamachin:checked + .det-checkbox-mark--yamachin {
+  background: #d63031 !important;
+  border-color: #d63031 !important;
+}
 
 /* ── レスポンシブ ────────────────────────────────────────── */
 @media (max-width: 900px) {

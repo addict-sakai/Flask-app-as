@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>フライヤー申請 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    /* index と同じ style.css を継承しつつ、タイトル直下に戻るリンクを追加 */
+    .back-link {
+      display: inline-block;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: #555;
+      text-decoration: none;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 5px 14px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .back-link:hover {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+  </style>
+</head>
+<body>
+  <h1>フライヤー申請</h1>
+  <a href="/" class="back-link">← トップへ戻る</a>
+
+  <div class="menu">
+    <a href="/apply"      class="btn" target="_self">年会員申込</a>
+    <a href="/apply_winter" class="btn" target="_self">冬季限定会員申込</a>
+    <a href="/apply_a"    class="btn" target="_self">スクール申込</a>
+    <a href="/apply_v"    class="btn" target="_self">ビジター申込</a>
+    <a href="/apply_upd"  class="btn" target="_self">登録内容変更 / 更新</a>
+    <a href="/apply_club" class="btn" target="_self">クラブ入会案内</a>
+  </div>
+</body>
+</html>
