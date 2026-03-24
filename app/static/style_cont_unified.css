@@ -73,7 +73,7 @@
 
 
 
-/* ════ レイアウト ════ */
+/* ════ レイアウト（旧2カラム：後方互換のため残す）════ */
 .uni-layout {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -83,11 +83,23 @@
   align-items: start;
 }
 
+/* ════ 新レイアウト（1カラム）════ */
+.uni-layout-single {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
 
-/* ════ サイドバー ════ */
+/* ════ サイドバー（後方互換のため残す）════ */
 .uni-aside {
   position: sticky;
-  top: 72px;          /* ヘッダー分 */
+  top: 72px;
   max-height: calc(100vh - 90px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -98,15 +110,86 @@
 .uni-aside::-webkit-scrollbar-track  { background: transparent; }
 .uni-aside::-webkit-scrollbar-thumb  { background: #ddd; border-radius: 2px; }
 
-/* 検索inputを縦積みにする */
+/* ════ 担当者検索カード ════ */
+.uni-search-card {
+  /* 検索カードは通常のcontカードスタイルを継承 */
+}
+
+/* 検索行：QRボタン＋氏名入力＋検索ボタン */
+.uni-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* QRコードボタン */
+.uni-qr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.uni-qr-btn:hover { opacity: 0.75; }
+.uni-qr-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* 氏名入力欄 */
+.uni-name-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* 検索ボタン */
+.uni-search-btn {
+  flex-shrink: 0;
+}
+
+/* 検索resultを縦積みにする（旧スタイル：後方互換）*/
 .uni-search-input {
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 8px;
 }
-.uni-search-btn {
-  width: 100%;
-  box-sizing: border-box;
+
+/* ════ 氏名候補リスト ════ */
+.uni-name-list {
+  margin-top: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.uni-name-item {
+  display: flex;
+  align-items: center;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #222;
+  gap: 10px;
+}
+.uni-name-item:last-child { border-bottom: none; }
+.uni-name-item:hover { background: #f0f8ff; }
+.uni-name-item-arrow {
+  margin-left: auto;
+  color: #bbb;
+  font-size: 0.9rem;
 }
 
 /* 担当者表示 */
@@ -438,6 +521,48 @@
 }
 
 
+/* ════ カレンダー操作ガイド（年月の右横）════ */
+.uni-cal-guide {
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  flex-shrink: 1;
+}
+
+
+/* ════ passコードモーダル ════ */
+.uni-pass-modal {
+  max-width: 360px;
+}
+.uni-pass-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+.uni-pass-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.uni-pass-input {
+  font-size: 1.6rem !important;
+  letter-spacing: 0.4em;
+  text-align: center;
+  width: 130px;
+  flex-shrink: 0;
+  padding: 10px 12px !important;
+}
+.uni-pass-ok-btn {
+  flex: 1;
+  margin-top: 0 !important;
+}
+
+
 /* ════ レスポンシブ ════ */
 @media (max-width: 960px) {
   .uni-layout {
@@ -449,7 +574,12 @@
     max-height: none;
     overflow: visible;
   }
-
+  .uni-layout-single {
+    padding: 12px 16px;
+  }
+  .uni-cal-guide {
+    display: none; /* 狭い画面では非表示 */
+  }
 }
 
 @media (max-width: 600px) {

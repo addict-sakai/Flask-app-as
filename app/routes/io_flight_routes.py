@@ -1,12 +1,19 @@
 """
 io_flight_routes.py  –  入下山管理 Flask ルート
 Mt.FUJI PARAGLIDING / FujipSystem
+
+改定: 2026-03-24
+  - /api/io/lookup_by_name  : 氏名（部分一致）で会員候補を返す
+  - /api/io/verify_pass     : 携帯番号下4桁でPASSコード認証する
 """
 
 from flask import Blueprint, render_template, request, jsonify
 from app.db import db
 from app.models.io_flight import IoFlight
 from app.models.member import Member
+from app.models.member_flyer import MemberFlyer
+from app.models.member_course import MemberCourse
+from app.models.member_contact import MemberContact
 from datetime import date, datetime, timedelta
 from sqlalchemy import func, extract
 import uuid as uuidlib
@@ -30,13 +37,19 @@ def _check_expiry(target_date: date | None) -> str:
 
 
 def _repack_limit(member: Member) -> date | None:
-    if not member.repack_date:
+    flyer = member.flyer  # backref 経由で MemberFlyer を取得
+    if not flyer or not flyer.repack_date:
         return None
-    rd = member.repack_date
+    rd = flyer.repack_date
     try:
         return rd.replace(year=rd.year + 1)
     except ValueError:
         return rd.replace(year=rd.year + 1, day=28)
+
+
+def _get_current_course(member: Member) -> MemberCourse | None:
+    """現在有効なコースを取得"""
+    return MemberCourse.get_current(member.id)
 
 
 def _fd(d: date | None) -> str | None:
@@ -101,6 +114,109 @@ def io_index():
     return render_template("入下山.html", records=records, today=today)
 
 
+# ─────────────────────────────────────────
+# ★ 新規 API: 氏名（部分一致）で会員候補を返す
+# ─────────────────────────────────────────
+# POST /api/io/lookup_by_name
+# リクエスト JSON: { "name": "山田" }
+# レスポンス JSON:
+#   {
+#     "members": [
+#       { "member_number": "0001", "full_name": "山田太郎", "birthday": "1980-01-01" },
+#       ...
+#     ]
+#   }
+#
+# 検索条件:
+#   - full_name の部分一致（ilike）
+#   - member_status が 'active' または 'visitor' の会員のみ返す
+#   - 最大10件に制限
+@io_bp.route("/api/io/lookup_by_name", methods=["POST"])
+def api_lookup_by_name():
+    data  = request.get_json(silent=True) or {}
+    name  = (data.get("name") or "").strip()
+
+    if not name:
+        return jsonify({"error": "氏名を入力してください"}), 400
+
+    if len(name) < 1:
+        return jsonify({"error": "氏名を1文字以上入力してください"}), 400
+
+    members = (
+        Member.query
+        .filter(
+            Member.full_name.ilike(f"%{name}%"),
+            Member.member_status.in_(["active", "visitor"]),
+        )
+        .order_by(Member.full_name)
+        .limit(10)
+        .all()
+    )
+
+    if not members:
+        return jsonify({"error": "該当する会員が見つかりません"}), 404
+
+    result = []
+    for m in members:
+        result.append({
+            "member_number": m.member_number,
+            "full_name":     m.full_name,
+            "birthday":      m.birthday.isoformat() if m.birthday else None,
+        })
+
+    return jsonify({"members": result})
+
+
+# ─────────────────────────────────────────
+# ★ 新規 API: PASSコード認証（携帯番号下4桁）
+# ─────────────────────────────────────────
+# POST /api/io/verify_pass
+# リクエスト JSON: { "member_number": "0001", "pass_code": "1234" }
+# レスポンス JSON:
+#   成功: { "ok": true, "member_number": "0001" }
+#   失敗: 401 { "error": "PASSコードが正しくありません" }
+#
+# 認証ロジック:
+#   - member_contacts.mobile_phone の末尾4桁と一致すれば認証成功
+#   - mobile_phone が未登録の場合は認証不可（エラー）
+#   - 入力は半角数字4桁のみ受け付ける
+@io_bp.route("/api/io/verify_pass", methods=["POST"])
+def api_verify_pass():
+    data          = request.get_json(silent=True) or {}
+    member_number = (data.get("member_number") or "").strip()
+    pass_code     = (data.get("pass_code") or "").strip()
+
+    # バリデーション
+    if not member_number:
+        return jsonify({"error": "会員番号が指定されていません"}), 400
+    if not pass_code or not pass_code.isdigit() or len(pass_code) != 4:
+        return jsonify({"error": "PASSコードは半角数字4桁で入力してください"}), 400
+
+    # 会員取得
+    member = Member.query.filter_by(member_number=member_number).first()
+    if not member:
+        return jsonify({"error": "会員が見つかりません"}), 404
+
+    # 連絡先取得
+    contact = MemberContact.query.filter_by(member_id=member.id).first()
+    if not contact or not contact.mobile_phone:
+        return jsonify({"error": "携帯番号が登録されていないため認証できません。スタッフにお声がけください。"}), 401
+
+    # 携帯番号から数字のみ抽出して末尾4桁と比較
+    mobile_digits = ''.join(c for c in contact.mobile_phone if c.isdigit())
+    if len(mobile_digits) < 4:
+        return jsonify({"error": "登録されている携帯番号が不正なため認証できません。スタッフにお声がけください。"}), 401
+
+    if mobile_digits[-4:] != pass_code:
+        return jsonify({"error": "PASSコードが正しくありません"}), 401
+
+    return jsonify({"ok": True, "member_number": member.member_number})
+
+
+# ─────────────────────────────────────────
+# 既存: 会員番号 or UUID で会員情報を返す
+# ─────────────────────────────────────────
+
 @io_bp.route("/api/io/lookup", methods=["POST"])
 def api_lookup():
     data  = request.get_json(silent=True) or {}
@@ -120,6 +236,8 @@ def api_lookup():
         return jsonify({"error": "会員が見つかりません"}), 404
 
     today      = date.today()
+    flyer      = member.flyer   # MemberFlyer（backref）
+    course     = _get_current_course(member)  # MemberCourse（現在有効）
     repack_lim = _repack_limit(member)
     existing   = IoFlight.query.filter_by(uuid=member.uuid, entry_date=today).first()
 
@@ -127,16 +245,16 @@ def api_lookup():
         "member_number":  member.member_number,
         "uuid":           member.uuid,
         "full_name":      member.full_name,
-        "member_type":    member.member_type,
-        "course_name":    member.course_name,
-        "reg_no":         member.reg_no,
-        "reglimit_date":  _fd(member.reglimit_date),
-        "license":        member.license,
-        "glider_name":    member.glider_name,
-        "glider_color":   member.glider_color,
-        "repack_date":    _fd(member.repack_date),
+        "member_type":    course.member_type  if course else None,
+        "course_name":    course.course_name  if course else None,
+        "reg_no":         flyer.reg_no        if flyer  else None,
+        "reglimit_date":  _fd(flyer.reglimit_date)  if flyer else None,
+        "license":        flyer.license       if flyer  else None,
+        "glider_name":    flyer.glider_name   if flyer  else None,
+        "glider_color":   flyer.glider_color  if flyer  else None,
+        "repack_date":    _fd(flyer.repack_date) if flyer else None,
         "repack_limit":   _fd(repack_lim),
-        "license_status": _check_expiry(member.reglimit_date),
+        "license_status": _check_expiry(flyer.reglimit_date if flyer else None),
         "repack_status":  _check_expiry(repack_lim),
         "already_in":     existing is not None,
         "already_out":    existing.out_time is not None if existing else False,
@@ -173,17 +291,19 @@ def api_checkin():
         })
 
     repack_lim = _repack_limit(member)
+    flyer      = member.flyer
+    course     = _get_current_course(member)
     record = IoFlight(
         member_number  = member.member_number,
         uuid           = member.uuid,
-        member_class   = data.get("member_class") or member.member_type,
+        member_class   = data.get("member_class") or (course.member_type if course else None),
         full_name      = member.full_name,
-        course_name    = data.get("course_name")  or member.course_name,
-        reg_no         = member.reg_no,
-        reglimit_date  = member.reglimit_date,
-        license        = member.license,
-        glider_name    = data.get("glider_name")  or member.glider_name,
-        glider_color   = data.get("glider_color") or member.glider_color,
+        course_name    = data.get("course_name")  or (course.course_name if course else None),
+        reg_no         = flyer.reg_no        if flyer else None,
+        reglimit_date  = flyer.reglimit_date  if flyer else None,
+        license        = flyer.license        if flyer else None,
+        glider_name    = data.get("glider_name")  or (flyer.glider_name  if flyer else None),
+        glider_color   = data.get("glider_color") or (flyer.glider_color if flyer else None),
         repack_date    = repack_lim,
         insurance_type = data.get("insurance_type"),
         radio_type     = data.get("radio_type"),
@@ -282,10 +402,8 @@ def api_io_calendar():
         cutoff = _period_cutoff(period)
         q = q.filter(IoFlight.entry_date >= cutoff)
     else:
-        # 通常の分類フィルターのみ
         q = _apply_class_filter(q, class_filter)
 
-    # id リストで日別集計
     id_subq = [r.id for r in q.with_entities(IoFlight.id)]
 
     rows = (
@@ -319,12 +437,6 @@ def api_io_calendar():
 # ─── 日付クリック：その日の入山者リスト ───
 @io_bp.route("/api/io/info/date-members")
 def api_io_date_members():
-    """
-    指定日の入山者リストを返す。現在のフィルター状態を反映する。
-    filter = all | 会員 | スクール | ビジター
-    type   = all | yamachin | comment | member
-    query  = 会員番号 or UUID（type=member の場合）
-    """
     date_str     = request.args.get("date")
     class_filter = request.args.get("filter", "all")
     filter_type  = request.args.get("type",   "all")
@@ -337,7 +449,6 @@ def api_io_date_members():
 
     q = IoFlight.query.filter_by(entry_date=target_date)
 
-    # 特殊フィルター適用
     if filter_type == "yamachin":
         q = q.filter(IoFlight.yamachin == True)  # noqa: E712
     elif filter_type == "comment":
@@ -351,7 +462,6 @@ def api_io_date_members():
             except ValueError:
                 q = q.filter(IoFlight.member_number == member_query)
     else:
-        # 通常の分類フィルターのみ
         q = _apply_class_filter(q, class_filter)
 
     records = q.order_by(IoFlight.in_time).all()
@@ -387,14 +497,6 @@ def api_io_update_record(record_id):
 # ─── 特殊フィルター（山チン・備考・個人） ─
 @io_bp.route("/api/io/info/special")
 def api_io_special():
-    """
-    特殊フィルター結果を返す
-    Query:
-      type   = yamachin | comment | member
-      period = 1y | 6m | 3m
-      filter = all | 会員 | スクール | ビジター  ※ type=yamachin/comment の場合は無視（全件）
-      query  = 会員番号またはUUID文字列（type=member の場合）
-    """
     filter_type  = request.args.get("type",   "yamachin")
     period       = request.args.get("period",  "3m")
     class_filter = request.args.get("filter",  "all")
@@ -404,27 +506,21 @@ def api_io_special():
     q      = IoFlight.query.filter(IoFlight.entry_date >= cutoff)
 
     if filter_type == "yamachin":
-        # 山チン・備考はクラスフィルターを適用しない（全員対象）
         q = q.filter(IoFlight.yamachin == True)  # noqa: E712
 
     elif filter_type == "comment":
-        # 山チン・備考はクラスフィルターを適用しない（全員対象）
         q = q.filter(IoFlight.comment.isnot(None), IoFlight.comment != "")
 
     elif filter_type == "member":
-        # 個人検索はクラスフィルターを適用する
         q = _apply_class_filter(q, class_filter)
 
         if not member_query:
             return jsonify({"error": "会員番号またはQRコードを入力してください"}), 400
 
-        # UUID形式かどうかで分岐
         try:
             uuid_obj = uuidlib.UUID(member_query)
-            # as_uuid=True の場合は UUID オブジェクトで比較
             q = q.filter(IoFlight.uuid == uuid_obj)
         except ValueError:
-            # 会員番号（文字列）で検索
             q = q.filter(IoFlight.member_number == member_query)
 
     records = q.order_by(IoFlight.entry_date.desc(), IoFlight.in_time).all()

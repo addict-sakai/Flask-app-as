@@ -73,6 +73,7 @@ body {
   background: #111111;
   flex-shrink: 0;
   border-bottom: 1px solid #2a2a2a;
+  gap: 0 16px;
 }
 
 .global-header-left {
@@ -88,8 +89,138 @@ body {
 
 .global-header-right {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  /* overflow:hidden を外してドロップダウンが見切れないようにする */
 }
+
+/* ── ハンバーガーメニュー ────────────────────────────────── */
+.hamburger-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ハンバーガーボタン本体 */
+.hamburger-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: 1px solid #3a3a3a;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition), border-color var(--transition);
+}
+.hamburger-btn:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}
+.hamburger-btn[aria-expanded="true"] {
+  background: rgba(217,119,6,.15);
+  border-color: rgba(217,119,6,.5);
+}
+
+/* 3本線 */
+.hamburger-bar {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #d1d5db;
+  border-radius: 2px;
+  transition: transform var(--transition), opacity var(--transition), background var(--transition);
+}
+.hamburger-btn[aria-expanded="true"] .hamburger-bar { background: var(--amber-300); }
+
+/* 開いているとき × アニメーション */
+.hamburger-btn[aria-expanded="true"] .hamburger-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger-btn[aria-expanded="true"] .hamburger-bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.hamburger-btn[aria-expanded="true"] .hamburger-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ドロップダウンパネル */
+.hamburger-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  z-index: 500;
+  overflow: hidden;
+  animation: dropdownIn .15s ease;
+}
+.hamburger-dropdown.open { display: block; }
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ドロップダウン内リスト */
+.hamburger-cat-list {
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+}
+
+.hamburger-cat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #d1d5db;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+.hamburger-cat-item::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.hamburger-cat-item:hover {
+  background: #2a2a2a;
+  color: #f3f4f6;
+}
+.hamburger-cat-item:hover::before { background: var(--amber-400); }
+
+.hamburger-cat-item.active {
+  background: rgba(217,119,6,.18);
+  color: var(--amber-300);
+  font-weight: 600;
+}
+.hamburger-cat-item.active::before { background: var(--amber-400); }
+
+.hamburger-cat-item.loading {
+  color: #555;
+  cursor: default;
+  font-style: italic;
+  font-size: 12px;
+}
+.hamburger-cat-item.loading::before { display: none; }
 
 .btn-back-header {
   display: inline-flex;
@@ -139,12 +270,12 @@ body {
   overflow: hidden;
 }
 
-/* ── サイドバー ──────────────────────────────────────────── */
+/* ── サイドバー（後方互換のため定義は残す・現在は非表示）── */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--navy-900);
   border-right: 1px solid var(--navy-600);
-  display: flex;
+  display: none;   /* サイドバー廃止 */
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;

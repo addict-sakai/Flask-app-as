@@ -595,3 +595,184 @@
 
 /* ─── サイドバー関連（旧スタイル無効化） ─── */
 .io-layout { display: none !important; }
+
+/* =========================================
+   追加スタイル（2026-03-24改定）
+   QRボタン / 氏名候補リスト / PASSコードモーダル
+   ========================================= */
+
+/* ─── QRコードボタン ─── */
+.io-qr-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.io-qr-btn:hover {
+  border-color: #000;
+  color: #000;
+  background: #f8f8f8;
+}
+.io-qr-btn svg {
+  flex-shrink: 0;
+}
+
+/* ─── 氏名候補リスト ─── */
+.io-candidates {
+  margin-top: 12px;
+  background: #fff;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 600px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.io-candidates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #eee;
+}
+.io-candidates-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: 0.08em;
+}
+.io-candidates-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #aaa;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+.io-candidates-close:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+.io-candidates-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.io-candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s;
+}
+.io-candidate-item:last-child {
+  border-bottom: none;
+}
+.io-candidate-item:hover {
+  background: #f0f7ff;
+}
+.io-candidate-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+  flex: 1;
+}
+.io-candidate-meta {
+  font-size: 0.78rem;
+  color: #888;
+  white-space: nowrap;
+}
+.io-candidate-arrow {
+  font-size: 1.1rem;
+  color: #bbb;
+  margin-left: 4px;
+}
+
+/* ─── PASSコードモーダル ─── */
+.io-modal--narrow {
+  max-width: 360px;
+}
+.io-pass-member-name {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #111;
+  text-align: center;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.io-pass-desc {
+  font-size: 0.82rem;
+  color: #888;
+  text-align: center;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+.io-pass-input-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.io-pass-input {
+  width: 140px;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #111;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: "Courier New", "Menlo", monospace;
+}
+.io-pass-input:focus {
+  border-color: #000;
+}
+.io-pass-input::placeholder {
+  color: #ddd;
+  letter-spacing: 0.3em;
+}
+
+/* ─── シェイクアニメーション（PASSコードエラー） ─── */
+@keyframes io-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+.io-shake {
+  animation: io-shake 0.4s ease;
+}
+
+/* ─── レスポンシブ対応 ─── */
+@media (max-width: 600px) {
+  .io-qr-btn {
+    padding: 9px 10px;
+    font-size: 0.75rem;
+  }
+  .io-candidates {
+    max-width: 100%;
+  }
+}

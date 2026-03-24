@@ -8,6 +8,7 @@ from ..db import db  # 相対インポートに統一
 # from ..models.rep_contract import RepContract  # 保存先はこちら
 from ..models.contract import Contract       # もし他で使っていれば残す
 from ..models.member import Member
+from ..models.member_contact import MemberContact
 from datetime import date, datetime, timedelta
 from typing import Optional
 import uuid as uuidlib
@@ -103,6 +104,94 @@ def api_lookup():
 
     if not member:
         return jsonify({"error": "請負担当者が見つかりません"}), 404
+
+    return jsonify({
+        "full_name":     member.full_name,
+        "uuid":          str(member.uuid).lower(),
+        "member_number": member.member_number,
+    })
+
+
+# ─────────────────────────────────────────
+# API: 氏名で会員検索（請負担当者のみ）
+# ─────────────────────────────────────────
+
+@contract_bp.route("/api/cont/search_by_name", methods=["POST"])
+def api_search_by_name():
+    """
+    氏名（部分一致）で請負担当者を検索する。
+    Request  JSON: { "name": "山田" }
+    Response JSON: { "members": [ { "full_name": "...", "uuid": "...", "member_number": "..." }, ... ] }
+    """
+    data  = request.get_json(silent=True) or {}
+    name  = (data.get("name") or "").strip()
+
+    if not name:
+        return jsonify({"error": "氏名を入力してください"}), 400
+
+    members = (
+        Member.query
+        .filter(
+            Member.contract == True,
+            Member.full_name.ilike(f"%{name}%"),
+        )
+        .order_by(Member.full_name)
+        .limit(20)
+        .all()
+    )
+
+    return jsonify({
+        "members": [
+            {
+                "full_name":     m.full_name,
+                "uuid":          str(m.uuid).lower(),
+                "member_number": m.member_number,
+            }
+            for m in members
+        ]
+    })
+
+
+# ─────────────────────────────────────────
+# API: passコード検証（携帯番号下4桁）
+# ─────────────────────────────────────────
+
+@contract_bp.route("/api/cont/verify_pass", methods=["POST"])
+def api_verify_pass():
+    """
+    UUIDで会員を特定し、携帯番号の下4桁がpassと一致するか検証する。
+    Request  JSON: { "uuid": "...", "pass": "1234" }
+    Response JSON: { "full_name": "...", "uuid": "...", "member_number": "..." }
+    """
+    data      = request.get_json(silent=True) or {}
+    uuid_str  = (data.get("uuid") or "").strip().lower()
+    pass_code = (data.get("pass") or "").strip()
+
+    if not uuid_str or not pass_code:
+        return jsonify({"error": "パラメータが不足しています"}), 400
+
+    if len(pass_code) != 4 or not pass_code.isdigit():
+        return jsonify({"error": "passコードは4桁の数字で入力してください"}), 400
+
+    # 会員取得
+    member = Member.query.filter(
+        Member.uuid.cast(db.String) == uuid_str,
+        Member.contract == True,
+    ).first()
+    if not member:
+        return jsonify({"error": "担当者が見つかりません"}), 404
+
+    # 携帯番号取得（member_contactsテーブル）
+    contact = MemberContact.query.filter_by(member_id=member.id).first()
+    mobile = (contact.mobile_phone or "").strip() if contact else ""
+
+    # 数字のみ抽出して下4桁を取得
+    mobile_digits = "".join(c for c in mobile if c.isdigit())
+    if len(mobile_digits) < 4:
+        return jsonify({"error": "携帯番号が登録されていません。管理者にお問い合わせください"}), 403
+
+    if mobile_digits[-4:] != pass_code:
+        return jsonify({"error": "passコードが違います"}), 401
 
     return jsonify({
         "full_name":     member.full_name,

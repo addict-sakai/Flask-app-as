@@ -243,6 +243,40 @@ body {
   flex-wrap: wrap;
 }
 
+/* 折り畳みヘッダー */
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+.collapsible-header:hover {
+  background: var(--table-head-bg);
+}
+
+/* 折り畳み矢印 */
+.collapse-arrow {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 2px;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.collapse-arrow.closed {
+  transform: rotate(180deg);
+}
+
+/* カードボディ（折り畳み対象） */
+.card-body {
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  opacity: 1;
+}
+.card-body.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
 .card-title-group {
   display: flex;
   align-items: center;
@@ -286,34 +320,6 @@ body {
 .sub-badge strong {
   color: var(--text-primary);
   font-weight: 900;
-}
-
-/* 入山申請：件数表示 */
-.pay-counts {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  padding-right: 4px;
-}
-.pay-count-item {
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.pay-count-item strong {
-  font-size: 15px;
-  font-weight: 900;
-  color: var(--text-primary);
-}
-.pay-count-sep {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-.yamachin-label strong {
-  color: var(--yamachin-color);
 }
 
 /* 総件数バッジ */
@@ -367,6 +373,9 @@ body {
 }
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table tbody tr:hover { background: var(--row-hover); }
+.data-table tbody tr.clickable-row { cursor: pointer; }
+.data-table tbody tr.clickable-row:hover { background: #e8f4fd; }
+.data-table tbody tr.clickable-row:active { background: #d0e8f8; }
 
 .data-table tbody td {
   padding: 10px 12px;

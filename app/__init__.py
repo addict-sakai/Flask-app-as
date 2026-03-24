@@ -38,8 +38,10 @@ def create_app():
 
     init_db(app)
 
-    from .routes.member_routes import member_bp
+    # ★ member_bp と init_member_scheduler を同時にインポート
+    from .routes.member_routes import member_bp, init_member_scheduler
     app.register_blueprint(member_bp)
+    init_member_scheduler(app)   # 毎日 00:05 に期限チェック・ビジター自動変更
 
     from .routes.experience_routes import experience_bp
     app.register_blueprint(experience_bp)

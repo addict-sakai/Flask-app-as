@@ -755,6 +755,35 @@ input[type="month"].field-input::-webkit-calendar-picker-indicator:hover {
 }
 .zip-group .field-input { flex: 1; }
 
+/* 郵便番号 分割入力（3桁 - 4桁） */
+.zip-split-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.zip-input-3 {
+  width: 62px;
+  flex: none;
+  text-align: center;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+.zip-input-4 {
+  width: 76px;
+  flex: none;
+  text-align: center;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+.zip-hyphen {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+
 /* =========================================
    固定ヘッダー＆スクロール構造
    ========================================= */

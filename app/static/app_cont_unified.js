@@ -41,18 +41,26 @@ const UnifiedApp = (() => {
     _updateReportMonthLabel();
     _updateCalMonthLabel();
 
+    // 氏名入力のEnterキー
     document.getElementById("search-input")
-      .addEventListener("keydown", e => { if (e.key === "Enter") lookup(); });
+      .addEventListener("keydown", e => { if (e.key === "Enter") searchByName(); });
+
+    // passコード入力のEnterキー
+    document.getElementById("pass-input")
+      .addEventListener("keydown", e => { if (e.key === "Enter") verifyPass(); });
 
     // モーダル外クリックで閉じる
     ["register-modal-overlay","edit-modal-overlay",
-     "members-popup-overlay","unsaved-modal-overlay"].forEach(id => {
-      document.getElementById(id).addEventListener("click", e => {
+     "members-popup-overlay","unsaved-modal-overlay","pass-modal-overlay"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("click", e => {
         if (e.target === e.currentTarget) {
           if (id === "register-modal-overlay") closeRegisterModal();
           else if (id === "edit-modal-overlay") closeModal();
           else if (id === "members-popup-overlay") closeMembersPopup();
           else if (id === "unsaved-modal-overlay") unsavedCancel();
+          else if (id === "pass-modal-overlay") closePassModal();
         }
       });
     });
@@ -60,9 +68,6 @@ const UnifiedApp = (() => {
     window.addEventListener("beforeunload", e => {
       if (_hasUnsavedChanges()) { e.preventDefault(); e.returnValue = ""; }
     });
-
-    // ページ読み込み時にカレンダーを表示（担当者未選択でも全メンバー分を表示）
-    _loadCalMonthData().then(() => _renderCalendar());
   }
 
 
@@ -100,8 +105,118 @@ const UnifiedApp = (() => {
 
 
   /* ═══════════════════════
-     会員検索
+     担当者検索（氏名検索 → リスト表示 → passコード確認）
   ═══════════════════════ */
+
+  // passコード入力待ちのメンバー情報
+  let _pendingPassMember = null;
+
+  // QRコードボタン（将来実装用プレースホルダー）
+  function openQr() {
+    alert("QRコード機能は今後実装予定です");
+  }
+
+  // 氏名で検索 → 候補リスト表示
+  async function searchByName() {
+    const query = document.getElementById("search-input").value.trim();
+    if (!query) { _showAlert("search-error", "氏名を入力してください"); return; }
+    _hideAlert("search-error");
+
+    let data;
+    try {
+      const resp = await fetch("/api/cont/search_by_name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: query }),
+      });
+      data = await resp.json();
+      if (!resp.ok) { _showAlert("search-error", data.error || "検索エラー"); return; }
+    } catch { _showAlert("search-error", "通信エラーが発生しました"); return; }
+
+    _renderNameList(data.members || []);
+  }
+
+  // 検索結果リストを描画
+  function _renderNameList(members) {
+    const listWrap = document.getElementById("search-result-list");
+    const listEl   = document.getElementById("search-result-items");
+
+    if (!members.length) {
+      _showAlert("search-error", "担当者が見つかりません");
+      listWrap.style.display = "none";
+      return;
+    }
+
+    // innerHTML + onclick属性ではJSONエスケープが壊れるため、
+    // DOM生成＋addEventListener方式で確実にクリックを処理する
+    listEl.innerHTML = "";
+    members.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "uni-name-item";
+      div.innerHTML = `<span>${_esc(m.full_name)}</span><span class="uni-name-item-arrow">›</span>`;
+      div.addEventListener("click", () => selectNameItem(m));
+      listEl.appendChild(div);
+    });
+    listWrap.style.display = "block";
+  }
+
+  // リストの行をクリック → passコードポップアップ
+  function selectNameItem(member) {
+    _pendingPassMember = member;
+    document.getElementById("pass-modal-name").textContent = member.full_name;
+    document.getElementById("pass-input").value = "";
+    _hideAlert("pass-error");
+    document.getElementById("pass-modal-overlay").classList.add("open");
+    setTimeout(() => document.getElementById("pass-input").focus(), 100);
+  }
+
+  // passコード確認
+  async function verifyPass() {
+    const pass = document.getElementById("pass-input").value.trim();
+    if (!pass || pass.length !== 4) {
+      _showPassError("4桁の数字を入力してください");
+      return;
+    }
+    if (!_pendingPassMember) return;
+
+    let data;
+    try {
+      const resp = await fetch("/api/cont/verify_pass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuid: _pendingPassMember.uuid, pass }),
+      });
+      data = await resp.json();
+      if (!resp.ok) { _showPassError(data.error || "passコードが違います"); return; }
+    } catch { _showPassError("通信エラーが発生しました"); return; }
+
+    // 認証成功
+    document.getElementById("pass-modal-overlay").classList.remove("open");
+    document.getElementById("search-result-list").style.display = "none";
+    _pendingPassMember = null;
+
+    if (_hasUnsavedChanges() && _memberUuid && _memberUuid !== data.uuid) {
+      _checkUnsaved(() => _applyMember(data));
+      return;
+    }
+    _applyMember(data);
+  }
+
+  function closePassModal() {
+    document.getElementById("pass-modal-overlay").classList.remove("open");
+    _pendingPassMember = null;
+    document.getElementById("pass-input").value = "";
+    _hideAlert("pass-error");
+  }
+
+  function _showPassError(msg) {
+    const el = document.getElementById("pass-error");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  // 旧lookup（QRコード・会員番号検索、後方互換として残す）
   async function lookup() {
     const query = document.getElementById("search-input").value.trim();
     if (!query) return;
@@ -130,10 +245,14 @@ const UnifiedApp = (() => {
     _memberUuid   = data.uuid;
     _memberNumber = data.member_number;
 
-    // サイドバー担当者表示
+    // 担当者表示
     document.getElementById("member-name").textContent = data.full_name;
     document.getElementById("member-sub").textContent  = "No." + (data.member_number || "");
     document.getElementById("member-block").style.display = "block";
+    document.getElementById("search-input").value = "";
+
+    // メインコンテンツ（日報＋カレンダー）を表示
+    document.getElementById("main-content").style.display = "block";
 
     // モーダルの担当者名
     document.getElementById("register-modal-name").textContent = data.full_name;
@@ -163,6 +282,10 @@ const UnifiedApp = (() => {
     document.getElementById("search-input").value = "";
     _hideAlert("search-error");
     document.getElementById("member-block").style.display = "none";
+    document.getElementById("search-result-list").style.display = "none";
+
+    // メインコンテンツを非表示
+    document.getElementById("main-content").style.display = "none";
 
     document.getElementById("report-tbody").innerHTML =
       `<tr id="empty-row"><td colspan="6" class="cont-empty">
@@ -171,7 +294,7 @@ const UnifiedApp = (() => {
     document.getElementById("stat-total").textContent = "—";
 
     document.getElementById("calendar-area").innerHTML = "";
-    document.getElementById("calendar-placeholder").style.display = "block";
+    document.getElementById("calendar-placeholder").style.display = "none";
 
     _schedules = {};
     _originalSchedules = {};
@@ -799,7 +922,8 @@ const UnifiedApp = (() => {
   }
 
   return {
-    init, lookup, clearMember, selectOpt,
+    init, lookup, searchByName, selectNameItem, verifyPass, closePassModal, openQr,
+    clearMember, selectOpt,
     register, closeRegisterModal, openRegisterModal,
     openEditModal, closeModal, saveEdit,
     navigateReportMonth, navigateCalMonth,

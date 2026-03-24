@@ -1,225 +1,557 @@
 <!DOCTYPE html>
 <html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コース申込書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem.css') }}">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+</head>
 
-  <head>
-    <meta charset="UTF-8" />
-    <title>エリア会員 申込書</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_mem.css') }}">
-    <!-- <script src="{{ url_for('static', filename='app_mem.js') }}"></script> -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
-    <!-- flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-  </head>
+<body data-apply-mode="mem">
+<!-- ══════════════════════════════════════
+     画面表示 UI（印刷時非表示）
+══════════════════════════════════════ -->
+<div class="screen-ui no-print">
 
-  <body>
-    <!-- ナビゲーションヘッダー -->
-    <div class="lang-bar no-print">
-      <div class="action-btns">
-        <button type="button" id="submitBtn" class="submit-btn">申 請</button>
-        <button type="button" id="exitBtn" class="exit-btn">終 了</button>
-        <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+  <!-- 固定ヘッダー -->
+  <div class="fixed-header">
+    <div class="page-header">
+      <div class="page-header-left">
+        <!-- <a href="/apply_flyer" class="btn btn-ghost top-btn"><span class="icon">←</span>戻る</a> -->
+        <a></a>
+      </div>
+      <h1 class="page-title">フライヤー　コース申込書</h1>
+      <div class="page-header-right">
+        <button type="button" class="btn btn-ghost" id="printBtn" style="display:none;">🖨 印刷</button>
+        <button type="button" class="btn btn-primary" id="submitBtn">申 請</button>
+        <button type="button" class="btn btn-ghost" id="exitBtn">終 了</button>
       </div>
     </div>
+  </div>
+
+  <!-- スクロールエリア -->
+  <div class="scroll-area">
     <form id="entryForm">
-      <div class="sheet">
-        <h1>エリア会員　申込書</h1>
-        <table>
-          <th>申込日</th>
-          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
-        </table>
 
-        <table>
-          <tr>
-            <th>氏名</th>
-            <td><input type="text" id="fullName" name="full_name"></td>
-            <th>フリガナ</th>
-            <td><input type="text" id="furigana" name="furigana" placeholder="自動入力されます"></td>
-          </tr>
-          <tr>
-            <th>性別</th>
-            <td>
-              <select name="gender">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
-            </td>
-            <th>血液型</th>
-            <td>
-              <select name="blood_type">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="A">Ａ</option>
-                <option value="B">Ｂ</option>
-                <option value="O">Ｏ</option>
-                <option value="AB">ＡＢ</option>
-                <option value="不明">不明</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th>生年月日</th>
-            <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
-            <th>年齢</th>
-            <td><input type="text" id="age" readonly></td>
-          </tr>
-          <tr>
-            <th>郵便番号</th>
-            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
-                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
-            <th>体重（kg）</th>
-            <td><input type="text" id="weight" name="weight"></td>
-          </tr>
-          <tr>
-            <th>住所</th>
-            <td colspan="3"><input type="text" id="address" name="address"></td>
-          </tr>
-          <tr>
-            <th>携帯電話</th>
-            <td><input type="text" name="mobile_phone"></td>
-            <th>自宅電話</th>
-            <td><input type="text" name="home_phone"></td>
-          </tr>
-          <tr>
-            <th>勤務先名</th>
-            <td><input type="text" name="company_name"></td>
-            <th>電話番号（勤務先）</th>
-            <td><input type="text" name="company_phone"></td>
-          </tr>
-          <tr>
-            <th>緊急連絡先氏名</th>
-            <td><input type="text" name="emergency_name"></td>
-            <th>電話番号（緊急時）</th>
-            <td><input type="text" name="emergency_phone"></td>
-          </tr>
-          <tr>
-            <th>本人との続柄</th>
-            <td><input type="text" id="relationship" name="relationship"></td>
-            <th>e-mail</th>
-            <td><input type="text" id="email" name="email"></td>
-          </tr>
-          <tr>
-            <th>傷病履歴</th>
-            <td colspan="3"><textarea name="medical_history" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
-          </tr>
-        </table>
+      <!-- ── コース情報 ── -->
+      <div class="form-section" id="section-course">
+        <h2 class="section-title">コース情報</h2>
+        <div class="form-grid">
 
-        <table>
-          <tr>
-            <th>フライヤー登録No</th>
-            <td><input type="text" id="reg_no" name="reg_no"></td>
-            <th>登録期限</th>
-            <td><input type="text" class="js-date" id="reglimit_date" name="reglimit_date"></td>
-          </tr>
-          <tr>
-            <th>技能証</th>
-            <!-- <td><input type="text" id="license" name="license"></td> -->
-            <td>
-              <select name="license" id="license">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="A">Ａ</option>
-                <option value="B">Ｂ</option>
-                <option value="NP">ＮＰ</option>
-                <option value="P">Ｐ</option>
-                <option value="XC">ＸＣ</option>
-                <!-- <option value="T">タンデム</option> -->
-                <!-- <option value="AT">上級タンデム</option> -->
-              </select>
-            </td>
-            <th>リパック日</th>
-            <td><input type="text" class="js-date" id="repack_date" name="repack_date"></td>
-          </tr>
-        </table>
-        
-        <table>
-          <tr>
-            <td class="check">
-              <input type="radio" id="schooling" name="course_type" value="schooling">
-            </td>
-            <td class="label_1">
-              <label for="schooling">スクーリング</label>
-            </td>
-            <td class="label_2">コース：</td>
-            <td>
-              <select name="course_name" id="course_name">
-                <option value="" selected>-- 選択してください --</option>
-                <!-- <option value="A">Ａ</option> -->
-                <option value="B">Ｂ</option>
-                <option value="NP">ＮＰ</option>
-                <option value="P">Ｐ</option>
-                <option value="XC">ＸＣ</option>
-                <option value="T">タンデム</option>
-                <option value="AT">上級タンデム</option>
-              </select>
-            </td>
-            <td class="label_2">コース料金：</td>
-            <td>
-              <input type="text" name="course_fee" id="course_fee">
-            </td>
-          </tr>
-          <tr>
-            <td class="check">
-              <input type="radio" id="freeflight" name="course_type" value="freeflight">
-            </td>
-            <td colspan="3">
-              <label for="freeflight">フリーフライトメンバー会員（年会費 ¥44,000）</label>
-            </td>
-            <td class="label_2">使用機体：</td>
-            <td>
-              <input type="text" name="glider_name" id="glider_name">
-            </td>
-          </tr>
-        </table>
+          <div class="field-group">
+            <label class="field-label required">コースタイプ</label>
+            <select class="field-input" name="course_type" id="course_type">
+              <option value="">選択してください</option>
+              <option value="年会員">年会員</option>
+              <option value="冬季会員">冬季会員</option>
+              <option value="スクール">スクール</option>
+              <option value="ビジター">ビジター</option>
+            </select>
+          </div>
 
-        <div class="rules">
-          <strong>◎エリア規定</strong>
-          ・必ず入山・下山チェック表に記入し、許可を受けずにフライトしないでください。<br>
-          ・フライトはスタッフの指示に従って行いましょう。<br>
-          ・Tバックルのハーネスを使用し、レスキューセットを携帯してフライトしてください。<br>
-          ・アウトサイドした場合は、被害の有無に関わらず申告してください。<br>
-          ・山火事防止のために、山中でのタバコ・焚き火は禁止です。<br>
-          ・農作物や草木の採取はしないこと。<br>
-          ・会員がゲレンデのみ使用する場合も、エリア管理費及び施設・保険料が必要です。<br>
-          ・エリア内でのパラグライダー用品の売買を禁じます。<br>
-          ・会員・非会員を問わず、エリアを使用しての営業はしないでください。（タンデム・体験・スクール講習など）<br>
-          ・エリア会員とは、原則としてＴＨＰホールディング株式会社または(有)さんじゅうでキャノピー、ハーネス等を購入していただくお客様の特典ですが、
-          初年度は他校にて購入された機材の持ち込みでの登録も可能です。（別途持込料が必要になります）
-          また、その他所購買物をＴＨＰホールディング株式会社または(有)さんじゅうが経営するエリアにおいて永続的に使用する場合には、２年目以降も更新できます。<br>
-          　（持込料（税込）：グライダー：71,500円　ハーネス：44,000円）<br>
-          ・ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
-          ・会社の都合により、予告なく定休日を設ける場合もあります。ご了承ください。<br>
-          <strong>以上を守れない場合には、エリアの使用を禁じます。</strong><br>
-        </div>
+          <div class="field-group" id="field-course-name">
+            <label class="field-label">コース内容</label>
+            <select class="field-input" name="course_name" id="course_name">
+              <option value="">選択</option>
+            </select>
+          </div>
 
-        <div class="agreement">
-          <strong>参加誓約書</strong><br>
-          私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
-          ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し、
-          予測可能か否かに問わず私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、
-          当スクール関係者に対してその他の責任追及及、損害請求を一切致しません。<br>
-          またエリア会員規定に基づき、規約に違反した場合、もしくはＴＨＰホールディング株式会社に対して不利益をもたらした場合、会員資格の無効化及び
-          退会を申し渡されても、異議申し立て、損害賠償請求、それらにに類似した行為を一切致しません。<br><br>
-          <table>
-            <tr>
-              <th>確認日</th>
-              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date"></td>
-              <th>本人署名</th>
-              <td><input type="text" name="signature_name"></td>
-            </tr>
-            <tr>
-              <th>保護者氏名（20歳未満）</th>
-              <td colspan="3"><input type="text" name="guardian_name"></td>
-            </tr>
-          </table>
+          <div class="field-group" id="field-course-fee">
+            <label class="field-label">コース料金</label>
+            <input type="text" class="field-input" name="course_fee" id="course_fee" inputmode="numeric">
+          </div>
+
         </div>
       </div>
-      <input type="hidden" name="member_type" value="会員">
 
+      <!-- コース未選択時のオーバーレイ用ラッパー -->
+      <div id="form-body-wrapper">
+
+      <!-- ── 基本情報 ── -->
+      <div class="form-section">
+        <h2 class="section-title">基本情報</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label" id="label_application_date">申込日</label>
+            <input type="text" class="field-input js-date" id="application_date" name="application_date">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">氏名</label>
+            <input type="text" class="field-input" id="fullName" name="full_name"
+                   inputmode="hiragana" placeholder="例: 富士　太郎">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">フリガナ</label>
+            <input type="text" class="field-input" id="furigana" name="furigana"
+                   placeholder="自動入力されます">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">性別</label>
+            <select class="field-input" name="gender">
+              <option value="">選択</option>
+              <option value="男">男</option>
+              <option value="女">女</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">血液型</label>
+            <select class="field-input" name="blood_type">
+              <option value="">選択</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="O">O</option>
+              <option value="AB">AB</option>
+              <option value="不明">不明</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">生年月日</label>
+            <input type="text" class="field-input js-date" id="birthday" name="birthday">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">年齢</label>
+            <input type="text" class="field-input" id="age" readonly>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">体重（kg）</label>
+            <input type="text" class="field-input" id="weight" name="weight" inputmode="decimal">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 連絡先 ── -->
+      <div class="form-section">
+        <h2 class="section-title">連絡先</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label">郵便番号</label>
+            <div class="zip-group">
+              <input type="text" class="field-input" id="zip1" name="zip1"
+                     maxlength="3" inputmode="numeric" placeholder="000" style="width:68px;">
+              <span class="zip-sep">-</span>
+              <input type="text" class="field-input" id="zip2" name="zip2"
+                     maxlength="4" inputmode="numeric" placeholder="0000" style="width:86px;">
+            </div>
+          </div>
+
+          <div class="field-group span-2">
+            <label class="field-label">住所</label>
+            <input type="text" class="field-input" id="address" name="address">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">携帯電話</label>
+            <input type="tel" class="field-input" name="mobile_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">自宅電話</label>
+            <input type="tel" class="field-input" name="home_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">e-mail</label>
+            <input type="email" class="field-input" id="email" name="email" inputmode="email">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">勤務先名</label>
+            <input type="text" class="field-input" name="company_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">勤務先電話番号</label>
+            <input type="tel" class="field-input" name="company_phone" inputmode="tel">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 緊急連絡先 ── -->
+      <div class="form-section">
+        <h2 class="section-title">緊急連絡先</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label required">氏名</label>
+            <input type="text" class="field-input" name="emergency_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">電話番号</label>
+            <input type="tel" class="field-input" name="emergency_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">本人との続柄</label>
+            <input type="text" class="field-input" id="relationship" name="relationship"
+                   placeholder="例: 配偶者">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 傷病履歴 ── -->
+      <div class="form-section">
+        <h2 class="section-title">傷病履歴</h2>
+        <div class="form-grid">
+          <div class="field-group span-3">
+            <textarea class="field-input" name="medical_history" rows="3"
+                      placeholder="脱臼・骨折癖・骨折後数週間など、その他持病があれば記載してください"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── フライヤー情報 ── -->
+      <div class="form-section">
+        <h2 class="section-title">フライヤー情報</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label required">所属団体</label>
+            <select class="field-input" id="organization" name="organization">
+              <option value="">選択</option>
+              <option value="JHF">JHF</option>
+              <option value="JPA">JPA</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">フライヤー登録番号</label>
+            <div id="regInputNone">
+              <input type="text" class="field-input" placeholder="所属団体を先に選択してください" readonly>
+            </div>
+            <div id="regInputJHF" class="reg-input-group" style="display:none;">
+              <span class="reg-prefix">JA</span>
+              <input type="text" id="reg_jhf1" class="reg-input-part reg-input-short"
+                     maxlength="2" inputmode="numeric" placeholder="00">
+              <span class="reg-prefix">O-</span>
+              <input type="text" id="reg_jhf2" class="reg-input-part reg-input-long"
+                     maxlength="6" inputmode="numeric" placeholder="000000">
+            </div>
+            <div id="regInputJPA" class="reg-input-group" style="display:none;">
+              <span class="reg-prefix">JP</span>
+              <input type="text" id="reg_jpa" class="reg-input-part reg-input-medium"
+                     maxlength="9" inputmode="numeric" placeholder="000000000">
+            </div>
+            <div class="reg-no-preview" id="regNoPreview"></div>
+            <input type="hidden" id="reg_no" name="reg_no">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">登録期限</label>
+            <input type="text" class="field-input" id="reglimit_date" name="reglimit_date">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">技能証（NP証は引率者必須）</label>
+            <select class="field-input" name="license" id="license">
+              <option value="">選択</option>
+              <option value="A">Ａ</option>
+              <option value="B">Ｂ</option>
+              <option value="NP">ＮＰ</option>
+              <option value="P">Ｐ</option>
+              <option value="XC">ＸＣ</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">リパック日</label>
+            <input type="text" class="field-input" id="repack_date" name="repack_date">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">使用機体名</label>
+            <input type="text" class="field-input" name="glider_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">機体カラー</label>
+            <input type="text" class="field-input" name="glider_color">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">ホームエリア名</label>
+            <input type="text" class="field-input" name="home_area">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">引率者氏名</label>
+            <input type="text" class="field-input" name="leader">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── ビジター料金・フライト経験（ビジター選択時のみ表示） ── -->
+      <div class="form-section" id="section-visitor-fee" style="display:none;">
+        <h2 class="section-title">ビジター料金・フライト経験</h2>
+        <div class="form-grid">
+
+          <div class="field-group span-3">
+            <label class="field-label required">◎ビジター料金</label>
+            <div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:4px;">
+              <label class="radio-label" style="flex:1; min-width:180px;">
+                <input type="radio" name="visitor_fee" value="1" id="fee_weekday">
+                <span id="fee_weekday_label">平日：￥３，２００</span>
+              </label>
+              <label class="radio-label" style="flex:1; min-width:180px;">
+                <input type="radio" name="visitor_fee" value="2" id="fee_holiday">
+                <span id="fee_holiday_label">土日祝日：￥３，８００</span>
+              </label>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.7;">
+              ※ フライトチケットは１枚￥700、１１枚綴りで￥7,000です。<br>
+              ※ XCに出る方は、必ず飛行計画書を提出してください。<br>
+              ※ ビジター料金には保険料は含まれておりません。各自で有効な保険をご利用ください。
+            </p>
+          </div>
+
+          <div class="field-group span-3">
+            <label class="field-label required">◎当スクールでのフライト経験</label>
+            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:4px;">
+              <label class="radio-label">
+                <input type="radio" name="experience" value="1">
+                <span>初めて（経験者同行なし）</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="experience" value="2">
+                <span>初めて（経験者同行あり）</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="experience" value="3">
+                <span>５回未満</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="experience" value="4">
+                <span>５回以上</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── エリア規定 ── -->
+      <div class="form-section">
+        <h2 class="section-title">エリア規定</h2>
+        <div class="rules-box">
+          <ul class="rules-list">
+            <li>必ず入山・下山チェック表に記入し、許可を受けずにフライトしないでください。</li>
+            <li>フライトはスタッフの指示に従って行いましょう。</li>
+            <li>Tバックルのハーネスを使用し、レスキューセットを携帯してフライトしてください。</li>
+            <li>アウトサイドした場合は、被害の有無に関わらず申告してください。</li>
+            <li>山火事防止のために、山中でのタバコ・焚き火は禁止です。</li>
+            <li>農作物や草木の採取はしないこと。</li>
+            <li>会員がゲレンデのみ使用する場合も、エリア管理費及び施設・保険料が必要です。</li>
+            <li>エリア内でのパラグライダー用品の売買を禁じます。</li>
+            <li>会員・非会員を問わず、エリアを使用しての営業はしないでください。（タンデム・体験・スクール講習など）</li>
+            <li>エリア会員とは、原則としてＴＨＰホールディング株式会社または(有)さんじゅうでキャノピー、ハーネス等を購入していただくお客様の特典ですが、初年度は他校にて購入された機材の持ち込みでの登録も可能です。（別途持込料が必要になります）また、その他所購買物をＴＨＰホールディング株式会社または(有)さんじゅうが経営するエリアにおいて永続的に使用する場合には、２年目以降も更新できます。<br>
+              <span class="rules-indent">（持込料（税込）：グライダー：71,500円　ハーネス：44,000円）</span>
+            </li>
+            <li>ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。</li>
+            <li>会社の都合により、予告なく定休日を設ける場合もあります。ご了承ください。</li>
+          </ul>
+          <p class="rules-warning">以上を守れない場合には、エリアの使用を禁じます。</p>
+        </div>
+      </div>
+
+      <!-- ── 参加誓約書 ── -->
+      <div class="form-section">
+        <h2 class="section-title">参加誓約書</h2>
+        <div class="pledge-box">
+          <p class="pledge-text">
+            私、<strong id="agreeName" class="agree-name">　　　　　　　　　</strong>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+            ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し、
+            予測可能か否かに問わず私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、
+            当スクール関係者に対してその他の責任追及及、損害請求を一切致しません。<br>
+            またエリア会員規定に基づき、規約に違反した場合、もしくはＴＨＰホールディング株式会社に対して不利益をもたらした場合、会員資格の無効化及び
+            退会を申し渡されても、異議申し立て、損害賠償請求、それらに類似した行為を一切致しません。
+          </p>
+          <div class="form-grid" style="margin-top:20px;">
+            <div class="field-group">
+              <label class="field-label required">確認日</label>
+              <input type="text" class="field-input" id="agreement_date" name="agreement_date" readonly style="background:var(--surface-alt, #f5f5f5); color:var(--text-secondary,#555); cursor:not-allowed;">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">本人署名</label>
+              <input type="text" class="field-input" name="signature_name" placeholder="自署してください">
+            </div>
+            <div class="field-group">
+              <label class="field-label">保護者氏名（20歳未満）</label>
+              <input type="text" class="field-input" name="guardian_name">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="member_type" id="member_type" value="">
+
+      </div><!-- /form-body-wrapper -->
     </form>
+  </div>
+</div><!-- /screen-ui -->
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-    <script src="{{ url_for('static', filename='app_mem.js') }}"></script>
-  </body>
+
+<!-- ══════════════════════════════════════
+     印刷専用レイアウト（画面では非表示）
+══════════════════════════════════════ -->
+<div class="print-sheet print-only">
+  <h1>エリア会員／スクール　申込書</h1>
+
+  <table class="pt">
+    <tr>
+      <th>申込日</th>
+      <td colspan="3"><span id="p_application_date"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th>氏名</th><td><span id="p_full_name"></span></td>
+      <th>フリガナ</th><td><span id="p_furigana"></span></td>
+    </tr>
+    <tr>
+      <th>性別</th><td><span id="p_gender"></span></td>
+      <th>血液型</th><td><span id="p_blood_type"></span></td>
+    </tr>
+    <tr>
+      <th>生年月日</th><td><span id="p_birthday"></span></td>
+      <th>年齢</th><td><span id="p_age"></span></td>
+    </tr>
+    <tr>
+      <th>郵便番号</th><td><span id="p_zip"></span></td>
+      <th>体重（kg）</th><td><span id="p_weight"></span></td>
+    </tr>
+    <tr>
+      <th>住所</th><td colspan="3"><span id="p_address"></span></td>
+    </tr>
+    <tr>
+      <th>携帯電話</th><td><span id="p_mobile_phone"></span></td>
+      <th>自宅電話</th><td><span id="p_home_phone"></span></td>
+    </tr>
+    <tr>
+      <th>勤務先名</th><td><span id="p_company_name"></span></td>
+      <th>電話番号（勤務先）</th><td><span id="p_company_phone"></span></td>
+    </tr>
+    <tr>
+      <th>緊急連絡先氏名</th><td><span id="p_emergency_name"></span></td>
+      <th>電話番号（緊急時）</th><td><span id="p_emergency_phone"></span></td>
+    </tr>
+    <tr>
+      <th>本人との続柄</th><td><span id="p_relationship"></span></td>
+      <th>e-mail</th><td><span id="p_email"></span></td>
+    </tr>
+    <tr>
+      <th>傷病履歴</th><td colspan="3" class="pt-tall"><span id="p_medical_history"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th class="pt-section-head" colspan="4">フライヤー情報</th>
+    </tr>
+    <tr>
+      <th>所属団体</th><td><span id="p_organization"></span></td>
+      <th>フライヤー登録番号</th><td><span id="p_reg_no"></span></td>
+    </tr>
+    <tr>
+      <th>登録期限</th><td><span id="p_reglimit_date"></span></td>
+      <th>技能証</th><td><span id="p_license"></span></td>
+    </tr>
+    <tr>
+      <th>リパック日</th><td><span id="p_repack_date"></span></td>
+      <th></th><td></td>
+    </tr>
+    <tr>
+      <th>使用機体名</th><td><span id="p_glider_name"></span></td>
+      <th>機体カラー</th><td><span id="p_glider_color"></span></td>
+    </tr>
+    <tr>
+      <th>ホームエリア名</th><td><span id="p_home_area"></span></td>
+      <th>引率者氏名</th><td><span id="p_leader"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt" id="p_table_visitor_fee" style="display:none;">
+    <tr>
+      <th>ビジター料金</th><td><span id="p_visitor_fee"></span></td>
+      <th>フライト経験</th><td><span id="p_experience"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt pt-course">
+    <tr>
+      <th class="pt-section-head" colspan="4">コース情報</th>
+    </tr>
+    <tr>
+      <th>コースタイプ</th><td><span id="p_course_type"></span></td>
+      <th id="p_label_course_name">コース内容</th><td><span id="p_course_name"></span></td>
+    </tr>
+    <tr id="p_row_course_fee">
+      <th>コース料金</th><td colspan="3"><span id="p_course_fee"></span></td>
+    </tr>
+  </table>
+
+  <div class="pt-rules">
+    <strong>◎エリア規定</strong>
+    ・必ず入山・下山チェック表に記入し、許可を受けずにフライトしないでください。<br>
+    ・フライトはスタッフの指示に従って行いましょう。<br>
+    ・Tバックルのハーネスを使用し、レスキューセットを携帯してフライトしてください。<br>
+    ・アウトサイドした場合は、被害の有無に関わらず申告してください。<br>
+    ・山火事防止のために、山中でのタバコ・焚き火は禁止です。<br>
+    ・農作物や草木の採取はしないこと。<br>
+    ・会員がゲレンデのみ使用する場合も、エリア管理費及び施設・保険料が必要です。<br>
+    ・エリア内でのパラグライダー用品の売買を禁じます。<br>
+    ・会員・非会員を問わず、エリアを使用しての営業はしないでください。（タンデム・体験・スクール講習など）<br>
+    ・エリア会員とは、原則としてＴＨＰホールディング株式会社または(有)さんじゅうでキャノピー、ハーネス等を購入していただくお客様の特典ですが、初年度は他校にて購入された機材の持ち込みでの登録も可能です。（別途持込料が必要になります）また、その他所購買物をＴＨＰホールディング株式会社または(有)さんじゅうが経営するエリアにおいて永続的に使用する場合には、２年目以降も更新できます。<br>
+    　（持込料（税込）：グライダー：71,500円　ハーネス：44,000円）<br>
+    ・ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
+    ・会社の都合により、予告なく定休日を設ける場合もあります。ご了承ください。<br>
+    <strong>以上を守れない場合には、エリアの使用を禁じます。</strong>
+  </div>
+
+  <div class="pt-agreement">
+    <strong>参加誓約書</strong><br>
+    私、<span id="p_agree_name" class="pt-handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+    ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し、
+    予測可能か否かに問わず私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、
+    当スクール関係者に対してその他の責任追及及、損害請求を一切致しません。<br>
+    またエリア会員規定に基づき、規約に違反した場合、もしくはＴＨＰホールディング株式会社に対して不利益をもたらした場合、会員資格の無効化及び
+    退会を申し渡されても、異議申し立て、損害賠償請求、それらにに類似した行為を一切致しません。<br>
+    <table class="pt" style="margin-top:6px;">
+      <tr>
+        <th>確認日</th><td><span id="p_agreement_date"></span></td>
+        <th>本人署名</th><td><span id="p_signature_name"></span></td>
+      </tr>
+      <tr>
+        <th>保護者氏名（20歳未満）</th><td colspan="3"><span id="p_guardian_name"></span></td>
+      </tr>
+    </table>
+  </div>
+</div><!-- /print-sheet -->
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+<!-- <script src="{{ url_for('static', filename='app_mem.js') }}"></script> -->
+<script src="{{ url_for('static', filename='app_apply.js') }}"></script>
+</body>
 </html>

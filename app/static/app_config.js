@@ -102,16 +102,41 @@ function renderCategories() {
   list.innerHTML = "";
 
   if (state.categories.length === 0) {
-    list.innerHTML = '<li class="category-item loading">データなし</li>';
+    list.innerHTML = '<li class="hamburger-cat-item loading">データなし</li>';
     return;
   }
 
   state.categories.forEach((cat) => {
-    const li = el("li", "category-item", cat);
+    const li = el("li", "hamburger-cat-item", cat);
     if (cat === state.currentCategory) li.classList.add("active");
-    li.addEventListener("click", () => selectCategory(cat));
+    li.addEventListener("click", () => {
+      selectCategory(cat);
+      closeHamburger();   // 項目選択でメニューを閉じる
+    });
     list.appendChild(li);
   });
+}
+
+// ══════════════════════════════════════════════════════════
+// ハンバーガーメニュー 開閉
+// ══════════════════════════════════════════════════════════
+function toggleHamburger() {
+  const btn      = $("hamburgerBtn");
+  const dropdown = $("hamburgerDropdown");
+  const isOpen   = dropdown.classList.contains("open");
+  if (isOpen) {
+    closeHamburger();
+  } else {
+    dropdown.classList.add("open");
+    btn.setAttribute("aria-expanded", "true");
+  }
+}
+
+function closeHamburger() {
+  const btn      = $("hamburgerBtn");
+  const dropdown = $("hamburgerDropdown");
+  dropdown.classList.remove("open");
+  btn.setAttribute("aria-expanded", "false");
 }
 
 async function selectCategory(cat) {
@@ -473,5 +498,19 @@ function escHtml(str) {
 // 初期化
 // ══════════════════════════════════════════════════════════
 (async () => {
+  // ハンバーガーボタンのクリックで開閉
+  $("hamburgerBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleHamburger();
+  });
+
+  // パネル外クリックで閉じる
+  document.addEventListener("click", (e) => {
+    const wrap = $("hamburgerWrap");
+    if (wrap && !wrap.contains(e.target)) {
+      closeHamburger();
+    }
+  });
+
   await loadCategories();
 })();

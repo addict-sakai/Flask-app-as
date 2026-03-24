@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>請負管理 | Mt.FUJI PARAGLIDING</title>
+  <title>請負入力</title>
   <link rel="stylesheet" href="../static/style.css" />
   <link rel="stylesheet" href="../static/style_cont_tan.css" />
   <link rel="stylesheet" href="../static/style_cont_work.css" />
@@ -15,8 +15,7 @@
   <header class="cont-header uni-header">
     <a href="/" class="cont-back-btn">← トップ</a>
     <div class="cont-header-center">
-      <h1 class="cont-title">請負管理</h1>
-      <div class="uni-header-sub">日報 &amp; 出勤予定</div>
+      <h1 class="cont-title">請負入力</h1>
     </div>
     <div class="uni-header-actions">
       <span style="color:#aaa;font-size:0.8rem;">今月 <strong id="stat-total">—</strong> 件</span>
@@ -25,70 +24,42 @@
     </div>
   </header>
 
-  <!-- ════ メインレイアウト ════ -->
-  <div class="uni-layout">
+  <!-- ════ メインレイアウト（1カラム）════ -->
+  <div class="uni-layout-single">
 
-    <!-- ─── サイドバー ─── -->
-    <aside class="uni-aside">
+    <!-- ─── 担当者検索 ─── -->
+    <div class="cont-card uni-search-card" id="search-card">
+      <h2 class="cont-card__title">担当者検索</h2>
+      <div class="uni-search-row">
+        <button class="uni-qr-btn" onclick="UnifiedApp.openQr()" title="QRコードで検索">
+          <span class="uni-qr-icon">⬛</span> QRコード
+        </button>
+        <input type="text" id="search-input" class="cont-search-input uni-name-input"
+               placeholder="氏名を入力" autocomplete="off" />
+        <button class="cont-search-btn uni-search-btn" onclick="UnifiedApp.searchByName()">検索</button>
+      </div>
+      <p class="cont-search-hint">Enterキーでも検索できます</p>
+      <div id="search-error" class="cont-alert cont-alert--danger"></div>
 
-      <!-- 担当者検索 -->
-      <div class="cont-card">
-        <h2 class="cont-card__title">担当者検索</h2>
-        <input type="text" id="search-input" class="cont-search-input uni-search-input"
-               placeholder="会員番号 または UUID（QR）" autocomplete="off" />
-        <button class="cont-search-btn uni-search-btn" onclick="UnifiedApp.lookup()">検索</button>
-        <p class="cont-search-hint">Enterキーでも検索できます</p>
-        <div id="search-error" class="cont-alert cont-alert--danger"></div>
-
-        <div id="member-block" style="display:none;">
-          <div class="uni-member-display">
-            <div>
-              <p class="work-member-name" id="member-name">—</p>
-              <p class="work-member-sub"  id="member-sub"></p>
-            </div>
-            <button class="uni-clear-btn" onclick="UnifiedApp.clearMember()">✕ クリア</button>
-          </div>
-        </div>
+      <!-- 検索結果リスト -->
+      <div id="search-result-list" style="display:none;">
+        <div id="search-result-items" class="uni-name-list"></div>
       </div>
 
-      <!-- 日報 操作ガイド -->
-      <div class="cont-card">
-        <h2 class="cont-card__title">日報の登録</h2>
-        <div class="work-guide">
-          担当者を検索後、上の<strong>「＋ 日報登録」</strong>をタップしてください。<br>
-          編集できるのは<strong>当日分のみ</strong>です。
+      <!-- 選択済み担当者 -->
+      <div id="member-block" style="display:none;">
+        <div class="uni-member-display">
+          <div>
+            <p class="work-member-name" id="member-name">—</p>
+            <p class="work-member-sub"  id="member-sub"></p>
+          </div>
+          <button class="uni-clear-btn" onclick="UnifiedApp.clearMember()">✕ クリア</button>
         </div>
       </div>
+    </div>
 
-      <!-- 出勤予定 操作ガイド -->
-      <div class="cont-card">
-        <h2 class="cont-card__title">出勤予定の入力</h2>
-        <div class="work-guide">
-          日付をタップするたびに切り替わります。<br>
-          <strong>未選択 → OK → NG → 未選択</strong><br><br>
-          変更後は上の<strong>「📅 予定登録」</strong>で保存してください。
-        </div>
-        <div class="work-legend" style="margin-top:10px;">
-          <div class="work-legend-item">
-            <span class="work-legend-dot work-legend-dot--ok">OK</span> 出勤可
-          </div>
-          <div class="work-legend-item">
-            <span class="work-legend-dot work-legend-dot--ng">NG</span> 出勤不可
-          </div>
-          <div class="work-legend-item">
-            <span class="work-legend-dot work-legend-dot--none">—</span> 未定
-          </div>
-          <div class="work-legend-item">
-            <span class="work-legend-dot work-legend-dot--past">過</span> 編集不可
-          </div>
-        </div>
-        <div id="result-msg" class="cont-result-msg" style="margin-top:12px;"></div>
-      </div>
-
-    </aside>
-
-    <!-- ─── メインコンテンツ ─── -->
-    <main class="uni-main">
+    <!-- ─── 日報リスト＆カレンダー（担当者選択後に表示）─── -->
+    <div id="main-content" style="display:none;">
 
       <!-- ── 日報リスト ── -->
       <div class="cont-card">
@@ -99,6 +70,7 @@
             <span id="report-month-display" class="uni-month-label">—</span>
             <button class="uni-nav-btn" onclick="UnifiedApp.navigateReportMonth(1)">›</button>
           </div>
+          <span class="uni-cal-guide">日報の登録は上の「＋日報登録」をクリックしてください</span>
         </div>
 
         <div class="uni-report-scroll">
@@ -129,6 +101,9 @@
             <span id="cal-month-display" class="uni-month-label">—</span>
             <button class="uni-nav-btn" onclick="UnifiedApp.navigateCalMonth(1)">›</button>
           </div>
+          <!-- 出勤予定の操作説明（年月表示の右横）-->
+          <!-- <span class="uni-cal-guide">日付タップ: 未選択→OK→NG→未選択 ／ 変更後は「📅 予定登録」で保存</span> -->
+          <span class="uni-cal-guide">日付タップ: 未選択→OK→NG→未選択</span>
         </div>
 
         <div id="calendar-placeholder" class="uni-cal-placeholder" style="display:none;">
@@ -136,9 +111,35 @@
           読み込み中...
         </div>
         <div id="calendar-area"></div>
+        <div id="result-msg" class="cont-result-msg" style="margin-top:8px;display:none;"></div>
       </div>
 
-    </main>
+    </div><!-- /#main-content -->
+
+  </div><!-- /.uni-layout-single -->
+
+
+  <!-- ════ passコード入力ポップアップ ════ -->
+  <div id="pass-modal-overlay" class="cont-modal-overlay">
+    <div class="cont-modal uni-pass-modal">
+      <div class="cont-modal__header">
+        <div>
+          <h3 class="cont-modal__title">passコードを入力</h3>
+          <p class="uni-modal-sub" id="pass-modal-name">—</p>
+        </div>
+        <button class="cont-modal__close" onclick="UnifiedApp.closePassModal()">✕</button>
+      </div>
+      <div style="padding:4px 0 8px;">
+        <p class="uni-pass-hint">携帯番号の下4桁を入力してください</p>
+        <div class="uni-pass-input-wrap">
+          <input type="tel" id="pass-input" class="cont-input uni-pass-input"
+                 maxlength="4" placeholder="0000" autocomplete="off"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+          <button class="cont-modal-save-btn uni-pass-ok-btn" onclick="UnifiedApp.verifyPass()">確認</button>
+        </div>
+        <div id="pass-error" class="cont-alert cont-alert--danger" style="margin-top:8px;display:none;"></div>
+      </div>
+    </div>
   </div>
 
 
@@ -180,21 +181,16 @@
               <div class="cont-form-group">
                 <label class="cont-label">使用機体</label>
                 <div class="cont-btn-group reg-grp-glider cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="K24"
-                          onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">K24</button>
-                  <button class="cont-opt-btn" data-val="BIBETA6"
-                          onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">BIBETA6</button>
-                  <button class="cont-opt-btn" data-val="持込"
-                          onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">持込</button>
+                  <button class="cont-opt-btn" data-val="K24"     onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">K24</button>
+                  <button class="cont-opt-btn" data-val="BIBETA6" onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">BIBETA6</button>
+                  <button class="cont-opt-btn" data-val="持込"    onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">持込</button>
                 </div>
               </div>
               <div class="cont-form-group">
                 <label class="cont-label">サイズ</label>
                 <div class="cont-btn-group reg-grp-size cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="SM(38)"
-                          onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">SM(38)</button>
-                  <button class="cont-opt-btn" data-val="ML(41)"
-                          onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">ML(41)</button>
+                  <button class="cont-opt-btn" data-val="SM(38)" onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">SM(38)</button>
+                  <button class="cont-opt-btn" data-val="ML(41)" onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">ML(41)</button>
                 </div>
               </div>
             </div>

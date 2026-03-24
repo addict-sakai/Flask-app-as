@@ -3,280 +3,1706 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>会員情報更新</title>
+  <title>コース変更/更新・登録内容修正</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem_upd.css') }}">
+  <style>
+    /* ══════════════════════════════════════
+       CSS変数（会員申込書と統一）
+    ══════════════════════════════════════ */
+    :root {
+      --bg:            #ffffff;
+      --surface:       #ffffff;
+      --surface-2:     #f8f9fa;
+      --border:        #e0e3e8;
+      --primary:       #2563eb;
+      --primary-dark:  #1d4ed8;
+      --primary-light: #eff6ff;
+      --text-primary:  #111827;
+      --text-secondary:#374151;
+      --text-muted:    #6b7280;
+      --radius:        10px;
+      --radius-sm:     6px;
+      --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md:     0 4px 12px rgba(0,0,0,0.10);
+      --danger:        #dc2626;
+      --warning:       #d97706;
+      --changed-bg:    #fefce8;
+      --changed-border:#facc15;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* スクロールバー非表示 */
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar { display: none; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ══════════════════════════════════════
+       固定ヘッダー
+    ══════════════════════════════════════ */
+    .fixed-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .page-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 10px 20px;
+      gap: 12px;
+    }
+    .page-header-left  { display: flex; align-items: center; }
+    .page-header-center { display: flex; align-items: center; justify-content: center; }
+    .page-header-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .page-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    /* ══════════════════════════════════════
+       ボタン
+    ══════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+      white-space: nowrap;
+      letter-spacing: .08em;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface-2); }
+    /* 検索に戻るボタン */
+    .btn-back {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    .btn-back:hover { background: var(--primary-light); }
+
+    /* ══════════════════════════════════════
+       スクロールエリア
+    ══════════════════════════════════════ */
+    .scroll-area {
+      padding-top: 62px;
+      padding-bottom: 48px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    /* ══════════════════════════════════════
+       検索パネル
+    ══════════════════════════════════════ */
+    .search-panel {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-top: 20px;
+    }
+    .search-panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: .04em;
+      margin-bottom: 12px;
+    }
+    .search-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .divider-or {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding-bottom: 8px;
+    }
+    .search-error {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    /* ══════════════════════════════════════
+       セクション
+    ══════════════════════════════════════ */
+    .form-section { margin-top: 24px; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: .04em;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    /* ══════════════════════════════════════
+       フォームグリッド
+    ══════════════════════════════════════ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px 20px;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
+    .field-group.span-2 { grid-column: span 2; }
+    .field-group.span-3 { grid-column: span 3; }
+    .field-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: .02em;
+    }
+    .field-label.required::after { content: ' *'; color: var(--danger); }
+
+    /* ══════════════════════════════════════
+       入力フィールド（会員申込書と完全統一）
+    ══════════════════════════════════════ */
+    .field-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      background: #ffffff;
+      transition: border-color .15s, box-shadow .15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    /* ホバー時：背景・文字色を白/黒で固定 */
+    .field-input:hover {
+      border-color: #b0b8c4;
+      background: #ffffff;
+      color: var(--text-primary);
+    }
+    /* フォーカス時 */
+    .field-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      background: #ffffff;
+      color: var(--text-primary);
+    }
+    /* selectのドロップダウンオプション */
+    .field-input option {
+      background: #ffffff;
+      color: var(--text-primary);
+    }
+    /* 読み取り専用 */
+    .field-input[readonly] {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      cursor: default;
+    }
+    .field-input[readonly]:hover {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+    /* 変更済みフィールド */
+    .field-input.changed {
+      background: var(--changed-bg) !important;
+      border-color: var(--changed-border) !important;
+      color: var(--text-primary) !important;
+    }
+    textarea.field-input { resize: vertical; }
+
+    /* 郵便番号行 */
+    .zip-row { display: flex; gap: 8px; align-items: center; }
+    /* 郵便番号 分割入力（3桁 - 4桁） */
+    .zip-split-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .zip-input-3 {
+      width: 62px;
+      flex: none;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+    }
+    .zip-input-4 {
+      width: 76px;
+      flex: none;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+    }
+    .zip-hyphen {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      padding-bottom: 2px;
+    }
+    .btn-zip {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-zip:hover { background: #e5e7eb; color: var(--text-primary); }
+
+    /* ══════════════════════════════════════
+       フライヤー登録番号
+    ══════════════════════════════════════ */
+    .reg-input-group { display: flex; align-items: center; gap: 6px; }
+    .reg-prefix {
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+    .reg-input-part {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      text-align: center;
+      background: #fff;
+      color: var(--text-primary);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .reg-input-part:hover { border-color: #b0b8c4; }
+    .reg-input-part:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .reg-input-short  { width: 52px; }
+    .reg-input-long   { width: 100px; }
+    .reg-input-medium { width: 130px; }
+    .reg-no-preview {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--primary);
+      margin-top: 4px;
+    }
+
+    /* ══════════════════════════════════════
+       コース情報カード
+    ══════════════════════════════════════ */
+    .current-course-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      flex-wrap: wrap;
+    }
+    .current-course-badge { display: flex; flex-direction: column; gap: 2px; }
+    .current-course-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .current-course-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .current-course-dates {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-left: 20px;
+      border-left: 2px solid #bfdbfe;
+    }
+    .current-course-date-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .date-label { font-size: 11px; font-weight: 600; color: var(--primary); min-width: 52px; }
+    .date-value { color: var(--text-secondary); font-family: 'DM Mono', monospace; font-size: 13px; }
+    .remaining-days {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    .remaining-days.ok     { background: #dcfce7; color: #15803d; }
+    .remaining-days.warn   { background: #fef9c3; color: #a16207; }
+    .remaining-days.danger { background: #fee2e2; color: #b91c1c; }
+    .remaining-days.none   { background: #f1f5f9; color: #64748b; }
+
+    /* コース変更行 */
+    .course-change-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .course-change-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .course-select-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    /* スクールコース内容 */
+    .school-course-wrap { display: none; align-items: center; gap: 8px; }
+    .school-course-wrap.visible { display: flex; }
+    .school-course-arrow { font-size: 13px; color: var(--text-muted); }
+
+    /* 料金表示 */
+    .course-fee-display { display: none; align-items: center; gap: 8px; }
+    .course-fee-display.visible { display: flex; }
+    .course-fee-amount { font-size: 15px; font-weight: 700; color: var(--primary); font-family: 'DM Mono', monospace; }
+    .course-fee-note { font-size: 11.5px; color: var(--warning); font-weight: 600; }
+
+    /* ══════════════════════════════════════
+       モーダル
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 28px;
+      width: min(520px, 90vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-md);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .modal-text  { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+    .modal-changes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .change-row {
+      display: grid;
+      grid-template-columns: 130px 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      padding: 8px 10px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+    }
+    .change-key   { font-weight: 600; color: var(--text-secondary); }
+    .change-old   { color: var(--text-muted); text-decoration: line-through; word-break: break-all; }
+    .change-arrow { color: var(--text-muted); font-size: 12px; }
+    .change-value { color: var(--primary); font-weight: 500; word-break: break-all; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ══════════════════════════════════════
+       トースト
+    ══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 300;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      background: var(--text-primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      transition: opacity .3s;
+    }
+    .toast.error { background: var(--danger); }
+
+    /* ══════════════════════════════════════
+       ユーティリティ
+    ══════════════════════════════════════ */
+    .hidden { display: none !important; }
+
+    /* 期限切れバッジ */
+    .expired-badge {
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    /* 申請中バッジ（後方互換用・非表示） */
+    .applying-badge { display: none !important; }
+
+    /* ══════════════════════════════════════
+       申請状態パネル（改定５追加）
+    ══════════════════════════════════════ */
+    .app-status-panel {
+      display: none;
+      margin-top: 12px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid #e0e3e8;
+    }
+    .app-status-panel.visible { display: block; }
+
+    .app-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .app-status-bar.pending  { background: #fef9c3; color: #92400e; border-bottom: 1px solid #fde68a; }
+    .app-status-bar.approved { background: #dcfce7; color: #166534; border-bottom: 1px solid #86efac; }
+    .app-status-bar.rejected { background: #fee2e2; color: #991b1b; border-bottom: 1px solid #fca5a5; }
+    .app-status-icon  { font-size: 14px; flex-shrink: 0; }
+    .app-status-label { flex: 1; }
+    .app-status-date  { font-size: 11px; font-weight: 400; opacity: .75; white-space: nowrap; }
+
+    .app-status-body {
+      padding: 9px 14px;
+      background: #f8f9fa;
+      font-size: 12px;
+      color: #374151;
+    }
+    .app-status-target { font-weight: 600; color: #2563eb; }
+    .app-status-note   { margin-top: 4px; font-size: 11.5px; color: #dc2626; font-weight: 600; }
+
+    /* ══════════════════════════════════════
+       確認モーダル：セクションヘッダー（改定５追加）
+    ══════════════════════════════════════ */
+    .change-section-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 4px;
+    }
+    .change-section-course { background: #fef9c3; color: #92400e; }
+    .change-section-info   { background: #eff6ff; color: #2563eb; margin-top: 8px; }
+
+    /* コース変更注意事項 */
+    .course-notes {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #f8f9fa;
+      border-left: 3px solid #bfdbfe;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .course-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 年会員の更新ボタン */
+    .btn-renewal {
+      margin-left: 10px;
+      padding: 3px 14px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-renewal:hover { background: #1d4ed8; }
+    .btn-renewal.hidden { display: none; }
+
+    /* 更新申請待ちラベル */
+    .renewal-waiting {
+      margin-left: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #d97706;
+      background: #fef3c7;
+      padding: 2px 10px;
+      border-radius: 10px;
+      border: 1px solid #fde68a;
+    }
+    .renewal-waiting.hidden { display: none; }
+
+    /* 申請中コース情報（期限日行の右端） */
+    .pending-course-info {
+      margin-left: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #7c3aed;
+      background: #f5f3ff;
+      padding: 2px 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd6fe;
+      white-space: nowrap;
+    }
+    .pending-course-info.hidden { display: none; }
+
+    /* ══════════════════════════════════════
+       改定７追加：QRボタン・候補リスト・PASSモーダル
+    ══════════════════════════════════════ */
+
+    /* 検索バー横並び */
+    .search-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    /* QRコードボタン */
+    .btn-qr {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .btn-qr:hover { background: #e5e7eb; border-color: #9ca3af; color: var(--text-primary); }
+    .btn-qr svg   { flex-shrink: 0; }
+
+    /* 氏名入力・検索ボタン */
+    .search-name-input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    /* ── 候補リスト ── */
+    .candidate-list-wrap {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow-md);
+    }
+    .candidate-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .candidate-list-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: .04em;
+    }
+    .candidate-list-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      padding: 0;
+      font-family: inherit;
+    }
+    .candidate-list-close:hover { background: var(--border); color: var(--text-primary); }
+    .candidate-list ul { list-style: none; margin: 0; padding: 0; }
+    .candidate-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 11px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background .12s;
+    }
+    .candidate-item:last-child { border-bottom: none; }
+    .candidate-item:hover      { background: var(--primary-light); }
+    .candidate-item-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .candidate-item-birthday {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .candidate-item-arrow { font-size: 14px; color: #d1d5db; }
+
+    /* ── PASSコードモーダル ── */
+    .pass-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+    .pass-overlay.is-visible { opacity: 1; }
+    .pass-modal {
+      background: #fff;
+      border-radius: var(--radius);
+      width: min(360px, 100%);
+      box-shadow: var(--shadow-md);
+      transform: translateY(12px);
+      transition: transform .22s ease;
+      overflow: hidden;
+    }
+    .pass-overlay.is-visible .pass-modal { transform: translateY(0); }
+    .pass-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pass-modal-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--text-secondary);
+    }
+    .pass-modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      padding: 0;
+      font-family: inherit;
+    }
+    .pass-modal-close:hover { background: var(--surface-2); color: var(--text-primary); }
+    .pass-modal-body  { padding: 20px 18px 18px; }
+    .pass-target-name {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .pass-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .pass-input-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
+    .pass-input {
+      width: 148px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: .4em;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color .2s;
+      font-family: 'DM Mono', 'Courier New', monospace;
+    }
+    .pass-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .pass-input::placeholder { color: #d1d5db; letter-spacing: .3em; }
+    .pass-error {
+      margin: 0 0 10px;
+      padding: 7px 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .pass-actions { display: flex; gap: 8px; }
+    .pass-actions .btn { flex: 1; justify-content: center; }
+
+    /* PASSエラーシェイク */
+    @keyframes upd-shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+    .upd-shake { animation: upd-shake .38s ease; }
+
+    /* ══════════════════════════════════════
+       レスポンシブ
+    ══════════════════════════════════════ */
+    @media (max-width: 680px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .field-group.span-3 { grid-column: span 2; }
+      .current-course-card { flex-direction: column; align-items: flex-start; }
+      .current-course-dates { border-left: none; padding-left: 0; border-top: 1px solid #bfdbfe; padding-top: 10px; }
+      .page-title { font-size: 13px; }
+      .change-row { grid-template-columns: 1fr; }
+      .search-bar-row { flex-wrap: wrap; }
+      .search-name-input { min-width: 140px; }
+    }
+  </style>
 </head>
 <body>
-<main class="main">
 
-  <!-- 固定ヘッダー -->
-  <div class="upd-fixed-header">
+  <!-- ══════════════════════════════════════
+       固定ヘッダー
+  ══════════════════════════════════════ -->
+  <div class="fixed-header">
     <div class="page-header">
       <div class="page-header-left">
-        <a href="/apply_flyer" class="btn btn-ghost top-btn">← フライヤー申請</a>
+        <!-- 空白スペーサー（センタリング用） -->
       </div>
-      <h1 class="page-title">会員情報更新</h1>
+      <div class="page-header-center">
+        <h1 class="page-title">コース変更 / 更新・登録内容修正</h1>
+      </div>
       <div class="page-header-right">
-        <button type="button" class="btn btn-ghost" id="btnCancel">キャンセル</button>
-        <button type="button" class="btn btn-primary" id="btnSubmit">更新申請</button>
+        <button type="button" class="btn btn-back hidden" id="btnBackToSearch">← 検索に戻る</button>
+        <button type="button" class="btn btn-primary" id="btnSubmit">申　請</button>
+        <button type="button" class="btn btn-ghost"   id="btnExit">終　了</button>
       </div>
     </div>
   </div>
 
-  <!-- スクロールエリア -->
-  <div class="upd-scroll-area">
+  <!-- ══════════════════════════════════════
+       スクロールエリア
+  ══════════════════════════════════════ -->
+  <div class="scroll-area">
 
-    <!-- 検索パネル -->
+    <!-- 検索パネル（改定７） -->
     <section id="searchSection">
       <div class="search-panel">
-        <div class="section-title">会員を検索</div>
-        <div class="search-row">
-          <div class="field-group">
-            <label class="field-label">会員番号</label>
-            <input type="text" id="searchMemberNo" class="field-input" placeholder="例: 0001">
-          </div>
-          <div class="divider-or">OR</div>
-          <div class="field-group">
-            <label class="field-label">QRコード（UUID）</label>
-            <input type="text" id="searchUuid" class="field-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-          </div>
+        <p class="search-panel-title">会員を検索</p>
+
+        <!-- QRボタン ＋ 氏名入力 ＋ 検索ボタン -->
+        <div class="search-bar-row">
+
+          <!-- ① QRコードボタン（将来実装用） -->
+          <button type="button" class="btn-qr" id="btnQr" onclick="handleQrBtn()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/>
+              <rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+            </svg>
+            QRコード
+          </button>
+
+          <!-- ② 氏名入力 -->
+          <input
+            type="text"
+            id="searchName"
+            class="field-input search-name-input"
+            placeholder="氏名を入力して検索"
+            autocomplete="off"
+          />
+
+          <!-- ③ 検索ボタン -->
+          <button type="button" class="btn btn-ghost" id="btnSearch">検　索</button>
         </div>
-        <div class="search-actions">
-          <button class="btn btn-ghost" id="btnSearch">検索</button>
-        </div>
+
+        <p style="font-size:11.5px; color:var(--text-muted); margin-top:6px;">
+          Enterキーでも検索できます
+        </p>
+
+        <!-- 検索エラー -->
         <div id="searchError" class="search-error hidden"></div>
+
+        <!-- ── 候補リスト（氏名検索結果） ── -->
+        <div id="candidateListWrap" class="candidate-list-wrap hidden">
+          <div class="candidate-list-header">
+            <span class="candidate-list-title">該当する会員を選択してください</span>
+            <button type="button" class="candidate-list-close" id="btnCloseCandidates">✕</button>
+          </div>
+          <div class="candidate-list">
+            <ul id="candidateList"></ul>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- 編集フォーム -->
-    <section class="hidden form-section-wrapper" id="formSection">
+    <!-- 編集フォーム（検索後に表示） -->
+    <section class="hidden" id="formSection">
       <form id="updateForm" novalidate>
-        <div class="member-form">
 
-          <!-- 分類 -->
-          <div class="type-band">
-            <span class="band-label">分類</span>
-            <div class="radio-group">
-              <label class="radio-label"><input type="radio" name="member_type" value="会員"> 会員</label>
-              <label class="radio-label"><input type="radio" name="member_type" value="スクール"> スクール</label>
-              <label class="radio-label"><input type="radio" name="member_type" value="ビジター"> ビジター</label>
+        <!-- ══ コース情報 ══ -->
+        <div class="form-section">
+          <h2 class="section-title">コース情報</h2>
+
+          <!-- 現在のコース表示カード -->
+          <div class="current-course-card" id="currentCourseCard">
+            <div class="current-course-badge">
+              <span class="current-course-label">現在のコース</span>
+              <span class="current-course-value" id="currentCourseValue">―</span>
             </div>
-          </div>
-
-          <!-- 基本情報 -->
-          <div class="form-section">
-            <h2 class="section-title">基本情報</h2>
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label">会員番号</label>
-                <input type="text" id="member_number" name="member_number" class="field-input" readonly>
+            <div class="current-course-dates">
+              <div class="current-course-date-row">
+                <span class="date-label">開始日</span>
+                <span class="date-value" id="currentApplyDate">―</span>
               </div>
-              <div class="field-group">
-                <label class="field-label required">氏名</label>
-                <input type="text" id="full_name" name="full_name" class="field-input" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label">ふりがな</label>
-                <input type="text" id="furigana" name="furigana" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">性別</label>
-                <select id="gender" name="gender" class="field-input">
-                  <option value="">選択してください</option>
-                  <option value="男性">男性</option>
-                  <option value="女性">女性</option>
-                  <option value="その他">その他</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label">血液型</label>
-                <select id="blood_type" name="blood_type" class="field-input">
-                  <option value="">選択してください</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="O">O</option>
-                  <option value="AB">AB</option>
-                  <option value="不明">不明</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label">生年月日</label>
-                <input type="date" id="birthday" name="birthday" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">体重</label>
-                <input type="text" id="weight" name="weight" class="field-input" placeholder="例: 65kg">
-              </div>
-              <div class="field-group">
-                <label class="field-label">本人との続柄</label>
-                <input type="text" id="relationship" name="relationship" class="field-input">
+              <div class="current-course-date-row">
+                <span class="date-label">期限日</span>
+                <span class="date-value" id="currentExpireDate">―</span>
+                <span class="remaining-days none" id="remainingDays"></span>
+                <span class="applying-badge hidden" id="applyingBadge"></span>
+                <!-- 申請中の変更コース表示 -->
+                <span class="pending-course-info hidden" id="pendingCourseInfo"></span>
+                <!-- 年会員の更新ボタン -->
+                <button type="button" class="btn-renewal hidden" id="btnRenewal" onclick="handleRenewalBtn()">更新</button>
+                <span class="renewal-waiting hidden" id="renewalWaiting">更新申請待ち</span>
               </div>
             </div>
           </div>
 
-          <!-- フライト情報 -->
-          <div class="form-section">
-            <h2 class="section-title">フライト情報</h2>
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label">使用機体</label>
-                <input type="text" id="glider_name" name="glider_name" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">機体カラー</label>
-                <input type="text" id="glider_color" name="glider_color" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">ホームエリア</label>
-                <input type="text" id="home_area" name="home_area" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">所属団体</label>
-                <select id="organization" name="organization" class="field-input">
-                  <option value="">選択</option>
-                  <option value="JHF">JHF</option>
-                  <option value="JPA">JPA</option>
+          <!-- ★ 申請状態パネル（改定５追加） -->
+          <div class="app-status-panel" id="appStatusPanel">
+            <div class="app-status-bar" id="appStatusBar">
+              <span class="app-status-icon" id="appStatusIcon"></span>
+              <span class="app-status-label" id="appStatusLabel"></span>
+              <span class="app-status-date" id="appStatusDate"></span>
+            </div>
+            <div class="app-status-body">
+              <span id="appStatusTarget"></span>
+              <div class="app-status-note hidden" id="appStatusNote"></div>
+            </div>
+          </div>
+
+          <!-- コース変更行 -->
+          <div class="course-change-row">
+            <span class="course-change-label">コース変更</span>
+            <div class="course-select-wrap">
+              <!-- コースタイプ -->
+              <select class="field-input" id="member_type" name="member_type" style="width:160px;">
+                <option value="">選択してください</option>
+                <option value="年会員">年会員</option>
+                <option value="冬季会員">冬季会員</option>
+                <option value="スクール">スクール</option>
+                <option value="ビジター">ビジター</option>
+              </select>
+
+              <!-- 冬季会員・スクール選択時のコース内容 -->
+              <div class="school-course-wrap" id="schoolCourseWrap">
+                <span class="school-course-arrow">▶</span>
+                <select class="field-input" id="course_name" name="course_name" style="width:210px;">
+                  <option value="">コース内容を選択</option>
                 </select>
               </div>
 
-              <!-- 登録番号：所属団体によって入力UIが変わる -->
-              <div class="field-group span-2">
-                <label class="field-label">フライヤー登録番号</label>
-                <!-- 未選択 -->
-                <div id="regInputNone">
-                  <input type="text" class="field-input" placeholder="所属団体を先に選択してください" readonly>
-                </div>
-                <!-- JHF: JA[XX]O-[XXXXXX] -->
-                <div id="regInputJHF" class="reg-input-group" style="display:none;">
-                  <span class="reg-prefix">JA</span>
-                  <input type="text" id="f_reg_jhf1" class="reg-input-part reg-input-short"
-                         maxlength="2" inputmode="numeric" placeholder="00">
-                  <span class="reg-prefix">O-</span>
-                  <input type="text" id="f_reg_jhf2" class="reg-input-part reg-input-long"
-                         maxlength="6" inputmode="numeric" placeholder="000000">
-                </div>
-                <!-- JPA: JP[XXXXXXXXX] (9桁) -->
-                <div id="regInputJPA" class="reg-input-group" style="display:none;">
-                  <span class="reg-prefix">JP</span>
-                  <input type="text" id="f_reg_jpa" class="reg-input-part reg-input-medium"
-                         maxlength="9" inputmode="numeric" placeholder="000000000">
-                </div>
-                <div class="reg-no-preview" id="regNoPreview"></div>
-                <input type="hidden" id="reg_no" name="reg_no">
-              </div>
-
-              <div class="field-group">
-                <label class="field-label">登録期限</label>
-                <input type="date" id="reglimit_date" name="reglimit_date" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">技能証</label>
-                <select id="license" name="license" class="field-input">
-                  <option value="">選択</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="NP">NP</option>
-                  <option value="P">P</option>
-                  <option value="XC">XC</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label">リパック日（年月）</label>
-                <input type="month" id="repack_date" name="repack_date" class="field-input">
+              <!-- 料金・注記 -->
+              <div class="course-fee-display" id="courseFeeDisplay">
+                <span class="course-fee-amount" id="courseFeeAmount"></span>
+                <span class="course-fee-note">※入金後に変更になります</span>
               </div>
             </div>
+          <!-- コース変更注意事項 -->
+          <div class="course-notes">
+            <p class="course-note">※　年会員の更新は期限日の2ヶ月前から申請できます。（新規の場合はいつでも可能です）</p>
+            <p class="course-note">※　冬季限定会員の申請は冬季開始日の1ヶ月前から申請できます。（冬季開始日までは現在のコースになります）</p>
+            <p class="course-note">※　スクールの更新/変更はいつでも可能です。</p>
+            <p class="course-note">※　ビジター以外全て、入金の確認が出来た日が申込日となります。</p>
+            <p class="course-note">※　コース変更はスタッフ確認後に反映されます。申請中も現在のコースが維持されます。</p>
+            <p class="course-note">※　基本情報・フライヤー情報・連絡先・緊急連絡先・傷病履歴の変更はスタッフ確認なしで即時反映されます（コース変更申請中も同様）。</p>
           </div>
+        </div>
+        <div class="form-section">
+          <h2 class="section-title">基本情報</h2>
+          <!-- 会員番号：非表示（値の保持のみ） -->
+          <input type="hidden" id="member_number" name="member_number">
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label required">氏名</label>
+              <input type="text" id="full_name" name="full_name" class="field-input" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label">ふりがな</label>
+              <input type="text" id="furigana" name="furigana" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">生年月日</label>
+              <input type="date" id="birthday" name="birthday" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">性別</label>
+              <select id="gender" name="gender" class="field-input">
+                <option value="">選択してください</option>
+                <option value="男性">男性</option>
+                <option value="女性">女性</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">血液型</label>
+              <select id="blood_type" name="blood_type" class="field-input">
+                <option value="">選択してください</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="O">O</option>
+                <option value="AB">AB</option>
+                <option value="不明">不明</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">体重（kg）</label>
+              <input type="text" id="weight" name="weight" class="field-input" placeholder="例: 65">
+            </div>
+          </div>
+        </div>
 
-          <!-- 連絡先 -->
-          <div class="form-section">
-            <h2 class="section-title">連絡先</h2>
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label">郵便番号</label>
-                <div class="zip-row">
-                  <input type="text" id="zip_code" name="zip_code" class="field-input" placeholder="例: 123-4567" maxlength="8">
-                  <button type="button" class="btn-zip" id="btnZip">住所検索</button>
+        <!-- ══ フライヤー情報 ══ -->
+        <div class="form-section">
+          <h2 class="section-title">フライヤー情報</h2>
+          <div class="form-grid">
+
+            <div class="field-group">
+              <label class="field-label required">所属団体</label>
+              <select id="organization" name="organization" class="field-input">
+                <option value="">選択</option>
+                <option value="JHF">JHF</option>
+                <option value="JPA">JPA</option>
+              </select>
+            </div>
+
+            <!-- フライヤー登録番号 -->
+            <div class="field-group span-2">
+              <label class="field-label required">フライヤー登録番号</label>
+              <div id="regInputNone">
+                <input type="text" class="field-input" placeholder="所属団体を先に選択してください" readonly>
+              </div>
+              <div id="regInputJHF" class="reg-input-group" style="display:none;">
+                <span class="reg-prefix">JA</span>
+                <input type="text" id="f_reg_jhf1" class="reg-input-part reg-input-short"
+                       maxlength="2" inputmode="numeric" placeholder="00">
+                <span class="reg-prefix">O-</span>
+                <input type="text" id="f_reg_jhf2" class="reg-input-part reg-input-long"
+                       maxlength="6" inputmode="numeric" placeholder="000000">
+              </div>
+              <div id="regInputJPA" class="reg-input-group" style="display:none;">
+                <span class="reg-prefix">JP</span>
+                <input type="text" id="f_reg_jpa" class="reg-input-part reg-input-medium"
+                       maxlength="9" inputmode="numeric" placeholder="000000000">
+              </div>
+              <div class="reg-no-preview" id="regNoPreview"></div>
+              <input type="hidden" id="reg_no" name="reg_no">
+            </div>
+
+            <div class="field-group">
+              <label class="field-label required">登録期限<span id="reglimitExpiredBadge" class="expired-badge hidden">　期限切れ</span></label>
+              <input type="date" id="reglimit_date" name="reglimit_date" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">技能証</label>
+              <select id="license" name="license" class="field-input">
+                <option value="">選択</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="NP">NP</option>
+                <option value="P">P</option>
+                <option value="XC">XC</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">リパック日（年月）<span id="repackExpiredBadge" class="expired-badge hidden">　期限切れ</span></label>
+              <input type="month" id="repack_date" name="repack_date" class="field-input">
+            </div>
+
+            <!-- 登録期限の下に移動 -->
+            <div class="field-group">
+              <label class="field-label">使用機体</label>
+              <input type="text" id="glider_name" name="glider_name" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">機体カラー</label>
+              <input type="text" id="glider_color" name="glider_color" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">ホームエリア</label>
+              <input type="text" id="home_area" name="home_area" class="field-input">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ══ 連絡先 ══ -->
+        <div class="form-section">
+          <h2 class="section-title">連絡先</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">郵便番号</label>
+              <div class="zip-row">
+                <div class="zip-split-wrap">
+                  <input type="text" id="zip_code1" class="field-input zip-input-3"
+                         placeholder="000" maxlength="3" inputmode="numeric">
+                  <span class="zip-hyphen">-</span>
+                  <input type="text" id="zip_code2" class="field-input zip-input-4"
+                         placeholder="0000" maxlength="4" inputmode="numeric">
+                  <!-- 保存・検索用の結合値（hidden） -->
+                  <input type="hidden" id="zip_code" name="zip_code">
                 </div>
-              </div>
-              <div class="field-group span-2">
-                <label class="field-label">住所</label>
-                <input type="text" id="address" name="address" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">携帯番号</label>
-                <input type="tel" id="mobile_phone" name="mobile_phone" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">自宅番号</label>
-                <input type="tel" id="home_phone" name="home_phone" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">メールアドレス</label>
-                <input type="email" id="email" name="email" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">勤務先</label>
-                <input type="text" id="company_name" name="company_name" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">勤務先電話番号</label>
-                <input type="tel" id="company_phone" name="company_phone" class="field-input">
+                <button type="button" class="btn-zip" id="btnZip">住所検索</button>
               </div>
             </div>
-          </div>
-
-          <!-- 緊急連絡先 -->
-          <div class="form-section">
-            <h2 class="section-title">緊急連絡先</h2>
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label">緊急連絡先氏名</label>
-                <input type="text" id="emergency_name" name="emergency_name" class="field-input">
-              </div>
-              <div class="field-group">
-                <label class="field-label">緊急連絡先番号</label>
-                <input type="tel" id="emergency_phone" name="emergency_phone" class="field-input">
-              </div>
+            <div class="field-group span-2">
+              <label class="field-label">住所</label>
+              <input type="text" id="address" name="address" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">携帯番号</label>
+              <input type="tel" id="mobile_phone" name="mobile_phone" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">自宅番号</label>
+              <input type="tel" id="home_phone" name="home_phone" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">Email</label>
+              <input type="email" id="email" name="email" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">勤務先</label>
+              <input type="text" id="company_name" name="company_name" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">勤務先電話番号</label>
+              <input type="tel" id="company_phone" name="company_phone" class="field-input">
             </div>
           </div>
+        </div>
 
-          <!-- 傷病履歴 -->
-          <div class="form-section">
-            <h2 class="section-title">傷病履歴</h2>
-            <div class="form-grid">
-              <div class="field-group span-3">
-                <textarea id="medical_history" name="medical_history" class="field-input" rows="4"></textarea>
-              </div>
+        <!-- ══ 緊急連絡先 ══ -->
+        <div class="form-section">
+          <h2 class="section-title">緊急連絡先</h2>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label required">氏名</label>
+              <input type="text" id="emergency_name" name="emergency_name" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">電話番号</label>
+              <input type="tel" id="emergency_phone" name="emergency_phone" class="field-input">
+            </div>
+            <div class="field-group">
+              <label class="field-label">本人との続柄</label>
+              <input type="text" id="relationship" name="relationship" class="field-input" placeholder="例: 配偶者">
             </div>
           </div>
+        </div>
 
-        </div><!-- /.member-form -->
+        <!-- ══ 傷病履歴 ══ -->
+        <div class="form-section">
+          <h2 class="section-title">傷病履歴</h2>
+          <div class="form-grid">
+            <div class="field-group span-3">
+              <textarea id="medical_history" name="medical_history" class="field-input" rows="4"
+                        placeholder="脱臼・骨折癖・骨折後数週間など、その他持病があれば記載してください"></textarea>
+            </div>
+          </div>
+        </div>
+
       </form>
     </section>
 
-  </div><!-- /upd-scroll-area -->
+  </div><!-- /scroll-area -->
 
-</main>
-
-<!-- 確認モーダル -->
-<div class="modal-overlay hidden" id="confirmModal">
-  <div class="modal">
-    <h3 class="modal-title">変更内容の確認</h3>
-    <p class="modal-text">以下の項目を変更します。よろしいですか？</p>
-    <div class="modal-changes" id="changeList"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="btnModalCancel">キャンセル</button>
-      <button class="btn btn-primary" id="btnConfirm">登 録</button>
+  <!-- ══ PASSコード認証モーダル（改定７追加） ══ -->
+  <div class="pass-overlay hidden" id="passOverlay">
+    <div class="pass-modal">
+      <div class="pass-modal-header">
+        <span class="pass-modal-title">本人確認</span>
+        <button type="button" class="pass-modal-close" id="btnPassClose">✕</button>
+      </div>
+      <div class="pass-modal-body">
+        <div class="pass-target-name" id="passTargetName">—</div>
+        <p class="pass-desc">
+          登録されている携帯番号の<strong>下4桁</strong>を入力してください
+        </p>
+        <div class="pass-input-wrap">
+          <input
+            type="tel"
+            id="passInput"
+            class="pass-input"
+            maxlength="4"
+            placeholder="0000"
+            autocomplete="off"
+            inputmode="numeric"
+          />
+        </div>
+        <div id="passError" class="pass-error hidden"></div>
+        <div class="pass-actions">
+          <button type="button" class="btn btn-primary" id="btnPassConfirm">確　認</button>
+          <button type="button" class="btn btn-ghost"   id="btnPassCancel">キャンセル</button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- トースト -->
-<div class="toast hidden" id="toast"></div>
+  <!-- ══ 確認モーダル ══ -->
+  <div class="modal-overlay hidden" id="confirmModal">
+    <div class="modal">
+      <h3 class="modal-title">変更内容の確認</h3>
+      <p class="modal-text">以下の変更を行います。<strong style="color:var(--warning);">コース変更はスタッフ確認後に反映</strong>、それ以外は即時反映されます。</p>
+      <div class="modal-changes" id="changeList"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnModalCancel">キャンセル</button>
+        <button class="btn btn-primary" id="btnConfirm">登　録</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ トースト ══ -->
+  <div class="toast hidden" id="toast"></div>
 
 <script src="{{ url_for('static', filename='app_mem_upd.js') }}"></script>
+<script>
+/* ════════════════════════════════════════
+   コース情報UI制御（改定５版 2026/3/23）
+════════════════════════════════════════ */
+(function () {
+
+  /* ──────────────────────────────────────
+     configから料金マップを取得
+  ────────────────────────────────────── */
+  const courseFeeMap = {};
+  const FEE_TARGETS = [
+    "年会費",
+    "冬季料金","冬季1月","冬季2月","冬季3月","冬季4月",
+    "Bコース入校料","NPコース入校料","Pコース入校料",
+    "XCコース入校料","Tコース入校料",
+  ];
+
+  function formatFee(n) { return "￥" + Number(n).toLocaleString("ja-JP"); }
+
+  fetch("/config/api/masters?category=" + encodeURIComponent("パラ"))
+    .then(r => r.json())
+    .then(masters => Promise.all(
+      masters
+        .filter(m => FEE_TARGETS.includes(m.item_name))
+        .map(m => fetch("/config/api/values/" + m.id).then(r => r.json()).then(vals => {
+          const a = vals.find(v => v.is_active);
+          if (a && a.value) courseFeeMap[m.item_name] = Number(a.value);
+        }))
+    ))
+    .then(() => { updateCourseFeeDisplay(); })
+    .catch(() => {});
+
+  /* ──────────────────────────────────────
+     コース内容の選択肢定義
+  ────────────────────────────────────── */
+  const COURSE_NAME_OPTIONS = {
+    "冬季会員": [
+      { value: "ALL", text: "年会費（12/1～4/30）" },
+      { value: "1",   text: "1月入会" },
+      { value: "2",   text: "2月入会" },
+      { value: "3",   text: "3月入会" },
+      { value: "4",   text: "4月入会" },
+    ],
+    "スクール": [
+      { value: "B",  text: "Bコース" },
+      { value: "NP", text: "NPコース" },
+      { value: "P",  text: "Pコース" },
+      { value: "XC", text: "XCコース" },
+      { value: "T",  text: "タンデムコース" },
+    ],
+  };
+
+  /* コースタイプ + コース内容 → config item_name */
+  function resolveCourseFeeKey(memberType, courseNameVal) {
+    if (memberType === "年会員")   return "年会費";
+    if (memberType === "冬季会員") {
+      const map = { "ALL":"冬季料金","1":"冬季1月","2":"冬季2月","3":"冬季3月","4":"冬季4月" };
+      return map[courseNameVal] || null;
+    }
+    if (memberType === "スクール") {
+      const map = { "B":"Bコース入校料","NP":"NPコース入校料","P":"Pコース入校料",
+                    "XC":"XCコース入校料","T":"Tコース入校料" };
+      return map[courseNameVal] || null;
+    }
+    return null;
+  }
+
+  /* ──────────────────────────────────────
+     DOM参照
+  ────────────────────────────────────── */
+  const memberTypeSel    = document.getElementById("member_type");
+  const schoolCourseWrap = document.getElementById("schoolCourseWrap");
+  const courseFeeDisplay = document.getElementById("courseFeeDisplay");
+  const courseFeeAmount  = document.getElementById("courseFeeAmount");
+  const courseNameSel    = document.getElementById("course_name");
+
+  /* ──────────────────────────────────────
+     コース内容セレクトの選択肢を更新
+  ────────────────────────────────────── */
+  function updateCourseNameOptions(memberType) {
+    courseNameSel.innerHTML = '<option value="">コース内容を選択</option>';
+    const opts = COURSE_NAME_OPTIONS[memberType];
+    if (opts) {
+      opts.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.textContent = opt.text;
+        courseNameSel.appendChild(o);
+      });
+    }
+  }
+
+  /* ──────────────────────────────────────
+     料金表示を更新
+  ────────────────────────────────────── */
+  function updateCourseFeeDisplay() {
+    const mt = memberTypeSel ? memberTypeSel.value : "";
+    const cn = courseNameSel ? courseNameSel.value : "";
+
+    if (!mt || mt === "ビジター") {
+      courseFeeDisplay.classList.remove("visible");
+      return;
+    }
+    if (mt === "年会員") {
+      const fee = courseFeeMap["年会費"];
+      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeDisplay.classList.add("visible");
+      return;
+    }
+    if (mt === "冬季会員" || mt === "スクール") {
+      if (!cn) { courseFeeDisplay.classList.remove("visible"); return; }
+      const key = resolveCourseFeeKey(mt, cn);
+      const fee = key ? courseFeeMap[key] : undefined;
+      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeDisplay.classList.add("visible");
+      return;
+    }
+    courseFeeDisplay.classList.remove("visible");
+  }
+
+  /* ──────────────────────────────────────
+     コースタイプ変更イベント
+  ────────────────────────────────────── */
+  if (memberTypeSel) {
+    memberTypeSel.addEventListener("change", function () {
+      const val = this.value;
+      updateCourseNameOptions(val);
+      if (val === "冬季会員" || val === "スクール") {
+        schoolCourseWrap.classList.add("visible");
+      } else {
+        schoolCourseWrap.classList.remove("visible");
+        courseNameSel.value = "";
+      }
+      updateCourseFeeDisplay();
+    });
+  }
+  if (courseNameSel) {
+    courseNameSel.addEventListener("change", function () { updateCourseFeeDisplay(); });
+  }
+
+  /* ──────────────────────────────────────
+     期限切れ判定ユーティリティ
+  ────────────────────────────────────── */
+  function isDateExpired(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    return d < today;
+  }
+
+  /* リパック日期限切れ判定：リパック月含め6か月後の月末を超えたら期限切れ */
+  function isRepackExpired(yearMonth) {
+    if (!yearMonth) return false;
+    const parts = yearMonth.slice(0,7).split("-");
+    if (parts.length < 2) return false;
+    const year  = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    if (isNaN(year) || isNaN(month)) return false;
+    let limitYear = year, limitMonth = month + 5;
+    if (limitMonth > 12) {
+      limitYear  += Math.floor((limitMonth - 1) / 12);
+      limitMonth  = ((limitMonth - 1) % 12) + 1;
+    }
+    const limitDate = new Date(limitYear, limitMonth, 0);
+    limitDate.setHours(23,59,59,999);
+    return new Date() > limitDate;
+  }
+
+  /* ──────────────────────────────────────
+     期限切れチェック（バッジ＋日付赤文字）
+     返値: { reglimitExpired, repackExpired }
+  ────────────────────────────────────── */
+  function updateExpiredBadges() {
+    const reglimitEl    = document.getElementById("reglimit_date");
+    const reglimitBadge = document.getElementById("reglimitExpiredBadge");
+    const repackEl      = document.getElementById("repack_date");
+    const repackBadge   = document.getElementById("repackExpiredBadge");
+
+    const reglimitExpired = reglimitEl ? isDateExpired(reglimitEl.value) : false;
+    const repackExpired   = repackEl   ? isRepackExpired(repackEl.value) : false;
+
+    /* バッジ表示 */
+    if (reglimitBadge) reglimitBadge.classList.toggle("hidden", !reglimitExpired);
+    if (repackBadge)   repackBadge.classList.toggle("hidden",   !repackExpired);
+
+    /* 日付フィールド自体を赤文字に */
+    if (reglimitEl) {
+      reglimitEl.style.color = reglimitExpired ? "var(--danger)" : "";
+    }
+    if (repackEl) {
+      repackEl.style.color = repackExpired ? "var(--danger)" : "";
+    }
+
+    return { reglimitExpired, repackExpired };
+  }
+
+  /* 入力変更時にも都度チェック */
+  const reglimitEl = document.getElementById("reglimit_date");
+  const repackEl   = document.getElementById("repack_date");
+  if (reglimitEl) reglimitEl.addEventListener("change", updateExpiredBadges);
+  if (repackEl)   repackEl.addEventListener("change",   updateExpiredBadges);
+
+  /* ──────────────────────────────────────
+     期限切れ状態を外部（app_mem_upd.js）から
+     参照できるように公開
+  ────────────────────────────────────── */
+  window.getExpiredStatus = function () {
+    return updateExpiredBadges();
+  };
+
+  /* ──────────────────────────────────────
+     ★ 申請状態パネル表示（改定５追加）
+     app_status: 'pending' | 'approved' | 'rejected' | null
+     memberType : コース名（変更後）
+     extra      : { appliedAt, confirmedAt, confirmedBy, notes }
+  ────────────────────────────────────── */
+  window.showStatusBadge = function (appStatus, memberType, extra) {
+    const panel    = document.getElementById("appStatusPanel");
+    const bar      = document.getElementById("appStatusBar");
+    const icon     = document.getElementById("appStatusIcon");
+    const label    = document.getElementById("appStatusLabel");
+    const dateEl   = document.getElementById("appStatusDate");
+    const targetEl = document.getElementById("appStatusTarget");
+    const noteEl   = document.getElementById("appStatusNote");
+
+    if (!panel) return;
+
+    if (!appStatus) {
+      panel.classList.remove("visible");
+      return;
+    }
+
+    extra = extra || {};
+    const mtLabel = memberType ? "「" + memberType + "」" : "";
+
+    panel.classList.add("visible");
+    bar.className = "app-status-bar " + appStatus;
+
+    if (appStatus === "member_pending") {
+      icon.textContent  = "⏳";
+      label.textContent = "新規申込　申請中";
+      dateEl.textContent = extra.appliedAt ? extra.appliedAt + " 申請日" : "";
+      targetEl.textContent = "スタッフが内容を確認中です。確認後に有効化されます。";
+    } else if (appStatus === "pending") {
+      icon.textContent  = "⏳";
+      label.textContent = "コース変更　申請中";
+      dateEl.textContent = extra.appliedAt ? extra.appliedAt + " 申請日" : "";
+      targetEl.innerHTML = mtLabel
+        ? "変更後コース：<span class='app-status-target'>" + mtLabel + "</span>　／　スタッフ確認後に反映されます。"
+        : "スタッフ確認後に反映されます。";
+    } else if (appStatus === "approved") {
+      icon.textContent  = "✅";
+      label.textContent = "コース変更　承認済み";
+      dateEl.textContent = extra.confirmedAt ? extra.confirmedAt + " 承認" : "";
+      targetEl.innerHTML = mtLabel
+        ? "変更後コース：<span class='app-status-target'>" + mtLabel + "</span>"
+        : "承認済み";
+    } else if (appStatus === "rejected") {
+      icon.textContent  = "❌";
+      label.textContent = "コース変更　却下";
+      dateEl.textContent = extra.confirmedAt ? extra.confirmedAt + " 処理" : "";
+      targetEl.textContent = "申請は却下されました。内容を確認して再申請してください。";
+    }
+
+    // 却下理由
+    if (appStatus === "rejected" && extra.notes) {
+      noteEl.textContent = "却下理由：" + extra.notes;
+      noteEl.classList.remove("hidden");
+    } else {
+      noteEl.textContent = "";
+      noteEl.classList.add("hidden");
+    }
+  };
+
+  /* 後方互換：showApplyingBadge も showStatusBadge を呼ぶ */
+  window.showApplyingBadge = function (memberType) {
+    if (!memberType || memberType === "ビジター") {
+      window.showStatusBadge(null, "");
+    } else {
+      window.showStatusBadge("pending", memberType, null);
+    }
+  };
+
+  /* ──────────────────────────────────────
+     期限日計算（開始日基準）
+     年会員・スクール：開始日から1年（1年後の前日）
+     冬季会員：当年or翌年の4/30
+  ────────────────────────────────────── */
+  function calcExpireDate(mt, base) {
+    if (!base) return null;
+    const d = new Date(base);
+    if (isNaN(d)) return null;
+    if (mt === "年会員" || mt === "スクール") {
+      // 開始日から1年後（例: 2025-03-01 → 2026-02-28）
+      const e = new Date(d);
+      e.setFullYear(e.getFullYear() + 1);
+      e.setDate(e.getDate() - 1);
+      return e;
+    }
+    if (mt === "冬季会員") {
+      const mon = d.getMonth() + 1;
+      return new Date(mon === 12 ? d.getFullYear() + 1 : d.getFullYear(), 3, 30);
+    }
+    return null;
+  }
+
+  function fmtJp(d) {
+    if (!d) return "―";
+    return `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,"0")}月${String(d.getDate()).padStart(2,"0")}日`;
+  }
+
+  function remainDays(exp) {
+    if (!exp) return null;
+    const t = new Date(); t.setHours(0,0,0,0);
+    return Math.ceil((exp - t) / 86400000);
+  }
+
+  /* 更新ボタンのトグル状態 */
+  let _renewalPending = false;
+  window.handleRenewalBtn = function () {
+    _renewalPending = !_renewalPending;
+    const waitEl  = document.getElementById("renewalWaiting");
+    const ccsWrap = document.querySelector(".course-change-row");
+    if (waitEl)  waitEl.classList.toggle("hidden", !_renewalPending);
+    // コース変更セレクトを無効化
+    if (ccsWrap) {
+      const selects = ccsWrap.querySelectorAll("select");
+      selects.forEach(s => { s.disabled = _renewalPending; });
+    }
+    const btn = document.getElementById("btnRenewal");
+    if (btn) btn.textContent = _renewalPending ? "更新をキャンセル" : "更新";
+  };
+
+  /* ──────────────────────────────────────
+     現在コース表示更新（loadForm後に呼ぶ）
+     改定６: course_start_date を使用、申請中はコース変更不可
+     ★ appData を省略した場合は API から自動取得する
+  ────────────────────────────────────── */
+  window.updateCurrentCourseDisplay = async function (data, appData) {
+    // appData が渡されていない場合は API から取得
+    if (appData === undefined && data && data.id) {
+      try {
+        const res = await fetch(`/api/members/${data.id}/pending_application`);
+        appData = res.ok ? await res.json() : null;
+      } catch { appData = null; }
+    }
+
+    const mt        = data.member_type || data.member_class || "";
+    // 開始日: course_start_date（member_courses.start_date）を優先
+    const startDate = data.course_start_date || data.confirmed_at || data.application_date || data.updated_at || null;
+
+    const el = id => document.getElementById(id);
+
+    if (el("currentCourseValue")) el("currentCourseValue").textContent = mt || "未設定";
+    if (el("currentApplyDate"))   el("currentApplyDate").textContent   = startDate ? fmtJp(new Date(startDate.slice(0,10))) : "―";
+
+    const exp = calcExpireDate(mt, startDate ? startDate.slice(0,10) : null);
+    const expEl = el("currentExpireDate");
+    if (expEl) {
+      expEl.textContent = exp ? fmtJp(exp) : "―";
+      if (exp) {
+        const days = remainDays(exp);
+        expEl.style.color = days < 0 ? "var(--danger)" : "";
+      } else {
+        expEl.style.color = "";
+      }
+    }
+
+    const rem = el("remainingDays");
+    if (rem) {
+      if (!exp) { rem.textContent = ""; rem.className = "remaining-days none"; }
+      else {
+        const days = remainDays(exp);
+        rem.textContent = days >= 0 ? `【残${days}日】` : `【超過${Math.abs(days)}日】`;
+        rem.className = "remaining-days " + (days > 30 ? "ok" : days > 0 ? "warn" : "danger");
+      }
+    }
+
+    // ── 申請中の処理 ──
+    const isPending = appData && appData.app_status === "pending" && appData.status_type === "course_change";
+
+    // 申請中コース情報を右端に表示
+    const pendingInfoEl = el("pendingCourseInfo");
+    if (pendingInfoEl) {
+      if (isPending && appData.changes) {
+        const ch = appData.changes;
+        const parts = [];
+        if (ch.member_type)  parts.push(ch.member_type);
+        if (ch.course_name)  parts.push(ch.course_name);
+        if (ch.course_fee)   parts.push(`¥${Number(ch.course_fee).toLocaleString()}`);
+        pendingInfoEl.textContent = parts.length ? "→ 申請中：" + parts.join(" ／ ") : "";
+        pendingInfoEl.classList.toggle("hidden", parts.length === 0);
+      } else {
+        pendingInfoEl.classList.add("hidden");
+      }
+    }
+
+    // ── 申請中はコース変更を無効化 ──
+    const changeRow = document.querySelector(".course-change-row");
+    if (changeRow) {
+      if (isPending) {
+        changeRow.style.opacity = "0.4";
+        changeRow.style.pointerEvents = "none";
+      } else {
+        changeRow.style.opacity = "";
+        changeRow.style.pointerEvents = "";
+      }
+    }
+
+    // ── 年会員の「更新」ボタン ──
+    const btnRenewal     = el("btnRenewal");
+    const renewalWaiting = el("renewalWaiting");
+    _renewalPending = false;
+    if (btnRenewal) {
+      btnRenewal.textContent = "更新";
+      if (isPending || mt !== "年会員") {
+        btnRenewal.classList.add("hidden");
+        if (renewalWaiting) renewalWaiting.classList.add("hidden");
+      } else {
+        // 期限2ヶ月前から使用可能
+        const twoMonthsBefore = exp ? new Date(exp) : null;
+        if (twoMonthsBefore) twoMonthsBefore.setMonth(twoMonthsBefore.getMonth() - 2);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const canRenew = twoMonthsBefore && today >= twoMonthsBefore;
+        btnRenewal.classList.toggle("hidden", !canRenew);
+        btnRenewal.disabled = !canRenew;
+        if (renewalWaiting) renewalWaiting.classList.add("hidden");
+      }
+    }
+
+    /* ★ 申請状態パネル：申請中なら表示、それ以外はリセット
+       （_loadPendingApplicationがない場合もここで確定表示する） */
+    if (typeof window.showStatusBadge === "function") {
+      if (appData && appData.app_status === "pending") {
+        const changes = appData.changes || {};
+        const changesMt = changes.member_type || "";
+        const changesCn = changes.course_name || "";
+        const mtLabel   = [changesMt, changesCn].filter(Boolean).join(" ");
+        window.showStatusBadge("pending", mtLabel, {
+          appliedAt: appData.applied_at ? appData.applied_at.slice(0, 10) : "",
+        });
+      } else if (appData && appData.status_type === "member_pending") {
+        window.showStatusBadge("member_pending", "", {
+          appliedAt: appData.applied_at || "",
+        });
+      } else {
+        // 申請なし → パネル非表示（app_mem_upd.jsが別途呼ぶ場合もある）
+        window.showStatusBadge(null, "");
+      }
+    }
+
+    /* コース選択リセット（未選択＝現在のコースのまま申請） */
+    if (memberTypeSel)    { memberTypeSel.value = ""; }
+    if (schoolCourseWrap) { schoolCourseWrap.classList.remove("visible"); }
+    if (courseFeeDisplay) { courseFeeDisplay.classList.remove("visible"); }
+    if (courseNameSel)    { courseNameSel.innerHTML = '<option value="">コース内容を選択</option>'; }
+
+    /* 期限切れバッジを更新 */
+    updateExpiredBadges();
+  };
+
+  /* ──────────────────────────────────────
+     現在のコースをJS側で参照できるよう公開
+  ────────────────────────────────────── */
+  window.getCurrentMemberTypeForSubmit = function (originalMemberType) {
+    const sel = document.getElementById("member_type");
+    return sel && sel.value ? sel.value : originalMemberType;
+  };
+
+})();
+</script>
 </body>
 </html>

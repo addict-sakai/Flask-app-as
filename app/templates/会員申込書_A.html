@@ -1,161 +1,365 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-  <meta charset="UTF-8" />
-  <title>【Aコース】エリア会員 申込書</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem_a.css') }}">
-  <!-- <script src="{{ url_for('static', filename='app_mem_a.js') }}"></script> -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ａコース　入校申込書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_mem.css') }}">
   <!-- flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 
-<body>
-  <!-- ナビゲーションヘッダー -->
-  <div class="lang-bar no-print">
-    <div class="action-btns">
-      <button type="button" id="submitBtn" class="submit-btn">申 請</button>
-      <button type="button" id="printBtn" class="print-btn">🖨 印刷</button>
-      <button type="button" id="exitBtn" class="exit-btn">終 了</button>
+<body data-apply-mode="mem_a">
+<!-- ══════════════════════════════════════
+     画面表示 UI（印刷時非表示）
+══════════════════════════════════════ -->
+<div class="screen-ui no-print">
+
+  <!-- 固定ヘッダー -->
+  <div class="fixed-header">
+    <div class="page-header">
+      <div class="page-header-left">
+        <!-- <a href="/apply_flyer" class="btn btn-ghost top-btn"><span class="icon">←</span>戻る</a> -->
+        <a></a>
+      </div>
+      <h1 class="page-title">Ａコース　入校申込書</h1>
+      <div class="page-header-right">
+        <button type="button" class="btn btn-ghost" id="printBtn">🖨 印刷</button>
+        <button type="button" class="btn btn-primary" id="submitBtn">申 請</button>
+        <button type="button" class="btn btn-ghost" id="exitBtn">終 了</button>
+      </div>
     </div>
   </div>
-  <form id="entryForm">
-    <div class="sheet">
-      <h1>【Aコース】エリア会員 申込書</h1>
-      <table>
-        <th>申込日</th>
-        <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
-      </table>
 
-      <table>
-        <tr>
-          <th>氏名</th>
-          <td><input type="text" id="fullName" name="full_name"></td>
-          <th>フリガナ</th>
-          <td><input type="text" id="furigana" name="furigana" placeholder="自動入力されます"></td>
-        </tr>
-        <tr>
-          <th>性別</th>
-          <td>
-            <select name="gender">
-              <option value="" selected>-- 選択してください --</option>
+  <!-- スクロールエリア -->
+  <div class="scroll-area">
+    <form id="entryForm">
+
+      <!-- ── 基本情報 ── -->
+      <div class="form-section">
+        <h2 class="section-title">基本情報</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label">申込日</label>
+            <input type="text" class="field-input js-date" id="application_date" name="application_date">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">氏名</label>
+            <input type="text" class="field-input" id="fullName" name="full_name"
+                   inputmode="hiragana" placeholder="例: 富士　太郎">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">フリガナ</label>
+            <input type="text" class="field-input" id="furigana" name="furigana"
+                   placeholder="自動入力されます">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">性別</label>
+            <select class="field-input" name="gender">
+              <option value="">選択</option>
               <option value="男">男</option>
               <option value="女">女</option>
             </select>
-          </td>
-          <th>血液型</th>
-          <td>
-            <select name="blood_type">
-              <option value="" selected>-- 選択してください --</option>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">血液型</label>
+            <select class="field-input" name="blood_type">
+              <option value="">選択</option>
               <option value="A">Ａ</option>
               <option value="B">Ｂ</option>
               <option value="O">Ｏ</option>
               <option value="AB">ＡＢ</option>
               <option value="不明">不明</option>
             </select>
-          </td>
-        </tr>
-        <tr>
-          <th>生年月日</th>
-          <td><input type="text" class="js-date" id="birthday" name="birthday"></td>
-          <th>年齢</th>
-          <td><input type="text" id="age" readonly></td>
-        </tr>
-        <tr>
-          <th>郵便番号</th>
-          <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
-              <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
-          <th>体重（kg）</th>
-          <td><input type="text" id="weight" name="weight"></td>
-        </tr>
-        <tr>
-          <th>住所</th>
-          <td colspan="3"><input type="text" id="address" name="address"></td>
-        </tr>
-        <tr>
-          <th>携帯電話</th>
-          <td><input type="text" name="mobile_phone"></td>
-          <th>自宅電話</th>
-          <td><input type="text" name="home_phone"></td>
-        </tr>
-        <tr>
-          <th>勤務先名</th>
-          <td><input type="text" name="company_name"></td>
-          <th>電話番号（勤務先）</th>
-          <td><input type="text" name="company_phone"></td>
-        </tr>
-        <tr>
-          <th>緊急連絡先氏名</th>
-          <td><input type="text" name="emergency_name"></td>
-          <th>電話番号（緊急時）</th>
-          <td><input type="text" name="emergency_phone"></td>
-        </tr>
-        <tr>
-          <th>本人との続柄</th>
-          <td><input type="text" id="relationship" name="relationship"></td>
-          <th>e-mail</th>
-          <td><input type="text" id="email" name="email"></td>
-        </tr>
-      </table>
+          </div>
 
-      <div class="rules">
-        <strong>◎当スクールを何でお知りになりましたか？</strong><br>
-        <input type="text" id="course_find" name="course_find"><br><br>
-        <strong>◎Aコース入校料：¥10,000　※当日の受付料金 ¥2,100（日ごとにかかります）</strong><br><br>
-        <strong>◎エリア規定</strong><br>
-        　・ 必ず受付を済ませてから入場し、許可を受けずにフライトしない事。<br>
-        　・ フライトする時は、スタッフの指示に従う事。<br>
-        　・ 山火事を出さない為に山中での喫煙及び焚火の禁止。農作物や草木／果物等の採取の禁止。<br>
-        　・ エリア内でのパラグライダー用品及び機材の売買の禁止。<br>
-        　・ 会員／非会員を問わず当エリアを使用しての営業の禁止。（タンデム／体験／スクール講習等）<br>
-        　・ 会員がゲレンデのみを使用する場合にも、エリア管理費は必要です。<br>
-        　・ 会員がＴＨＰホールディング株式会社及びMt.FUJIPARAGULIDINGに対し、不利益をもたらす様な行為をしたと判断した場合、
-        一切の理由を問わず、会員を解約出来るものとする。（有効期限残存期間に関わらず、一切返金は致しません。）<br>
-        　・ 当社の都合により、予告無く定休日を設ける場合があることをご了承頂きます。<br>
-        　・ ご購入後原則一年以内を目安にお使いください。<br>
-        　・ なお、ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
-        　・ 初回の予約で年間保険の加入が必須となります。（4/1～3/31 ¥2,000）<br>
-        <strong>★ご参加の際の注意事項・・・・・</strong><br>
-        　　　　　<strong>アウトドアでため、気象条件の悪化等により、やむなく中止せざるを得ない場合もありますので、ご了承頂きます。</strong>
+          <div class="field-group">
+            <label class="field-label required">生年月日</label>
+            <input type="text" class="field-input js-date" id="birthday" name="birthday">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">年齢</label>
+            <input type="text" class="field-input" id="age" readonly>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">体重（kg）</label>
+            <input type="text" class="field-input" name="weight" inputmode="decimal">
+          </div>
+
+        </div>
       </div>
 
-      <div class="agreement">
-        <strong>参加誓約書</strong><br>
-        ＴＨＰホールディング株式会社　　　Mt.FUJI PARAGLIDING　殿<br><br>
-        私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
-        その結果私自身に生じたいかなる障害及び損害に対しても（予測可能か不可能かを問わず）私自身が全責任を負うものとします。私及び私の家族や関係者は、
-        私に生じた障害及び損害の保障に関して《損害保険》の範囲とし、当スクール関係者に対して、その他の責任追及、及び損害賠償請求を一切致しません。
-        又、アウトドアである事を充分に理解し、汚れても差し支えの無い服装で参加し、時計／メガネ等の装着品に関しても、万一何らかの理由により破損した場合、
-        理由のいかんに関わらず損害賠償請求、及びそれに類似した行為を一切致しません。又、マナー違反など、弊社に不利益をもたらした場合、退場を申し渡されても、
-        異議申し立てや損害賠償請求、及びそれに類似した行為を、一切致しません。エリア内（上空・地上）において撮影された写真及び映像に関しても、
-        一切の肖像権を主張いたしませんれ。<br><br>
-        <table>
-          <tr>
-            <th>確認日</th>
-            <td><input type="text" class="js-date" ID="agreement_date" name="agreement_date"></td>
-            <th>本人署名</th>
-            <td><input type="text" name="signature_name"></td>
-          </tr>
-          <tr>
-            <th>保護者氏名（20歳未満）</th>
-            <td colspan="3"><input type="text" name="guardian_name"></td>
-          </tr>
-        </table>
+      <!-- ── 連絡先 ── -->
+      <div class="form-section">
+        <h2 class="section-title">連絡先</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label">郵便番号</label>
+            <div class="zip-group">
+              <input type="text" class="field-input" id="zip1" name="zip1"
+                     maxlength="3" inputmode="numeric" placeholder="000" style="width:68px;">
+              <span class="zip-sep">-</span>
+              <input type="text" class="field-input" id="zip2" name="zip2"
+                     maxlength="4" inputmode="numeric" placeholder="0000" style="width:86px;">
+            </div>
+          </div>
+
+          <div class="field-group span-2">
+            <label class="field-label">住所</label>
+            <input type="text" class="field-input" id="address" name="address">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">携帯電話</label>
+            <input type="tel" class="field-input" id="mobile_phone" name="mobile_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">自宅電話</label>
+            <input type="tel" class="field-input" name="home_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">e-mail</label>
+            <input type="email" class="field-input" id="email" name="email" inputmode="email">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">勤務先名</label>
+            <input type="text" class="field-input" name="company_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">勤務先電話番号</label>
+            <input type="tel" class="field-input" name="company_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">緊急連絡先氏名</label>
+            <input type="text" class="field-input" id="emergency_name" name="emergency_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">緊急連絡先電話番号</label>
+            <input type="tel" class="field-input" id="emergency_phone" name="emergency_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">本人との続柄</label>
+            <input type="text" class="field-input" id="relationship" name="relationship"
+                   placeholder="例: 配偶者">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 入校のきっかけ ── -->
+      <div class="form-section">
+        <h2 class="section-title">入校のきっかけ</h2>
+        <div class="form-grid">
+          <div class="field-group span-3">
+            <label class="field-label">当スクールをお知りになったきっかけ</label>
+            <input type="text" class="field-input" id="course_find" name="course_find"
+                   placeholder="例: インターネット、知人の紹介 など">
+          </div>
+          <div class="field-group span-3">
+            <label class="field-label">体験から入校</label>
+            <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:4px;">
+              <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                <input type="checkbox" id="from_experience" name="from_experience" value="1"
+                       style="width:16px; height:16px; cursor:pointer;">
+                <span>体験から入校</span>
+              </label>
+              <div id="expResvNoGroup" style="display:none; align-items:center; gap:4px;">
+                <span style="font-size:14px; font-weight:500; letter-spacing:0.03em;">P-</span>
+                <input type="text" id="exp_resv_digits" class="field-input"
+                       inputmode="numeric" maxlength="7" placeholder="0000000"
+                       style="width:120px; font-family: var(--font-mono, monospace);">
+                <input type="hidden" id="exp_resv_no" name="exp_resv_no">
+                <span id="expResvNoPreview" style="font-size:13px; color:var(--text-muted); margin-left:4px;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── エリア規定 ── -->
+      <div class="form-section">
+        <h2 class="section-title">エリア規定</h2>
+        <div class="rules-box">
+          <ul class="rules-list">
+            <li>必ず受付を済ませてから入場し、許可を受けずにフライトしない事。</li>
+            <li>フライトする時は、スタッフの指示に従う事。</li>
+            <li>山火事を出さない為に山中での喫煙及び焚火の禁止。農作物や草木／果物等の採取の禁止。</li>
+            <li>エリア内でのパラグライダー用品及び機材の売買の禁止。</li>
+            <li>会員／非会員を問わず当エリアを使用しての営業の禁止。（タンデム／体験／スクール講習等）</li>
+            <li>会員がゲレンデのみを使用する場合にも、エリア管理費は必要です。</li>
+            <li>会員がＴＨＰホールディング株式会社及びMt.FUJIPARAGULIDINGに対し、不利益をもたらす様な行為をしたと判断した場合、一切の理由を問わず、会員を解約出来るものとする。（有効期限残存期間に関わらず、一切返金は致しません。）</li>
+            <li>当社の都合により、予告無く定休日を設ける場合があることをご了承頂きます。</li>
+            <li>ご購入後原則一年以内を目安にお使いください。</li>
+            <li>なお、ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。</li>
+            <li>初回の予約で年間保険の加入が必須となります。</li>
+          </ul>
+          <p class="rules-warning">★ご参加の際の注意事項……アウトドアであるため、気象条件の悪化等により、やむなく中止せざるを得ない場合もありますので、ご了承頂きます。</p>
+        </div>
+
+        <div style="margin-top: 14px; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary);">
+          <strong style="color: var(--text-primary);">◎Aコース入校料：<span id="fee_course"></span></strong>　※当日の受付料金 <span id="fee_reception"></span>（日ごとにかかります）　年間保険料：<span id="fee_insurance"></span>（4/1〜3/31）
+        </div>
+      </div>
+
+      <!-- ── 参加誓約書 ── -->
+      <div class="form-section">
+        <h2 class="section-title">参加誓約書</h2>
+        <div class="pledge-box">
+          <p class="pledge-text">
+            ＴＨＰホールディング株式会社　　Mt.FUJI PARAGLIDING　殿<br><br>
+            私、<strong id="agreeName" class="agree-name">　　　　　　　　　</strong>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+            その結果私自身に生じたいかなる障害及び損害に対しても（予測可能か不可能かを問わず）私自身が全責任を負うものとします。
+            私及び私の家族や関係者は、私に生じた障害及び損害の保障に関して《損害保険》の範囲とし、当スクール関係者に対して、その他の責任追及、及び損害賠償請求を一切致しません。
+            又、アウトドアである事を充分に理解し、汚れても差し支えの無い服装で参加し、時計／メガネ等の装着品に関しても、万一何らかの理由により破損した場合、
+            理由のいかんに関わらず損害賠償請求、及びそれに類似した行為を一切致しません。
+            又、マナー違反など、弊社に不利益をもたらした場合、退場を申し渡されても、異議申し立てや損害賠償請求、及びそれに類似した行為を、一切致しません。
+            エリア内（上空・地上）において撮影された写真及び映像に関しても、一切の肖像権を主張いたしません。
+          </p>
+          <div class="form-grid" style="margin-top:20px;">
+            <div class="field-group">
+              <label class="field-label required">確認日</label>
+              <input type="text" class="field-input js-date" id="agreement_date" name="agreement_date">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">本人署名</label>
+              <input type="text" class="field-input" name="signature_name" placeholder="自署してください">
+            </div>
+            <div class="field-group">
+              <label class="field-label">保護者氏名（20歳未満）</label>
+              <input type="text" class="field-input" name="guardian_name">
+            </div>
+          </div>
+        </div>
       </div>
 
       <input type="hidden" name="member_type" value="スクール">
       <input type="hidden" name="course_name" value="A">
       <input type="hidden" name="course_fee" value="10000">
-      <input type="hidden" name="course_type" value="schooling">
-      <!-- <input type="hidden" name="member_number" value=""> -->
+      <input type="hidden" name="course_type" value="スクール">
 
-    </div>
+    </form>
+  </div>
+</div><!-- /screen-ui -->
 
-  </form>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-  <script src="{{ url_for('static', filename='app_mem_a.js') }}"></script>
+<!-- ══════════════════════════════════════
+     印刷専用レイアウト（画面では非表示）
+══════════════════════════════════════ -->
+<div class="print-sheet print-only">
+  <h1>【Aコース】エリア会員　申込書</h1>
+
+  <table class="pt">
+    <tr>
+      <th>申込日</th>
+      <td colspan="3"><span id="p_application_date"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th>氏名</th><td><span id="p_full_name"></span></td>
+      <th>フリガナ</th><td><span id="p_furigana"></span></td>
+    </tr>
+    <tr>
+      <th>性別</th><td><span id="p_gender"></span></td>
+      <th>血液型</th><td><span id="p_blood_type"></span></td>
+    </tr>
+    <tr>
+      <th>生年月日</th><td><span id="p_birthday"></span></td>
+      <th>年齢</th><td><span id="p_age"></span></td>
+    </tr>
+    <tr>
+      <th>郵便番号</th><td><span id="p_zip"></span></td>
+      <th>体重（kg）</th><td><span id="p_weight"></span></td>
+    </tr>
+    <tr>
+      <th>住所</th><td colspan="3"><span id="p_address"></span></td>
+    </tr>
+    <tr>
+      <th>携帯電話</th><td><span id="p_mobile_phone"></span></td>
+      <th>自宅電話</th><td><span id="p_home_phone"></span></td>
+    </tr>
+    <tr>
+      <th>勤務先名</th><td><span id="p_company_name"></span></td>
+      <th>電話番号（勤務先）</th><td><span id="p_company_phone"></span></td>
+    </tr>
+    <tr>
+      <th>緊急連絡先氏名</th><td><span id="p_emergency_name"></span></td>
+      <th>電話番号（緊急時）</th><td><span id="p_emergency_phone"></span></td>
+    </tr>
+    <tr>
+      <th>本人との続柄</th><td><span id="p_relationship"></span></td>
+      <th>e-mail</th><td><span id="p_email"></span></td>
+    </tr>
+    <tr>
+      <th>入校のきっかけ</th><td colspan="3"><span id="p_course_find"></span></td>
+    </tr>
+    <tr>
+      <th>体験から入校</th><td><span id="p_from_experience"></span></td>
+      <th>体験予約番号</th><td><span id="p_exp_resv_no"></span></td>
+    </tr>
+  </table>
+
+  <div class="pt-rules">
+    <strong>◎Aコース入校料：<span id="p_fee_course"></span>　※当日の受付料金 <span id="p_fee_reception"></span>（日ごとにかかります）　年間保険料：<span id="p_fee_insurance"></span>（4/1〜3/31）</strong>
+    <strong>◎エリア規定</strong>
+    ・必ず受付を済ませてから入場し、許可を受けずにフライトしない事。<br>
+    ・フライトする時は、スタッフの指示に従う事。<br>
+    ・山火事を出さない為に山中での喫煙及び焚火の禁止。農作物や草木／果物等の採取の禁止。<br>
+    ・エリア内でのパラグライダー用品及び機材の売買の禁止。<br>
+    ・会員／非会員を問わず当エリアを使用しての営業の禁止。（タンデム／体験／スクール講習等）<br>
+    ・会員がゲレンデのみを使用する場合にも、エリア管理費は必要です。<br>
+    ・会員がＴＨＰホールディング株式会社及びMt.FUJIPARAGULIDINGに対し、不利益をもたらす様な行為をしたと判断した場合、一切の理由を問わず、会員を解約出来るものとする。（有効期限残存期間に関わらず、一切返金は致しません。）<br>
+    ・当社の都合により、予告無く定休日を設ける場合があることをご了承頂きます。<br>
+    ・ご購入後原則一年以内を目安にお使いください。<br>
+    ・なお、ご購入されたフライトチケットは、いかなる場合も払い戻しには応じられません。<br>
+    ・初回の予約で年間保険の加入が必須となります。<br>
+    <strong>★ご参加の際の注意事項……アウトドアであるため、気象条件の悪化等により、やむなく中止せざるを得ない場合もありますので、ご了承頂きます。</strong>
+  </div>
+
+  <div class="pt-agreement">
+    <strong>参加誓約書</strong><br>
+    ＴＨＰホールディング株式会社　　Mt.FUJI PARAGLIDING　殿<br><br>
+    私、<span id="p_agree_name" class="pt-handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
+    その結果私自身に生じたいかなる障害及び損害に対しても（予測可能か不可能かを問わず）私自身が全責任を負うものとします。
+    私及び私の家族や関係者は、私に生じた障害及び損害の保障に関して《損害保険》の範囲とし、当スクール関係者に対して、その他の責任追及、及び損害賠償請求を一切致しません。
+    又、アウトドアである事を充分に理解し、汚れても差し支えの無い服装で参加し、時計／メガネ等の装着品に関しても、万一何らかの理由により破損した場合、
+    理由のいかんに関わらず損害賠償請求、及びそれに類似した行為を一切致しません。
+    又、マナー違反など、弊社に不利益をもたらした場合、退場を申し渡されても、異議申し立てや損害賠償請求、及びそれに類似した行為を、一切致しません。
+    エリア内（上空・地上）において撮影された写真及び映像に関しても、一切の肖像権を主張いたしません。<br>
+    <table class="pt" style="margin-top:6px;">
+      <tr>
+        <th>確認日</th><td><span id="p_agreement_date"></span></td>
+        <th>本人署名</th><td><span id="p_signature_name"></span></td>
+      </tr>
+      <tr>
+        <th>保護者氏名（20歳未満）</th><td colspan="3"><span id="p_guardian_name"></span></td>
+      </tr>
+    </table>
+  </div>
+</div><!-- /print-sheet -->
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+<!-- <script src="{{ url_for('static', filename='app_mem_a.js') }}"></script> -->
+<script src="{{ url_for('static', filename='app_apply.js') }}"></script>
 </body>
 </html>

@@ -8,6 +8,62 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style_info.css') }}">
+  <style>
+    /* 新規申請・コース変更パネル */
+    .new-application-panel {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 32px;
+      align-items: center;
+    }
+    .app-info-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-info-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 80px;
+    }
+    .app-info-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .confirmed-badge {
+      display: inline-block;
+      background: #16a34a;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: .04em;
+    }
+    /* 取消ボタン（入金確認済みチェック横） */
+    .btn-cancel-app {
+      margin-left: 10px;
+      padding: 4px 12px;
+      background: #fff;
+      color: #dc2626;
+      border: 1px solid #dc2626;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .btn-cancel-app:hover {
+      background: #fef2f2;
+    }
+  </style>
 </head>
 <body>
 <main class="main">
@@ -23,7 +79,7 @@
         <div class="page-header-left">
           <a href="/apply_staff_manage" class="btn btn-ghost top-btn"><span class="icon">←</span>管理メニュー</a>
         </div>
-        <h1 class="page-title">会員一覧</h1>
+        <h1 class="page-title">個人情報一覧</h1>
         <div class="page-header-right">
           <div class="total-count-badge">
             総会員数 <span class="count-num" id="totalCount">—</span> 名
@@ -109,14 +165,14 @@
     <div class="edit-fixed-header">
       <div class="page-header">
         <div class="page-header-left">
-          <a href="/apply_staff_manage" class="btn btn-ghost top-btn"><span class="icon">←</span>管理メニュー</a>
+          <a href="/apply_staff_manage" class="btn btn-ghost top-btn" id="btnToMenu"><span class="icon">←</span>管理メニュー</a>
           <button type="button" class="btn btn-ghost" id="backToList">← 一覧に戻る</button>
         </div>
         <h1 class="page-title" id="formTitle">新規登録</h1>
         <div class="page-header-right">
           <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none">削除</button>
           <button type="button" class="btn btn-ghost" id="cancelBtn">キャンセル</button>
-          <button type="button" class="btn btn-primary" id="saveBtn">保存する</button>
+          <button type="button" class="btn btn-primary" id="saveBtn">登録</button>
         </div>
       </div>
     </div><!-- /edit-fixed-header -->
@@ -125,6 +181,105 @@
     <div class="edit-scroll-area">
       <form class="member-form" id="memberForm">
         <input type="hidden" id="editId">
+        <input type="hidden" id="fromSource" value=""><!-- flyer / update_app / list -->
+
+        <!-- 新規申請 -->
+        <div class="form-section" id="newApplicationSection" style="display:none;">
+          <h2 class="section-title">新規申請</h2>
+          <div class="new-application-panel" id="newApplicationPanel">
+            <!-- 申請中（入金確認前） -->
+            <div id="pendingApplicationArea">
+              <div class="app-info-row">
+                <span class="app-info-label">申請日</span>
+                <span class="app-info-value" id="disp_application_date">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">申請コース</span>
+                <span class="app-info-value" id="disp_new_member_type">―</span>
+              </div>
+              <div class="app-info-row" id="disp_new_course_name_row" style="display:none;">
+                <span class="app-info-label">コース内容</span>
+                <span class="app-info-value" id="disp_new_course_name">―</span>
+              </div>
+              <div class="app-info-row" id="disp_new_course_fee_row" style="display:none;">
+                <span class="app-info-label">金額</span>
+                <span class="app-info-value" id="disp_new_course_fee">―</span>
+              </div>
+              <div class="app-info-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="f_payment_confirmed_new">
+                  <span class="checkbox-text">入金済み</span>
+                </label>
+                <button type="button" class="btn-cancel-app" id="btnCancelNewApp" onclick="cancelNewApplication()">取消</button>
+              </div>
+            </div>
+            <!-- 入金確認済み（登録済み） -->
+            <div id="confirmedApplicationArea" style="display:none;">
+              <div class="app-info-row">
+                <span class="app-info-label">登録日</span>
+                <span class="app-info-value" id="disp_confirmed_date">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="confirmed-badge">入金済</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コース変更申請 -->
+        <div class="form-section" id="courseChangeSection" style="display:none;">
+          <h2 class="section-title">コース変更</h2>
+          <div class="new-application-panel" id="courseChangePanel">
+            <!-- 変更申請中（入金確認前） -->
+            <div id="pendingCourseArea">
+              <div class="app-info-row">
+                <span class="app-info-label">コースタイプ</span>
+                <span class="app-info-value" id="disp_change_member_type">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">コース内容</span>
+                <span class="app-info-value" id="disp_change_course_name">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">金額</span>
+                <span class="app-info-value" id="disp_change_course_fee">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">申請日</span>
+                <span class="app-info-value" id="disp_change_applied_at">―</span>
+              </div>
+              <div class="app-info-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="f_payment_confirmed_course">
+                  <span class="checkbox-text">入金済み</span>
+                </label>
+                <button type="button" class="btn-cancel-app" id="btnCancelCourseApp" onclick="cancelCourseApplication()">取消</button>
+              </div>
+            </div>
+            <!-- 入金確認済み（登録済み） -->
+            <div id="confirmedCourseArea" style="display:none;">
+              <div class="app-info-row">
+                <span class="app-info-label">コースタイプ</span>
+                <span class="app-info-value" id="disp_confirmed_member_type">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">コース内容</span>
+                <span class="app-info-value" id="disp_confirmed_course_name">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">金額</span>
+                <span class="app-info-value" id="disp_confirmed_course_fee">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="app-info-label">登録日</span>
+                <span class="app-info-value" id="disp_course_confirmed_date">―</span>
+              </div>
+              <div class="app-info-row">
+                <span class="confirmed-badge">入金済</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 基本情報 -->
         <div class="form-section">
@@ -135,13 +290,6 @@
               <label class="field-label required">分類</label>
               <select class="field-input" id="f_member_type">
                 <option value="">選択してください</option>
-                <option value="会員">会員</option>
-                <option value="スクール">スクール</option>
-                <option value="ビジター">ビジター</option>
-                <option value="スタッフ">スタッフ</option>
-                <option value="請負">請負</option>
-                <option value="ディーラー">ディーラー</option>
-                <option value="他校引率">他校引率</option>
               </select>
             </div>
 
@@ -164,8 +312,8 @@
               <label class="field-label">性別</label>
               <select class="field-input" id="f_gender">
                 <option value="">選択</option>
-                <option value="男性">男性</option>
-                <option value="女性">女性</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
                 <option value="その他">その他</option>
               </select>
             </div>
@@ -174,15 +322,16 @@
               <label class="field-label">血液型</label>
               <select class="field-input" id="f_blood_type">
                 <option value="">選択</option>
-                <option value="A">A型</option>
-                <option value="B">B型</option>
-                <option value="O">O型</option>
-                <option value="AB">AB型</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="O">O</option>
+                <option value="AB">AB</option>
+                <option value="不明">不明</option>
               </select>
             </div>
 
             <div class="field-group">
-              <label class="field-label">生年月日</label>
+              <label class="field-label required">生年月日</label>
               <input type="date" class="field-input" id="f_birthday">
             </div>
 
@@ -217,8 +366,15 @@
             <div class="field-group">
               <label class="field-label">郵便番号</label>
               <div class="zip-group">
-                <input type="text" class="field-input" id="f_zip_code"
-                       placeholder="000-0000" maxlength="8">
+                <div class="zip-split-wrap">
+                  <input type="text" class="field-input zip-input-3" id="f_zip_code1"
+                         placeholder="000" maxlength="3" inputmode="numeric">
+                  <span class="zip-hyphen">-</span>
+                  <input type="text" class="field-input zip-input-4" id="f_zip_code2"
+                         placeholder="0000" maxlength="4" inputmode="numeric">
+                  <!-- 保存・検索用の結合値（hidden） -->
+                  <input type="hidden" id="f_zip_code">
+                </div>
                 <button type="button" class="zip-search-btn" id="btnZipSearch">住所検索</button>
               </div>
             </div>
@@ -229,7 +385,7 @@
             </div>
 
             <div class="field-group">
-              <label class="field-label">携帯番号</label>
+              <label class="field-label required">携帯番号</label>
               <input type="tel" class="field-input" id="f_mobile_phone">
             </div>
 
@@ -239,7 +395,7 @@
             </div>
 
             <div class="field-group">
-              <label class="field-label">メールアドレス</label>
+              <label class="field-label required">メールアドレス</label>
               <input type="email" class="field-input" id="f_email">
             </div>
 
@@ -261,11 +417,11 @@
           <h2 class="section-title">緊急連絡先</h2>
           <div class="form-grid">
             <div class="field-group">
-              <label class="field-label">氏名</label>
+              <label class="field-label required">氏名</label>
               <input type="text" class="field-input" id="f_emergency_name">
             </div>
             <div class="field-group">
-              <label class="field-label">電話番号</label>
+              <label class="field-label required">電話番号</label>
               <input type="tel" class="field-input" id="f_emergency_phone">
             </div>
             <div class="field-group">
@@ -275,23 +431,28 @@
           </div>
         </div>
 
-        <!-- コース情報 -->
-        <div class="form-section">
+        <!-- コース情報（非表示：データ保持のみ） -->
+        <div class="form-section" style="display:none;" id="courseInfoSection">
           <h2 class="section-title">コース情報</h2>
           <div class="form-grid">
             <div class="field-group">
               <label class="field-label">コースタイプ</label>
-              <input type="text" class="field-input" id="f_course_type">
+              <select class="field-input" id="f_course_type">
+                <option value="">選択</option>
+                <option value="スクール">スクール</option>
+                <option value="フリーフライト">フリーフライト</option>
+              </select>
             </div>
             <div class="field-group">
               <label class="field-label">スクールコース</label>
               <select class="field-input" id="f_course_name">
                 <option value="">選択</option>
-                <option value="Bコース">Bコース</option>
-                <option value="NPコース">NPコース</option>
-                <option value="Pコース">Pコース</option>
-                <option value="XCコース">XCコース</option>
-                <option value="Tコース">Tコース</option>
+                <option value="A">Ａ</option>
+                <option value="B">Ｂ</option>
+                <option value="NP">ＮＰ</option>
+                <option value="P">Ｐ</option>
+                <option value="XC">ＸＣ</option>
+                <option value="タンデム">タンデム</option>
               </select>
             </div>
             <div class="field-group">
@@ -310,7 +471,7 @@
           <h2 class="section-title">機体情報</h2>
           <div class="form-grid">
             <div class="field-group">
-              <label class="field-label">使用機体</label>
+              <label class="field-label required">使用機体</label>
               <input type="text" class="field-input" id="f_glider_name">
             </div>
             <div class="field-group">
@@ -330,7 +491,7 @@
           <div class="form-grid">
 
             <div class="field-group">
-              <label class="field-label">所属団体</label>
+              <label class="field-label required">所属団体</label>
               <select class="field-input" id="f_organization">
                 <option value="">選択</option>
                 <option value="JHF">JHF</option>
@@ -340,7 +501,7 @@
 
             <!-- 登録番号：所属団体によって入力UIが変わる -->
             <div class="field-group span-2">
-              <label class="field-label">フライヤー登録番号</label>
+              <label class="field-label required">フライヤー登録番号</label>
 
               <!-- 未選択 -->
               <div id="regInputNone">
@@ -371,12 +532,12 @@
             </div>
 
             <div class="field-group">
-              <label class="field-label">登録期限</label>
+              <label class="field-label required">登録期限</label>
               <input type="date" class="field-input" id="f_reglimit_date">
             </div>
 
             <div class="field-group">
-              <label class="field-label">技能証</label>
+              <label class="field-label required">技能証</label>
               <select class="field-input" id="f_license">
                 <option value="">選択</option>
                 <option value="A">A</option>
@@ -387,7 +548,8 @@
               </select>
             </div>
 
-            <div class="field-group">
+            <!-- 非表示項目（データ保持のみ） -->
+            <div class="field-group" style="display:none;">
               <label class="field-label">フライト経験</label>
               <input type="text" class="field-input" id="f_experience">
             </div>
@@ -397,12 +559,12 @@
               <input type="text" class="field-input" id="f_home_area">
             </div>
 
-            <div class="field-group">
+            <div class="field-group" style="display:none;">
               <label class="field-label">引率者名</label>
               <input type="text" class="field-input" id="f_leader">
             </div>
 
-            <div class="field-group">
+            <div class="field-group" style="display:none;">
               <label class="field-label">ビジター料金</label>
               <input type="text" class="field-input" id="f_visitor_fee">
             </div>

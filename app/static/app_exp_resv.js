@@ -1363,3 +1363,41 @@ const ExpApp = (() => {
 })();
 
 document.addEventListener("DOMContentLoaded", () => ExpApp.init());
+
+// ?from=staff_manage の場合、更新・キャンセルボタンで管理メニューへ戻る
+(function () {
+  const params  = new URLSearchParams(location.search);
+  const fromSrc = params.get("from");
+
+  if (fromSrc !== "staff_manage") return;
+
+  // モーダルが開いてから動的にバインドするため MutationObserver を使用
+  // btnModalSave（更新）・btnModalClose / btnModalCancel（閉じる）が実際のID
+  const CLOSE_IDS = ["btnModalClose", "btnModalCancel"];
+  const SAVE_IDS  = ["btnModalSave"];
+
+  function tryBind() {
+    let bound = 0;
+    [...CLOSE_IDS, ...SAVE_IDS].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.staffManageBound) return;
+      el.dataset.staffManageBound = "1";
+      el.addEventListener("click", () => {
+        // 保存処理が終わってから遷移（500ms 待機）
+        setTimeout(() => { location.href = "/apply_staff_manage"; }, 500);
+      });
+      bound++;
+    });
+    return bound;
+  }
+
+  // DOM 構築後に即バインドを試みる
+  document.addEventListener("DOMContentLoaded", () => {
+    tryBind();
+
+    // モーダルが後から表示される場合に備えて監視
+    const observer = new MutationObserver(() => tryBind());
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  });
+})();
+

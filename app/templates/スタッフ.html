@@ -3,30 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>スタッフ管理 | Mt.FUJI PARAGLIDING</title>
+  <title>スタッフ管理画面</title>
   <link rel="stylesheet" href="../static/style_staff_manage.css" />
 </head>
 <body>
 
-  <!-- ===== グローバルヘッダー（全幅・黒） ===== -->
   <header class="global-header">
     <div class="global-header-left">
       <a href="/" class="back-btn">← トップ</a>
     </div>
     <div class="global-header-center">
-      <span class="site-name">Mt.FUJI PARAGLIDING</span>
-      <span class="divider">|</span>
-      <span class="page-name">スタッフ管理</span>
+      <!-- <span class="site-name">Mt.FUJI PARAGLIDING</span> -->
+      <!-- <span class="divider">|</span> -->
+      <span class="page-name">スタッフ管理画面</span>
     </div>
     <div class="global-header-right">
       <div class="header-date" id="headerDate"></div>
     </div>
   </header>
 
-  <!-- ===== ボディラッパー（サイドバー＋メイン） ===== -->
   <div class="body-wrapper">
-
-    <!-- ===== サイドバー（白） ===== -->
     <aside class="sidebar">
       <nav class="sidebar-nav">
         <a href="/apply_info"       class="nav-btn">個人情報管理</a>
@@ -38,107 +34,160 @@
       </nav>
     </aside>
 
-    <!-- ===== メインエリア ===== -->
     <div class="main-wrapper">
       <main class="main-content">
 
         <!-- ① フライヤー申請（未処理） -->
         <section class="dash-card" id="flyerSection">
-          <div class="card-header">
+          <div class="card-header collapsible-header" onclick="toggleSection('flyerSection')">
             <div class="card-title-group">
               <span class="card-icon">✈</span>
-              <h2 class="card-title">フライヤー申請（未処理）</h2>
+              <h2 class="card-title">フライヤー申請（未）</h2>
             </div>
             <div class="sub-badges" id="flyerSubCounts"></div>
             <span class="badge" id="flyerCount">—</span>
+            <span class="collapse-arrow" id="flyerSection-arrow">▲</span>
           </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>申込日</th>
-                  <th>氏名</th>
-                  <th>分類</th>
-                  <th class="col-action">操作</th>
-                </tr>
-              </thead>
-              <tbody id="flyerTableBody">
-                <tr><td colspan="4" class="empty-row">読み込み中…</td></tr>
-              </tbody>
-            </table>
+          <div class="card-body" id="flyerSection-body">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>申込日</th><th>氏名</th><th>分類</th>
+                  </tr>
+                </thead>
+                <tbody id="flyerTableBody">
+                  <tr><td colspan="4" class="empty-row">読み込み中…</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
-        <!-- ② 体験予約（未処理） -->
+        <!-- ② フライヤー更新・変更（未処理） -->
+        <section class="dash-card" id="updateAppSection">
+          <div class="card-header collapsible-header" onclick="toggleSection('updateAppSection')">
+            <div class="card-title-group">
+              <span class="card-icon">📝</span>
+              <h2 class="card-title">フライヤー更新・変更（未）</h2>
+            </div>
+            <span class="badge badge--right" id="updateAppCount">—</span>
+            <span class="collapse-arrow" id="updateAppSection-arrow">▲</span>
+          </div>
+          <div class="card-body" id="updateAppSection-body">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>申請日時</th><th>氏名</th><th>会員番号</th><th>種別</th>
+                  </tr>
+                </thead>
+                <tbody id="updateAppTableBody">
+                  <tr><td colspan="5" class="empty-row">読み込み中…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ③ 体験予約（未処理） -->
         <section class="dash-card" id="expSection">
-          <div class="card-header">
+          <div class="card-header collapsible-header" onclick="toggleSection('expSection')">
             <div class="card-title-group">
               <span class="card-icon">🪂</span>
-              <h2 class="card-title">体験予約（未処理）</h2>
+              <h2 class="card-title">体験予約（未）</h2>
             </div>
             <span class="badge badge--right" id="expCount">—</span>
+            <span class="collapse-arrow" id="expSection-arrow">▲</span>
           </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>予約日</th>
-                  <th>受付日</th>
-                  <th>氏名</th>
-                  <th>種別</th>
-                  <th>TEL</th>
-                  <th class="col-action">操作</th>
-                </tr>
-              </thead>
-              <tbody id="expTableBody">
-                <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
-              </tbody>
-            </table>
+          <div class="card-body" id="expSection-body">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>予約日</th><th>受付日</th><th>氏名</th><th>種別</th><th>TEL</th>
+                  </tr>
+                </thead>
+                <tbody id="expTableBody">
+                  <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
-        <!-- ③ 入山申請（入金確認） -->
+        <!-- ④ 入山申請（入金確認） -->
         <section class="dash-card" id="paySection">
-          <div class="card-header">
+          <div class="card-header collapsible-header" onclick="toggleSection('paySection')">
             <div class="card-title-group">
               <span class="card-icon">⛰</span>
               <h2 class="card-title">入山申請（入金確認）</h2>
             </div>
-            <div class="pay-counts">
-              <span class="pay-count-item">
-                入山料未確認：<strong id="entranceCount">—</strong>件
-              </span>
-              <span class="pay-count-sep">/</span>
-              <span class="pay-count-item yamachin-label">
-                山チン未確認：<strong id="yamachinCount">—</strong>件
-              </span>
-            </div>
+            <div class="sub-badges" id="paySubCounts"></div>
             <span class="badge" id="payCount">—</span>
+            <span class="collapse-arrow" id="paySection-arrow">▲</span>
           </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>氏名</th>
-                  <th>会員番号</th>
-                  <th>分類</th>
-                  <th>種別</th>
-                  <th class="col-action">操作</th>
-                </tr>
-              </thead>
-              <tbody id="payTableBody">
-                <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
-              </tbody>
-            </table>
+          <div class="card-body" id="paySection-body">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>日付</th><th>氏名</th><th>会員番号</th><th>分類</th><th>種別</th>
+                  </tr>
+                </thead>
+                <tbody id="payTableBody">
+                  <tr><td colspan="6" class="empty-row">読み込み中…</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
       </main>
-    </div><!-- /.main-wrapper -->
-  </div><!-- /.body-wrapper -->
+    </div>
+  </div>
 
-  <!-- 確認モーダル -->
+<!-- ══════════════════════════════════════════════════════════
+     スタッフ.html に追加する 体験予約詳細モーダル
+     既存の confirmModal の直後あたりに貼り付けてください
+══════════════════════════════════════════════════════════ -->
+<div id="expModal" style="
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; z-index:800;">
+  <div style="
+    background:#fff; border-radius:12px; padding:28px;
+    width:90%; max-width:480px; max-height:85vh; overflow-y:auto;
+    box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+
+    <h3 id="expModalTitle" style="
+      font-size:16px; font-weight:700; margin-bottom:16px;
+      padding-bottom:10px; border-bottom:1px solid #e0e3e8;">
+      体験予約詳細
+    </h3>
+
+    <div id="expModalBody" style="margin-bottom:20px;"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <!-- キャンセル：管理メニューに留まる（モーダルを閉じる） -->
+      <button onclick="closeExpModal()" style="
+        padding:8px 20px; background:transparent; color:#374151;
+        border:1px solid #d1d5db; border-radius:6px;
+        font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;">
+        閉じる
+      </button>
+      <!-- 更新：体験管理画面へ移動、戻り先=管理メニュー -->
+      <button onclick="goToExpDetail()" style="
+        padding:8px 20px; background:#2563eb; color:#fff;
+        border:none; border-radius:6px;
+        font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;">
+        体験管理で編集
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- 入金確認モーダル -->
   <div class="modal-overlay" id="confirmModal" style="display:none;">
     <div class="modal-box">
       <h3 class="modal-title" id="confirmModalTitle">入金確認</h3>
@@ -146,6 +195,32 @@
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeConfirmModal()">キャンセル</button>
         <button class="btn-ok"     onclick="doConfirmPayment()">確認済みにする</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- フライヤー更新・変更 承認・却下モーダル -->
+  <div class="modal-overlay" id="updateAppModal" style="display:none;">
+    <div class="modal-box">
+      <h3 class="modal-title" id="updateAppModalTitle">更新・変更申請の確認</h3>
+      <p id="updateAppModalMeta" style="font-size:13px; color:#666; margin-bottom:10px;"></p>
+      <div id="updateAppChangeList" style="
+        max-height:260px; overflow-y:auto;
+        border:1px solid #e0e0e0; border-radius:6px;
+        padding:10px; margin-bottom:14px; font-size:13px;
+      "></div>
+      <div id="updateAppRejectRow" style="display:none; margin-bottom:12px;">
+        <label style="font-size:13px; font-weight:600;">却下理由（任意）</label>
+        <textarea id="updateAppRejectNote" rows="2" style="
+          width:100%; box-sizing:border-box; margin-top:4px;
+          border:1px solid #ccc; border-radius:4px; padding:6px; font-size:13px;
+        "></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel"  onclick="closeUpdateAppModal()">閉じる</button>
+        <button class="btn-reject"  onclick="toggleRejectMode()" id="btnRejectToggle"
+          style="background:#e17055; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer;">却下</button>
+        <button class="btn-ok"      onclick="doApproveApp()" id="btnApprove">承認する</button>
       </div>
     </div>
   </div>

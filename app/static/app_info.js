@@ -39,7 +39,8 @@ function showToast(msg, type = "success") {
 function parseRegNo(org, raw) {
   if (!raw) return { jhf1: "", jhf2: "", jpa: "" };
   if (org === "JHF") {
-    const m = raw.match(/^JA(\d{2})O-(\d{6})$/);
+    // ハイフンあり・なし両対応
+    const m = raw.match(/^JA(\d{2})O-?(\d{6})$/);
     if (m) return { jhf1: m[1], jhf2: m[2], jpa: "" };
   }
   if (org === "JPA") {
@@ -47,6 +48,14 @@ function parseRegNo(org, raw) {
     if (m) return { jhf1: "", jhf2: "", jpa: m[1] };
   }
   return { jhf1: "", jhf2: "", jpa: "" };
+}
+
+/** reg_no の書式から所属団体を推定する（organization が null の場合のフォールバック） */
+function guessOrgFromRegNo(raw) {
+  if (!raw) return "";
+  if (/^JA\d{2}O-?\d{6}$/.test(raw)) return "JHF";
+  if (/^JP\d{9}$/.test(raw)) return "JPA";
+  return "";
 }
 
 function buildRegNo(org) {
@@ -238,7 +247,7 @@ function clearForm() {
   [
     "editId","f_member_type","f_member_number","f_full_name","f_furigana",
     "f_gender","f_blood_type","f_birthday","f_weight","f_application_date",
-    "f_zip_code","f_address","f_mobile_phone","f_home_phone",
+    "f_zip_code","f_zip_code1","f_zip_code2","f_address","f_mobile_phone","f_home_phone",
     "f_email","f_company_name","f_company_phone",
     "f_emergency_name","f_emergency_phone","f_relationship",
     "f_course_type","f_course_name","f_course_fee","f_course_find",
@@ -253,6 +262,15 @@ function clearForm() {
     else el.value = "";
   });
   $("f_contract").checked = false;
+  // 新規申請・コース変更リセット
+  if ($("f_payment_confirmed_new"))    $("f_payment_confirmed_new").checked = false;
+  if ($("f_payment_confirmed_course")) $("f_payment_confirmed_course").checked = false;
+  if ($("newApplicationSection"))  $("newApplicationSection").style.display  = "none";
+  if ($("courseChangeSection"))    $("courseChangeSection").style.display    = "none";
+  if ($("pendingApplicationArea"))  $("pendingApplicationArea").style.display  = "";
+  if ($("confirmedApplicationArea")) $("confirmedApplicationArea").style.display = "none";
+  if ($("pendingCourseArea"))      $("pendingCourseArea").style.display      = "";
+  if ($("confirmedCourseArea"))    $("confirmedCourseArea").style.display    = "none";
   $("regNoPreview").textContent = "";
   $("f_application_date_disp").style.display = "none";
   $("f_application_date_disp").textContent = "—";
@@ -295,10 +313,10 @@ async function openEdit(id) {
     $("deleteBtn").style.display = "";
     $("editId").value = m.id;
 
-    // 文字列フィールド
+    // 文字列フィールド（zip_code は分割入力のため別処理）
     [
       "member_type","member_number","full_name","furigana","gender","blood_type",
-      "weight","zip_code","address","mobile_phone","home_phone","email",
+      "weight","address","mobile_phone","home_phone","email",
       "company_name","company_phone","emergency_name","emergency_phone","relationship",
       "course_type","course_name","course_fee","course_find",
       "glider_name","glider_color","organization","license",
@@ -308,6 +326,16 @@ async function openEdit(id) {
       const el = $("f_" + f);
       if (el && m[f] != null) el.value = m[f];
     });
+
+    // 郵便番号：3桁と4桁に分割して表示
+    if (m.zip_code) {
+      const digits = String(m.zip_code).replace(/-/g, "");
+      $("f_zip_code1").value = digits.slice(0, 3);
+      $("f_zip_code2").value = digits.slice(3, 7);
+      $("f_zip_code").value  = digits.length >= 7
+        ? `${digits.slice(0,3)}-${digits.slice(3,7)}`
+        : m.zip_code;
+    }
 
     // チェックボックス
     $("f_contract").checked = !!m.contract;
@@ -346,7 +374,9 @@ async function openEdit(id) {
     }
 
     // 登録番号 分割表示
-    const org = m.organization || "";
+    // organization が null の場合は reg_no の書式から推定
+    const org = m.organization || guessOrgFromRegNo(m.reg_no) || "";
+    if (org) $("f_organization").value = org;
     switchRegUI(org);
     if (org && m.reg_no) {
       const parsed = parseRegNo(org, m.reg_no);
@@ -355,10 +385,122 @@ async function openEdit(id) {
       updateRegPreview();
     }
 
+    // 新規申請・コース変更パネル表示
+    await loadApplicationPanels(id, m);
+
     showView("view-add");
     document.querySelector(".edit-scroll-area").scrollTop = 0;
   } catch (e) {
     showToast("データ取得に失敗しました","error");
+  }
+}
+
+/* ================================================
+   新規申請・コース変更パネル読み込み
+   ================================================ */
+// 現在の申請中レコードID（新規申請用）
+let _pendingNewAppId    = null;
+let _pendingCourseAppId = null;
+
+async function loadApplicationPanels(memberId, memberData) {
+  // 新規申請パネル（member_status === 'pending'）
+  if (memberData.member_status === 'pending') {
+    $("newApplicationSection").style.display = "";
+    // application_date を表示
+    $("disp_application_date").textContent = fmtDate(memberData.application_date);
+
+    // 申請コース情報を pending_application から取得して表示
+    try {
+      const appRes = await fetch(`/api/members/${memberId}/pending_application`);
+      const appData = appRes.ok ? await appRes.json() : null;
+      // status_type === 'member_pending' の場合は changes に申請コース情報が入っている
+      const changes = (appData && appData.changes) ? appData.changes : {};
+      const mt  = changes.member_type  || null;
+      const cn  = changes.course_name  || null;
+      const cf  = changes.course_fee   || null;
+      if ($("disp_new_member_type")) $("disp_new_member_type").textContent = mt || "―";
+      if ($("disp_new_course_name_row")) $("disp_new_course_name_row").style.display = cn ? "" : "none";
+      if ($("disp_new_course_name"))     $("disp_new_course_name").textContent = cn || "―";
+      if ($("disp_new_course_fee_row"))  $("disp_new_course_fee_row").style.display  = cf ? "" : "none";
+      if ($("disp_new_course_fee"))      $("disp_new_course_fee").textContent  = cf ? `¥${Number(cf).toLocaleString()}` : "―";
+    } catch { /* 申請コース情報取得失敗は無視 */ }
+
+    // confirmed_at があれば入金済み表示
+    if (memberData.confirmed_at) {
+      $("pendingApplicationArea").style.display  = "none";
+      $("confirmedApplicationArea").style.display = "";
+      $("disp_confirmed_date").textContent = fmtDate(memberData.confirmed_at);
+    } else {
+      $("pendingApplicationArea").style.display  = "";
+      $("confirmedApplicationArea").style.display = "none";
+    }
+  } else {
+    $("newApplicationSection").style.display = "none";
+  }
+
+  // コース変更申請パネル（pending application of type course_change）
+  try {
+    const res = await fetch(`/api/members/${memberId}/pending_application`);
+    if (!res.ok) return;
+    const appData = await res.json();
+    if (appData && appData.status_type === 'course_change' && appData.app_status === 'pending') {
+      _pendingCourseAppId = appData.id;
+      $("courseChangeSection").style.display = "";
+      $("pendingCourseArea").style.display   = "";
+      $("confirmedCourseArea").style.display = "none";
+      const changes = appData.changes || {};
+      $("disp_change_member_type").textContent = changes.member_type  || "―";
+      $("disp_change_course_name").textContent = changes.course_name  || "―";
+      $("disp_change_course_fee").textContent  = changes.course_fee   ? `¥${Number(changes.course_fee).toLocaleString()}` : "―";
+      $("disp_change_applied_at").textContent  = appData.applied_at   ? fmtDate(appData.applied_at.slice(0,10)) : "―";
+    } else {
+      _pendingCourseAppId = null;
+      $("courseChangeSection").style.display = "none";
+    }
+  } catch { /* コース変更申請なし */ }
+}
+
+/* ================================================
+   新規申請：入金確認済み登録
+   ================================================ */
+async function saveNewApplicationPayment(memberId) {
+  const checked = $("f_payment_confirmed_new").checked;
+  if (!checked) return false;
+  try {
+    const res = await fetch(`/api/staff/confirm_member/${memberId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error("入金確認更新失敗");
+    const data = await res.json();
+    // 確定した member_type を分類欄にセット
+    if (data.confirmed_member_type && $("f_member_type")) {
+      $("f_member_type").value = data.confirmed_member_type;
+    }
+    return true;
+  } catch (e) {
+    showToast(e.message, "error");
+    return false;
+  }
+}
+
+/* ================================================
+   コース変更：入金確認済み登録（承認）
+   ================================================ */
+async function saveCourseChangePayment() {
+  const checked = $("f_payment_confirmed_course").checked;
+  if (!checked || !_pendingCourseAppId) return false;
+  try {
+    const res = await fetch(`/api/applications/${_pendingCourseAppId}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmed_by: "staff" }),
+    });
+    if (!res.ok) throw new Error("コース変更承認失敗");
+    return true;
+  } catch (e) {
+    showToast(e.message, "error");
+    return false;
   }
 }
 
@@ -372,16 +514,14 @@ async function saveMember() {
   // 登録番号を hidden に反映
   $("f_reg_no").value = buildRegNo(org) || "";
 
-  if (!$("f_full_name").value.trim()) {
-    showToast("氏名を入力してください","error");
-    return;
-  }
+  // 必須バリデーション
+  if (!validateRequired()) return;
 
   const payload = {};
 
   [
     "member_type","full_name","furigana","gender","blood_type",
-    "weight","zip_code","address","mobile_phone","home_phone","email",
+    "weight","address","mobile_phone","home_phone","email",
     "company_name","company_phone","emergency_name","emergency_phone","relationship",
     "course_type","course_name","course_fee","course_find",
     "glider_name","glider_color","repack_date","organization","license",
@@ -390,6 +530,13 @@ async function saveMember() {
     const el = $("f_" + f);
     payload[f] = el ? (el.value || null) : null;
   });
+
+  // 郵便番号：分割inputから結合
+  const z1 = ($("f_zip_code1").value || "").replace(/\D/g, "");
+  const z2 = ($("f_zip_code2").value || "").replace(/\D/g, "");
+  payload.zip_code = (z1 || z2)
+    ? `${z1.padStart(3,"0")}-${z2.padStart(4,"0")}`
+    : null;
 
   payload.reg_no   = $("f_reg_no").value || null;
   payload.contract = $("f_contract").checked ? 1 : 0;
@@ -413,11 +560,121 @@ async function saveMember() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "保存失敗");
 
+    // 新規申請：入金確認済み処理
+    if (isEdit && $("newApplicationSection").style.display !== "none" &&
+        $("f_payment_confirmed_new") && $("f_payment_confirmed_new").checked) {
+      await saveNewApplicationPayment(id);
+    }
+    // コース変更：入金確認済み処理
+    if (isEdit && $("courseChangeSection").style.display !== "none" &&
+        $("f_payment_confirmed_course") && $("f_payment_confirmed_course").checked) {
+      await saveCourseChangePayment();
+    }
+
     showToast(isEdit ? "更新しました" : "登録しました");
+
+    // 遷移元により戻り先を変える
+    const src = $("fromSource") ? $("fromSource").value : "";
+    if (src === "flyer" || src === "update_app") {
+      location.href = "/apply_staff_manage";
+    } else {
+      await fetchMembers(getSearchParams());
+      showView("view-list");
+    }
+  } catch (e) {
+    showToast(e.message,"error");
+  }
+}
+
+/* ================================================
+   キャンセル処理（遷移元により戻り先を変える）
+   ================================================ */
+function handleCancel() {
+  const src = $("fromSource") ? $("fromSource").value : "";
+  if (src === "flyer" || src === "update_app") {
+    location.href = "/apply_staff_manage";
+  } else {
+    clearForm();
+    showView("view-list");
+  }
+}
+
+/* ================================================
+   必須バリデーション（12項目）
+   ================================================ */
+function validateRequired() {
+  const checks = [
+    { id: "f_member_type",    label: "分類" },
+    { id: "f_full_name",      label: "氏名" },
+    { id: "f_birthday",       label: "生年月日" },
+    { id: "f_email",          label: "メールアドレス" },
+    { id: "f_mobile_phone",   label: "携帯番号" },
+    { id: "f_emergency_name", label: "緊急連絡先氏名" },
+    { id: "f_emergency_phone",label: "緊急連絡先電話番号" },
+    { id: "f_glider_name",    label: "使用機体" },
+    { id: "f_organization",   label: "所属団体" },
+    { id: "f_reg_no",         label: "フライヤー登録番号" },
+    { id: "f_reglimit_date",  label: "登録期限" },
+    { id: "f_license",        label: "技能証" },
+  ];
+  // 登録番号は hidden に buildRegNo で反映済み
+  $("f_reg_no").value = buildRegNo($("f_organization").value) || "";
+
+  const missing = checks
+    .filter(c => { const el = $(c.id); return !el || !el.value.trim(); })
+    .map(c => c.label);
+
+  if (missing.length) {
+    showToast(`未入力の必須項目があります：${missing.join("、")}`, "error");
+    return false;
+  }
+  return true;
+}
+
+/* ================================================
+   新規申請 取消
+   ================================================ */
+async function cancelNewApplication() {
+  const memberId = $("editId").value;
+  if (!memberId) return;
+  if (!confirm("新規申請を取消しますか？この操作は元に戻せません。")) return;
+  try {
+    // member_status を 'cancelled' または削除
+    const res = await fetch(`/api/members/${memberId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ member_status: "cancelled" }),
+    });
+    if (!res.ok) throw new Error("取消失敗");
+    showToast("申請を取消しました");
     await fetchMembers(getSearchParams());
     showView("view-list");
   } catch (e) {
-    showToast(e.message,"error");
+    showToast(e.message, "error");
+  }
+}
+
+/* ================================================
+   コース変更申請 取消（却下）
+   ================================================ */
+async function cancelCourseApplication() {
+  if (!_pendingCourseAppId) return;
+  if (!confirm("コース変更申請を取消しますか？")) return;
+  try {
+    const res = await fetch(`/api/applications/${_pendingCourseAppId}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: "スタッフによる取消" }),
+    });
+    if (!res.ok) throw new Error("取消失敗");
+    showToast("コース変更申請を取消しました");
+    // パネルを再ロード
+    const id = $("editId").value;
+    const res2 = await fetch(`/api/members/${id}`);
+    const m = await res2.json();
+    await loadApplicationPanels(id, m);
+  } catch (e) {
+    showToast(e.message, "error");
   }
 }
 
@@ -448,8 +705,15 @@ async function doDelete() {
    郵便番号検索
    ================================================ */
 async function searchZip() {
-  const zip = ($("f_zip_code").value || "").replace(/-/g,"").trim();
-  if (zip.length !== 7) { showToast("7桁の郵便番号を入力してください","error"); return; }
+  const z1 = ($("f_zip_code1").value || "").replace(/\D/g, "");
+  const z2 = ($("f_zip_code2").value || "").replace(/\D/g, "");
+  const zip = z1 + z2;
+  if (zip.length !== 7) {
+    showToast("郵便番号を3桁と4桁に正しく入力してください", "error");
+    return;
+  }
+  // hidden にも反映
+  $("f_zip_code").value = `${z1}-${z2}`;
   try {
     const res  = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`);
     const data = await res.json();
@@ -457,15 +721,54 @@ async function searchZip() {
       const r = data.results[0];
       $("f_address").value = r.address1 + r.address2 + r.address3;
     } else {
-      showToast("住所が見つかりませんでした","error");
+      showToast("住所が見つかりませんでした", "error");
     }
-  } catch { showToast("住所検索に失敗しました","error"); }
+  } catch { showToast("住所検索に失敗しました", "error"); }
+}
+
+/** 分割inputの値を hidden の f_zip_code に常時同期する */
+function _syncZipHidden() {
+  const z1 = ($("f_zip_code1").value || "").replace(/\D/g, "");
+  const z2 = ($("f_zip_code2").value || "").replace(/\D/g, "");
+  $("f_zip_code").value = (z1 || z2) ? `${z1}-${z2}` : "";
 }
 
 /* ================================================
    初期化
    ================================================ */
 document.addEventListener("DOMContentLoaded", () => {
+  // CONFIG の全 master を取得し item_name === "分類" のレコードから
+  // f_member_type（編集フォーム）と searchType（一覧検索）の option を動的生成
+  fetch("/config/api/masters")
+    .then(r => r.json())
+    .then(masters => {
+      // item_name が「分類」のマスターを探す（category は問わない）
+      const master = masters.find(m => m.item_name === "分類");
+      if (!master) return;
+      return fetch("/config/api/values/" + master.id)
+        .then(r => r.json())
+        .then(vals => {
+          const activeVals = vals
+            .filter(v => v.is_active)
+            .sort((a, b) => a.sort_order - b.sort_order);
+          if (!activeVals.length) return;
+
+          function buildOptions(sel, firstLabel) {
+            if (!sel) return;
+            sel.innerHTML = `<option value="">${firstLabel}</option>`;
+            activeVals.forEach(v => {
+              const o = document.createElement("option");
+              o.value = v.value;
+              o.textContent = v.label || v.value;
+              sel.appendChild(o);
+            });
+          }
+          buildOptions($("f_member_type"), "選択してください");
+          buildOptions($("searchType"),    "すべて");
+        });
+    })
+    .catch(() => { /* CONFIG取得失敗時は HTML の既存 option をそのまま使用 */ });
+
   fetchMembers();
 
   $("searchBtn").addEventListener("click", () => fetchMembers(getSearchParams()));
@@ -480,7 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("addFromListBtn").addEventListener("click", openNew);
   $("saveBtn").addEventListener("click", saveMember);
-  $("cancelBtn").addEventListener("click", () => { clearForm(); showView("view-list"); });
+  $("cancelBtn").addEventListener("click", handleCancel);
   $("backToList").addEventListener("click", () => { clearForm(); showView("view-list"); });
   $("deleteBtn").addEventListener("click", confirmDelete);
 
@@ -489,13 +792,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btnZipSearch").addEventListener("click", searchZip);
 
+  // 郵便番号 分割input制御
+  // f_zip_code1：数字のみ・3桁入力で f_zip_code2 へ自動フォーカス
+  $("f_zip_code1").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+    _syncZipHidden();
+    if (e.target.value.length >= 3) $("f_zip_code2").focus();
+  });
+  // f_zip_code2：数字のみ・4桁制限
+  $("f_zip_code2").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+    _syncZipHidden();
+  });
+  // f_zip_code2 で Enter → 住所検索
+  $("f_zip_code2").addEventListener("keydown", e => {
+    if (e.key === "Enter") searchZip();
+  });
+
   bindRegInputEvents();
 
   $("f_member_type").addEventListener("change", e => {
     $("f_contract").checked = (e.target.value === "請負");
   });
 
-  // スタッフ管理画面からの遷移：?id=XX で会員編集画面を直接開く
-  const _openId = new URLSearchParams(location.search).get("id");
-  if (_openId) openEdit(_openId);
-});
+  $("f_course_type").addEventListener("change", e => {
+    if (e.target.value) $("f_member_type").value = "スクール";
+  });
+
+  // ── 遷移元判定 ──────────────────────────────────────────────
+  // ?from=flyer        : フライヤー申請（未）から
+  // ?from=update_app   : フライヤー更新・変更から
+  // ?id=XX             : スタッフ管理画面から（一覧遷移）
+  const params   = new URLSearchParams(location.search);
+  const fromSrc  = params.get("from") || "";
+  const openId   = params.get("id");
+
+  if (fromSrc === "flyer" || fromSrc === "update_app") {
+    // 管理メニュー・一覧に戻る を非表示
+    const menuBtn = $("btnToMenu");
+    const backBtn = $("backToList");
+    if (menuBtn) menuBtn.style.display = "none";
+    if (backBtn) backBtn.style.display = "none";
+    // fromSource に記録
+    if ($("fromSource")) $("fromSource").value = fromSrc;
+  }
+
+  // ★ 追加：新規申請「入金済み」チェック時に分類欄の表示を更新
+  $("f_payment_confirmed_new").addEventListener("change", e => {
+    if (!e.target.checked) {
+      // チェックを外したら分類欄を空に戻す
+      if ($("f_member_type")) $("f_member_type").value = "";
+      return;
+    }
+    // チェックを入れたら申請コースを分類欄にセット
+    const mt = $("disp_new_member_type") ? $("disp_new_member_type").textContent : "";
+    if (mt && mt !== "―" && $("f_member_type")) {
+      $("f_member_type").value = mt;
+    }
+  });
+
+  if (openId) openEdit(openId);
+})

@@ -1,59 +1,70 @@
+"""
+app/models/member.py
+members テーブル SQLAlchemy モデル
+DB構成V5 対応（2026-03-23）
+
+members テーブルは個人の基本情報・ステータスのみを保持する。
+連絡先    → member_contacts
+フライヤー → member_flyers
+コース履歴 → member_courses
+変更申請  → member_applications
+"""
 import uuid
 from app.db import db
 from datetime import datetime
 
+
 class Member(db.Model):
     __tablename__ = "members"
 
-    id = db.Column(db.Integer, primary_key=True)
-    uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
+    # ── 識別情報 ──────────────────────────────────────────────────
+    id            = db.Column(db.Integer, primary_key=True)                       # 1
+    uuid          = db.Column(
+                        db.String(36),
+                        default=lambda: str(uuid.uuid4()),
+                        unique=True,
+                        nullable=False,
+                    )                                                              # UUID（QRコード用）
+    member_number = db.Column(db.Text, nullable=False, unique=True)               # 会員番号
 
-    member_type = db.Column(db.String(20))     # 分類
+    # ── 基本個人情報 ──────────────────────────────────────────────
+    full_name     = db.Column(db.Text)                                            # 氏名
+    furigana      = db.Column(db.Text)                                            # ふりがな
+    gender        = db.Column(db.Text)                                            # 性別
+    blood_type    = db.Column(db.Text)                                            # 血液型
+    birthday      = db.Column(db.Date)                                            # 生年月日
+    weight        = db.Column(db.Text)                                            # 体重
 
-    application_date = db.Column(db.Date)       # 申込日
-    full_name = db.Column(db.String(100), nullable=False)       # 氏名
-    furigana = db.Column(db.String(100))        # ふりがな
-    gender = db.Column(db.String(10))           # 性別
-    blood_type = db.Column(db.String(10))       # 血液型
-    birthday = db.Column(db.Date)               # 生年月日
-    weight = db.Column(db.String(10))           # 体重
-    zip_code = db.Column(db.String(10))         # 郵便番号
-    address = db.Column(db.String(255))         # 住所
-    mobile_phone = db.Column(db.String(20))     # 携帯番号
-    home_phone = db.Column(db.String(20))       # 自宅番号
-    company_name = db.Column(db.String(100))    # 勤務先
-    company_phone = db.Column(db.String(20))    # 勤務先電話番号
-    emergency_name = db.Column(db.String(100))  # 緊急連絡先氏名
-    emergency_phone = db.Column(db.String(20))  # 緊急連絡先番号
-    email = db.Column(db.String(255))           # メールアドレス
-    member_number = db.Column(db.String(10), nullable=False, unique=True)  # 会員番号
-    # member_number = db.Column(db.String(10))    # 会員番号
-    medical_history = db.Column(db.Text)        # 傷病履歴
-    relationship = db.Column(db.String(10))     # 本人との続柄
+    # ── 家族・続柄 ────────────────────────────────────────────────
+    guardian_name = db.Column(db.Text)                                            # 保護者氏名
+    relationship  = db.Column(db.Text)                                            # 本人との続柄
 
-    course_type = db.Column(db.String(20))      # コースタイプ
-    course_name = db.Column(db.String(20))      # スクールコース名
-    course_fee = db.Column(db.String(20))       # コース料金
-    glider_name = db.Column(db.String(50) )     # 使用機体
-    glider_color = db.Column(db.String(50) )    # 機体カラー
+    # ── 申込・誓約 ────────────────────────────────────────────────
+    application_date = db.Column(db.Date)                                         # 申込日
+    agreement_date   = db.Column(db.Date)                                         # 誓約確認日
+    signature_name   = db.Column(db.Text)                                         # 本人署名
 
-    agreement_date = db.Column(db.Date)         # 確認日
-    signature_name = db.Column(db.String(100), nullable=False)  # 本人署名
-    guardian_name = db.Column(db.String(100))   # 保護者氏名
+    # ── 入校情報 ──────────────────────────────────────────────────
+    course_find   = db.Column(db.Text)                                            # スクール選択理由
+    member_class  = db.Column(db.Text)                                            # 会員クラス
 
-    course_find = db.Column(db.String(255))     # 選択理由
-    leader = db.Column(db.String(100))          # 引率者名
-    home_area = db.Column(db.String(50))        # ホームエリア
-    visitor_fee = db.Column(db.String(20))      # ビジター料金
-    experience = db.Column(db.String(10))       # フライト経験
+    # ── ステータス・フラグ ────────────────────────────────────────
+    member_status = db.Column(
+                        db.String(20),
+                        nullable=False,
+                        default='pending',
+                    )                                                              # 会員ステータス
+    # 値:
+    #   'pending' : 新規申込受付中（入金確認待ち）
+    #   'active'  : 有効
+    #   'visitor' : 期限切れ自動変更（APScheduler）
 
-    reg_no = db.Column(db.String(20))           # フライヤー登録番号
-    reglimit_date = db.Column(db.Date)          # 登録期限
-    license = db.Column(db.String(20))          # 技能証
-    repack_date = db.Column(db.Date)            # リパック日
+    confirmed_at      = db.Column(db.Date)                                        # 入金確認日（開始日）
+    contract          = db.Column(db.Boolean, nullable=False, default=False)      # 請負判定
+    payment_confirmed = db.Column(db.Boolean, nullable=False, default=False)      # 入金確認フラグ
+    from_experience   = db.Column(db.Boolean, nullable=False, default=False)      # 体験から入校
+    exp_resv_no       = db.Column(db.String(20))                                  # 体験予約番号
 
-    contract = db.Column(db.Boolean, default=False, nullable=False)   # 請負判定
-
-    organization = db.Column(db.String(10))     # 所属団体（JHF/JPA）
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())  # 更新日時
-
+    # ── タイムスタンプ ────────────────────────────────────────────
+    created_at    = db.Column(db.DateTime)
+    updated_at    = db.Column(db.DateTime, onupdate=db.func.now())
