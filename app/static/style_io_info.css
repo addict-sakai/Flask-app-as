@@ -1,6 +1,6 @@
 /* ============================================================
    style_io_info.css  –  入下山管理画面専用スタイル
-   既存 style.css / style_io.css を補完
+   v4 / 2026-03-25  サイドバー廃止・コントロールバーフィルター版
 ============================================================ */
 
 /* ── ページ基盤 ─────────────────────────────────────────── */
@@ -66,7 +66,7 @@
 .info-stat--in    { background: #1a3a6e; color: #6af; }
 .info-stat--out   { background: #3a1a0a; color: #fa8; }
 
-/* ── メインレイアウト ───────────────────────────────────── */
+/* ── メインレイアウト（サイドバーなし）────────────────── */
 .info-layout {
   display: flex;
   flex: 1;
@@ -74,120 +74,35 @@
   height: calc(100vh - 52px);
 }
 
-/* ── サイドバー ─────────────────────────────────────────── */
-.info-sidebar {
-  width: 170px;
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
-  overflow-y: auto;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.info-sidebar::-webkit-scrollbar { width: 4px; }
-.info-sidebar::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
-
-.sidebar-section { margin-bottom: 4px; }
-
-.sidebar-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #999;
-  margin: 0 0 8px 0;
-}
-
-.sidebar-divider {
-  border: none;
-  border-top: 1px solid #eee;
-  margin: 12px 0;
-}
-
-/* 分類フィルターボタン */
-.sidebar-filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sf-btn {
-  width: 100%;
-  padding: 7px 10px;
-  background: #f5f5f5;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  color: #555;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
-}
-.sf-btn:hover  { border-color: #000; color: #000; background: #f0f0f0; }
-.sf-btn.active { background: #000; border-color: #000; color: #fff; font-weight: 700; }
-
-/* 期間ボタン（黒で統一） */
-.sidebar-period-group {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-
-.sp-btn {
+/* ── メインコンテンツ ────────────────────────────────────── */
+.info-main {
   flex: 1;
-  padding: 5px 4px;
-  background: #f5f5f5;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 5px;
-  font-size: 0.7rem;
-  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  color: #666;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s;
-  white-space: nowrap;
+  overflow-y: auto;
+  padding: 20px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-/* ホバー・アクティブは全て黒に統一 */
-.sp-btn:hover  { border-color: #000; color: #000; background: #f0f0f0; }
-.sp-btn.active { background: #000; border-color: #000; color: #fff; font-weight: 700; }
 
-/* 個人検索入力 */
-.sidebar-input {
-  width: 100%;
-  padding: 7px 10px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  color: #111;
-  outline: none;
-  box-sizing: border-box;
-  margin-bottom: 6px;
-  transition: border-color 0.2s;
-}
-.sidebar-input:focus { border-color: #000; }
+.info-main::-webkit-scrollbar { width: 6px; }
+.info-main::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
-/* ── コントロールバー（請負管理.html スタイル） ─────────── */
+/* ── コントロールバー ────────────────────────────────────── */
 .control-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 16px;
   border-bottom: 1px solid #f0f0f0;
   background: #fafafa;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 
 .month-nav {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .month-label {
@@ -199,7 +114,215 @@
   text-align: center;
 }
 
-/* 請負管理スタイルのボタン */
+/* ── 分類フィルター セレクト ────────────────────────────── */
+.filter-select-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-select {
+  padding: 6px 32px 6px 12px;
+  border: 1.5px solid #d0d0d0;
+  border-radius: 8px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 10px center;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 0.88rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  min-width: 130px;
+}
+
+.filter-select:focus {
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.07);
+}
+
+/* ── 当日ボタン（右端）──────────────────────────────────── */
+.today-btn-wrap {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.btn-today {
+  background: #fff;
+  border: 1.5px solid #d0d0d0;
+  color: #444;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+.btn-today:hover:not(:disabled) {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+.btn-today:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #f0f0f0;
+  border-color: #e0e0e0;
+  color: #aaa;
+}
+
+/* フィルターラベルバー */
+.filter-label-bar {
+  background: #fffbea;
+  border-bottom: 1px solid #f0e060;
+  padding: 6px 16px;
+}
+
+.filter-label-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #776600;
+}
+
+/* ── 個人検索パネル ─────────────────────────────────────── */
+.member-search-panel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #f8f6ff;
+  border-bottom: 1px solid #e0d8f8;
+}
+
+.ms-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ms-group--checks {
+  gap: 14px;
+}
+
+.ms-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* 名前入力＋サジェスト */
+.ms-input-wrap {
+  position: relative;
+}
+
+.ms-input {
+  padding: 6px 12px;
+  border: 1.5px solid #c8c0e8;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  color: #111;
+  outline: none;
+  width: 180px;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+.ms-input:focus { border-color: #6644cc; }
+
+/* サジェストリスト */
+.ms-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: #fff;
+  border: 1.5px solid #c8c0e8;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 200;
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ms-suggest-item {
+  padding: 9px 14px;
+  font-size: 0.85rem;
+  color: #222;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ms-suggest-item:hover { background: #f0ecff; color: #3311aa; }
+
+/* 期限セレクト */
+.ms-period-select {
+  padding: 5px 28px 5px 10px;
+  border: 1.5px solid #c8c0e8;
+  border-radius: 7px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 8px center;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 0.82rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.ms-period-select:focus { border-color: #6644cc; }
+
+/* チェックボックス */
+.ms-check-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ms-checkbox { display: none; }
+
+.ms-check-mark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #c8c0e8;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.ms-checkbox:checked + .ms-check-mark {
+  background: #6644cc;
+  border-color: #6644cc;
+}
+.ms-checkbox:checked + .ms-check-mark::after {
+  content: "✓";
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+/* ── 請負管理スタイルのボタン ────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -233,38 +356,12 @@
   padding: 5px 12px;
 }
 
-/* ── メインコンテンツ ────────────────────────────────────── */
-.info-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 20px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.info-main::-webkit-scrollbar { width: 6px; }
-.info-main::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-
 /* ── 日別セクション ─────────────────────────────────────── */
 .daily-section {
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
   overflow: hidden;
-}
-
-/* フィルターラベルバー */
-.filter-label-bar {
-  background: #fffbea;
-  border-top: 1px solid #f0e060;
-  padding: 6px 16px;
-}
-
-.filter-label-text {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #776600;
 }
 
 /* ── テーブル ───────────────────────────────────────────── */
@@ -317,8 +414,6 @@
 .status-chip--in  { background: #e3f6f0; color: #007a50; }
 .status-chip--out { background: #fdecea; color: #b31c1c; }
 
-/* 山チン・備考マーク */
-
 /* 入山料マーク */
 .mark-nyuzan {
   font-size: 0.78rem;
@@ -326,15 +421,8 @@
   padding: 2px 6px;
   border-radius: 4px;
 }
-.mark-nyuzan--paid {
-  background: #e3f6f0;
-  color: #007a50;
-}
-.mark-nyuzan--unpaid {
-  background: #fdecea;
-  color: #b31c1c;
-  font-size: 0.7rem;
-}
+.mark-nyuzan--paid   { background: #e3f6f0; color: #007a50; }
+.mark-nyuzan--unpaid { background: #fdecea; color: #b31c1c; font-size: 0.7rem; }
 .mark-yamachin { color: #cc3300; font-size: 0.85rem; }
 .mark-comment  { color: #1a56cc; font-size: 0.85rem; }
 .mark-none     { color: #ddd; }
@@ -429,6 +517,50 @@
   top: 5px; right: 5px;
 }
 
+/* ── カレンダー月合計バー ────────────────────────────────── */
+.calendar-month-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 0;
+}
+
+.cal-summary-label {
+  font-size: 0.72rem;
+  color: #999;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.cal-summary-count { font-size: 0.85rem; color: #333; }
+
+.cal-summary-count strong {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #1a3a6e;
+}
+
+/* ── カレンダー選択日フォーカス ─────────────────────────── */
+.cal-day--selected {
+  border-color: #1a56cc !important;
+  background: #e8f0ff !important;
+  box-shadow: 0 0 0 2px rgba(26, 86, 204, 0.25);
+}
+.cal-day--selected .cal-day-num {
+  color: #1a56cc !important;
+}
+/* 当日かつ選択中：黒を優先 */
+.cal-day--today.cal-day--selected {
+  border-color: #000 !important;
+  background: #f0f0f0 !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.18);
+}
+.cal-day--today.cal-day--selected .cal-day-num {
+  background: #000;
+  color: #fff !important;
+}
+
 /* ── 詳細モーダル ───────────────────────────────────────── */
 .info-modal-overlay {
   position: fixed;
@@ -486,32 +618,18 @@
 }
 
 .info-modal-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  color: #aaa;
-  width: 32px; height: 32px;
-  border-radius: 50%;
+  background: none; border: none; cursor: pointer; font-size: 1rem;
+  color: #aaa; width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
+  transition: all 0.15s; flex-shrink: 0;
 }
 .info-modal-close:hover { background: #f0f0f0; color: #333; }
 
-.info-modal-body {
-  padding: 18px 20px;
-  overflow-y: auto;
-  flex: 1;
-}
+.info-modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
 
 .info-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 20px 16px;
-  border-top: 1px solid #eee;
-  flex-shrink: 0;
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px 16px; border-top: 1px solid #eee; flex-shrink: 0;
 }
 
 /* 詳細グリッド */
@@ -531,13 +649,7 @@
   gap: 3px;
 }
 
-.det-label {
-  font-size: 0.62rem;
-  color: #bbb;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
+.det-label { font-size: 0.62rem; color: #bbb; font-weight: 700; letter-spacing: 0.08em; }
 .det-value { font-size: 0.85rem; font-weight: 700; color: #222; }
 
 .det-chip { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; }
@@ -550,13 +662,8 @@
 .det-edit-row     { display: flex; flex-direction: column; gap: 6px; }
 
 .det-edit-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #333;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; font-size: 0.88rem; font-weight: 700; color: #333;
 }
 
 .det-checkbox { display: none; }
@@ -566,26 +673,18 @@
   border: 2px solid #ddd;
   border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
+  transition: all 0.15s; flex-shrink: 0;
 }
 
 .det-checkbox:checked + .det-checkbox-mark {
-  background: #cc3300;
-  border-color: #cc3300;
+  background: #cc3300; border-color: #cc3300;
 }
 .det-checkbox:checked + .det-checkbox-mark::after {
-  content: "✓";
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 900;
+  content: "✓"; color: #fff; font-size: 0.8rem; font-weight: 900;
 }
 
 .det-edit-label-text {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.06em;
+  font-size: 0.72rem; font-weight: 700; color: #888; letter-spacing: 0.06em;
 }
 
 .det-textarea {
@@ -595,170 +694,47 @@
   padding: 9px 12px;
   font-size: 0.85rem;
   font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  color: #111;
-  outline: none;
-  resize: vertical;
-  box-sizing: border-box;
+  color: #111; outline: none; resize: vertical; box-sizing: border-box;
   transition: border-color 0.2s;
 }
 .det-textarea:focus { border-color: #000; }
 
 .info-btn {
-  padding: 9px 20px;
-  border-radius: 8px;
-  border: none;
-  font-size: 0.85rem;
-  font-weight: 700;
+  padding: 9px 20px; border-radius: 8px; border: none;
+  font-size: 0.85rem; font-weight: 700;
   font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  cursor: pointer;
-  transition: all 0.15s;
+  cursor: pointer; transition: all 0.15s;
 }
 .info-btn--primary { background: #000; color: #fff; }
 .info-btn--primary:hover { opacity: 0.75; }
 .info-btn--ghost { background: #fff; color: #666; border: 1.5px solid #ddd; }
 .info-btn--ghost:hover { border-color: #000; color: #333; }
 
-
-/* ── カレンダー月合計バー ────────────────────────────────── */
-.calendar-month-summary {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 8px 16px 0;
+/* ── 入金確認チェックボックス行 ──────────────────────────── */
+.det-edit-row--confirm {
+  flex-direction: row; gap: 16px; flex-wrap: wrap; align-items: center;
+  padding: 10px 14px; background: #f8f8f8; border-radius: 8px; border: 1px solid #e8e8e8;
 }
 
-.cal-summary-label {
-  font-size: 0.72rem;
-  color: #999;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.det-edit-label--entrance     { color: #2e7d32; }
+.det-edit-label--yamachin-conf { color: #d63031; }
+
+.det-checkbox--entrance:checked + .det-checkbox-mark {
+  background: #2e7d32 !important; border-color: #2e7d32 !important;
 }
-
-.cal-summary-count {
-  font-size: 0.85rem;
-  color: #333;
-}
-
-.cal-summary-count strong {
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #1a3a6e;
-}
-
-/* ── カレンダーポップアップ ─────────────────────────────── */
-.cal-popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.cal-popup-overlay.is-visible { opacity: 1; }
-
-.cal-popup {
-  background: #fff;
-  border-radius: 14px;
-  width: 100%;
-  max-width: 420px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 16px 48px rgba(0,0,0,.22);
-  transform: scale(0.95);
-  transition: transform 0.18s;
-  overflow: hidden;
-}
-.cal-popup-overlay.is-visible .cal-popup { transform: scale(1); }
-
-.cal-popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid #eee;
-}
-
-.cal-popup-date {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #111;
-  margin: 0;
-  letter-spacing: 0.04em;
-}
-
-.cal-popup-body {
-  overflow-y: auto;
-  padding: 8px 16px;
-  flex: 1;
-}
-
-/* ポップアップ内の行 */
-.cal-popup-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 8px;
-  border-bottom: 1px solid #f5f5f5;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.cal-popup-row:last-child { border-bottom: none; }
-.cal-popup-row:hover { background: #f5f8ff; }
-
-.cal-popup-name {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #111;
-  flex: 1;
-}
-
-.cal-popup-meta { font-size: 0.72rem; color: #999; white-space: nowrap; }
-
-.cal-popup-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 8px;
-  white-space: nowrap;
-}
-.cal-popup-badge--in   { background: #e3f6f0; color: #007a50; }
-.cal-popup-badge--out  { background: #fdecea; color: #b31c1c; }
-.cal-popup-badge--yama { background: #ffe0d6; color: #cc3300; }
-
-.cal-popup-empty {
-  text-align: center;
-  color: #ccc;
-  padding: 30px 0;
-  font-size: 0.85rem;
+.det-checkbox--yamachin:checked + .det-checkbox-mark--yamachin {
+  background: #d63031 !important; border-color: #d63031 !important;
 }
 
 /* ── トースト ────────────────────────────────────────────── */
 .toast-zone {
-  position: fixed;
-  top: 70px;
-  right: 20px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
+  position: fixed; top: 70px; right: 20px; z-index: 2000;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
 }
 
 .toast-msg {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  animation: toastIn 0.2s ease;
-  pointer-events: auto;
+  padding: 10px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2); animation: toastIn 0.2s ease; pointer-events: auto;
 }
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(16px); }
@@ -767,51 +743,15 @@
 .toast-msg--success { background: #f0fff4; border-left: 3px solid #00c853; color: #007a33; }
 .toast-msg--error   { background: #fff0f0; border-left: 3px solid #ff3355; color: #cc1133; }
 
-/* ── 入金確認チェックボックス行 ──────────────────────────── */
-.det-edit-row--confirm {
-  flex-direction: row;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 10px 14px;
-  background: #f8f8f8;
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
-}
-
-.det-edit-label--entrance {
-  color: #2e7d32;
-}
-
-.det-edit-label--yamachin-conf {
-  color: #d63031;
-}
-
-.det-checkbox--entrance:checked + .det-checkbox-mark {
-  background: #2e7d32 !important;
-  border-color: #2e7d32 !important;
-}
-
-.det-checkbox-mark--yamachin {
-  /* override: 山チン系は赤 */
-}
-.det-checkbox--yamachin:checked + .det-checkbox-mark--yamachin {
-  background: #d63031 !important;
-  border-color: #d63031 !important;
-}
-
 /* ── レスポンシブ ────────────────────────────────────────── */
 @media (max-width: 900px) {
   .info-layout { flex-direction: column; height: auto; overflow: auto; }
-  .info-sidebar {
-    width: 100%; flex-direction: row; flex-wrap: wrap;
-    gap: 12px; padding: 12px; overflow: visible;
-    height: auto; border-right: none; border-bottom: 1px solid #e0e0e0;
-  }
-  .sidebar-section { margin-bottom: 0; }
-  .sidebar-divider { display: none; }
   .info-main { padding: 12px; }
   .month-label { min-width: 120px; font-size: 0.85rem; }
+  .control-bar { gap: 8px; }
+  .filter-select { min-width: 110px; font-size: 0.82rem; }
+  .member-search-panel { flex-direction: column; align-items: flex-start; }
+  .ms-input { width: 100%; }
 }
 
 @media (max-width: 600px) {
@@ -820,4 +760,6 @@
   .cal-day { min-height: 44px; padding: 4px; }
   .cal-day-num { font-size: 0.7rem; }
   .cal-count-badge { font-size: 0.58rem; padding: 1px 4px; }
+  .info-stats { display: none; }
+  .ms-group { flex-wrap: wrap; }
 }

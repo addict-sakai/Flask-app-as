@@ -22,23 +22,33 @@ let _rejectMode    = false;
 // 起動
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
-  setHeaderDate();
+  initHamburger();
   initCollapse();
   loadDashboard();
 });
 
 // =============================================================
-// ヘッダー日付表示
+// ハンバーガーメニュー 開閉
 // =============================================================
-function setHeaderDate() {
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  const now = new Date();
-  const y   = now.getFullYear();
-  const m   = String(now.getMonth() + 1).padStart(2, "0");
-  const d   = String(now.getDate()).padStart(2, "0");
-  const dow = days[now.getDay()];
-  document.getElementById("headerDate").textContent =
-    `${y}年${m}月${d}日（${dow}）`;
+function initHamburger() {
+  const btn      = document.getElementById("hamburgerBtn");
+  const wrap     = document.getElementById("hamburgerWrap");
+  const dropdown = document.getElementById("hamburgerDropdown");
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.classList.contains("open");
+    dropdown.classList.toggle("open", !isOpen);
+    btn.setAttribute("aria-expanded", String(!isOpen));
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) {
+      dropdown.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
 }
 
 // =============================================================

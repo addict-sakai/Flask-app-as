@@ -28,119 +28,66 @@
   </header>
 
   <!-- ══════════════════════════════════════════
-       メインレイアウト
+       メインレイアウト（サイドバーなし）
   ══════════════════════════════════════════ -->
   <div class="exp-layout">
-
-    <!-- ── サイドバー ──────────────────────── -->
-    <aside class="exp-sidebar">
-
-      <!-- 新規予約ボタン -->
-      <div class="sidebar-section">
-        <button class="exp-new-btn" id="btnNewResv">＋ 新規予約</button>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 体験申込 編集ボタン -->
-      <div class="sidebar-section">
-        <button class="exp-new-btn exp-new-btn--sub" id="btnExpApp">📋 体験申込 編集</button>
-        <div class="unlinked-wrap" id="unlinkedWrap" style="display:none;">
-          <span class="unlinked-badge" id="unlinkedBadge"></span>
-        </div>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 表示範囲 -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">表示範囲</p>
-        <div class="view-btn-group">
-          <button class="view-btn" id="btnViewToday">当日</button>
-          <button class="view-btn active" id="btnViewAll">ALL</button>
-          <button class="view-btn" id="btnViewMonth">当月</button>
-        </div>
-      </div>
-
-
-      <hr class="sidebar-divider" />
-
-      <!-- 過去の予約 -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">過去の予約</p>
-        <label class="radio-label-sm">
-          <input type="radio" name="pastRange" value="3m" />
-          過去3か月
-        </label>
-        <label class="radio-label-sm">
-          <input type="radio" name="pastRange" value="6m" />
-          過去半年
-        </label>
-        <label class="radio-label-sm">
-          <input type="radio" name="pastRange" value="1y" />
-          過去1年
-        </label>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- キャンセル表示 -->
-      <div class="sidebar-section">
-        <label class="check-label">
-          <input type="checkbox" id="chkShowCancel" />
-          <span class="check-mark"></span>
-          キャンセルも表示
-        </label>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 申込状態 色分け説明 -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">受付の見方</p>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--app-none">申込未</span>
-          <span class="badge-legend-note">申込データなし</span>
-        </div>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--app">N名申込済</span>
-          <span class="badge-legend-note">申込あり</span>
-        </div>
-        <p class="sidebar-label" style="margin-top:10px;">状態の見方</p>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--pending">受付未</span>
-        </div>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--ok">受付済</span>
-        </div>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--done">体験完了</span>
-        </div>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--cancel">キャンセル</span>
-        </div>
-        <div class="badge-legend">
-          <span class="td-chip td-chip--walkin">飛込</span>
-          <span class="badge-legend-note">当日受付</span>
-        </div>
-      </div>
-
-    </aside>
 
     <!-- ── メインコンテンツ ──────────────────── -->
     <main class="exp-main">
 
+      <!-- ─ 操作バー（ボタン類）─ -->
+      <div class="exp-action-bar">
+        <!-- 新規予約ボタン -->
+        <button class="exp-new-btn" id="btnNewResv">＋ 新規予約</button>
+        <!-- 体験申込編集ボタン＋未リンクバッジ -->
+        <div class="action-bar-app-wrap">
+          <button class="exp-new-btn exp-new-btn--sub" id="btnExpApp">📋 体験申込 編集</button>
+          <div class="unlinked-wrap" id="unlinkedWrap" style="display:none;">
+            <span class="unlinked-badge" id="unlinkedBadge"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- ─ 統計バー ─ -->
       <div class="exp-stats-bar" id="statsBar">
+
+        <!-- 件数・売上 -->
         <span class="exp-stat exp-stat--count">件数 <strong id="statCount">—</strong></span>
         <span class="exp-stat exp-stat--amount">売上 <strong id="statAmount">—</strong> 円</span>
-        <div class="stats-sort-group" id="statsSortGroup" style="display:none;">
-          <button class="stats-sort-btn" id="btnSortReception" data-sort="reception">登録順</button>
-          <button class="stats-sort-btn" id="btnSortDateAsc"   data-sort="date_asc" >予約日昇順</button>
-          <button class="stats-sort-btn" id="btnSortDateDesc"  data-sort="date_desc">予約日降順</button>
+
+        <div class="stats-controls">
+
+          <!-- 表示範囲・過去の予約 統合セレクト -->
+          <select class="stats-select" id="selRange">
+            <option value="all"           >ALL</option>
+            <option value="today"  selected>当日</option>
+            <option value="3m"            >3か月</option>
+            <option value="6m"            >半年</option>
+            <option value="1y"            >1年</option>
+            <option value="past_3m"       >過去3か月</option>
+            <option value="past_6m"       >過去半年</option>
+            <option value="past_1y"       >過去1年</option>
+          </select>
+
+          <!-- ソートセレクト -->
+          <select class="stats-select" id="selSort">
+            <option value="reception">登録順</option>
+            <option value="date_asc">予約日昇順</option>
+            <option value="date_desc">予約日降順</option>
+          </select>
+
+          <!-- キャンセルも表示チェック -->
+          <label class="stats-check-label">
+            <input type="checkbox" id="chkShowCancel" class="stats-checkbox" />
+            <span class="stats-check-mark"></span>
+            キャンセルも表示
+          </label>
+
         </div>
+
+        <!-- パイロットボタン -->
         <button class="stats-pilot-btn" id="btnStatsPilot" style="display:none;">🧑‍✈️ —名</button>
-        <span class="exp-stat exp-stat--label" id="statLabel">—</span>
+
       </div>
 
       <!-- ─ テーブル ─ -->

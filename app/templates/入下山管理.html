@@ -29,83 +29,86 @@
   </header>
 
   <!-- ══════════════════════════════════════════
-       メインレイアウト
+       メインレイアウト（サイドバーなし）
   ══════════════════════════════════════════ -->
   <div class="info-layout">
-
-    <!-- ── サイドバー ──────────────────── -->
-    <aside class="info-sidebar">
-
-      <!-- 分類フィルター -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">分類フィルター</p>
-        <div class="sidebar-filter-group" id="classFilterGroup">
-          <button class="sf-btn active" data-filter="all">ALL</button>
-          <button class="sf-btn" data-filter="会員">会員</button>
-          <button class="sf-btn" data-filter="スクール">スクール</button>
-          <button class="sf-btn" data-filter="ビジター">ビジター</button>
-        </div>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 個人検索 -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">個人</p>
-        <input type="text" id="memberQueryInput" class="sidebar-input"
-               placeholder="会員番号 or QR" autocomplete="off" />
-        <div class="sidebar-period-group" id="memberPeriodGroup">
-          <button class="sp-btn" data-period="3m">3ヶ月</button>
-          <button class="sp-btn" data-period="6m">半年</button>
-          <button class="sp-btn" data-period="1y">1年</button>
-        </div>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 山チン -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">山チン</p>
-        <div class="sidebar-period-group">
-          <button class="sp-btn" data-type="yamachin" data-period="3m">3ヶ月</button>
-          <button class="sp-btn" data-type="yamachin" data-period="6m">半年</button>
-          <button class="sp-btn" data-type="yamachin" data-period="1y">1年</button>
-        </div>
-      </div>
-
-      <hr class="sidebar-divider" />
-
-      <!-- 備考あり -->
-      <div class="sidebar-section">
-        <p class="sidebar-label">備考あり</p>
-        <div class="sidebar-period-group">
-          <button class="sp-btn" data-type="comment" data-period="3m">3ヶ月</button>
-          <button class="sp-btn" data-type="comment" data-period="6m">半年</button>
-          <button class="sp-btn" data-type="comment" data-period="1y">1年</button>
-        </div>
-      </div>
-
-    </aside>
-
-    <!-- ── メインコンテンツ ──────────────── -->
     <main class="info-main">
 
       <!-- ─ 日別セクション ─ -->
       <section class="daily-section" id="dailySection">
 
-        <!-- 日付ナビ（請負管理.html スタイル） -->
-        <div class="control-bar">
+        <!-- ─── コントロールバー ─── -->
+        <div class="control-bar" id="controlBarDaily">
+
+          <!-- 左：日付ナビ -->
           <div class="month-nav">
             <button class="btn btn-ghost btn-sm" id="btnPrevDay">◀ 前日</button>
             <span class="month-label" id="dateNavTitle">—</span>
             <button class="btn btn-ghost btn-sm" id="btnNextDay" disabled>翌日 ▶</button>
           </div>
 
-          <!-- フィルター表示ラベル（特殊フィルター時） -->
-          <div class="filter-label-bar" id="filterLabelBar" style="display:none;">
-            <span class="filter-label-text" id="filterLabelText"></span>
+          <!-- 中央：分類フィルター セレクト -->
+          <div class="filter-select-wrap">
+            <select class="filter-select" id="classFilterSelect">
+              <option value="all">ALL</option>
+              <option value="年会員">年会員</option>
+              <option value="冬季会員">冬季会員</option>
+              <option value="スクール">スクール</option>
+              <option value="ビジター">ビジター</option>
+              <option value="yamachin">山チン</option>
+              <option value="comment">備考あり</option>
+              <option value="member">個人</option>
+            </select>
           </div>
+
+          <!-- 右：当日ボタン -->
+          <div class="today-btn-wrap">
+            <button class="btn btn-today btn-sm" id="btnToday" disabled>当日</button>
+          </div>
+
+        </div><!-- /#controlBarDaily -->
+
+        <!-- フィルターラベルバー（特殊フィルター時に表示） -->
+        <div class="filter-label-bar" id="filterLabelBar" style="display:none;">
+          <span class="filter-label-text" id="filterLabelText"></span>
         </div>
+
+        <!-- ─── 個人検索パネル ─── -->
+        <div class="member-search-panel" id="memberSearchPanel" style="display:none;">
+
+          <div class="ms-group">
+            <label class="ms-label">名前検索</label>
+            <div class="ms-input-wrap">
+              <input type="text" id="memberNameInput" class="ms-input"
+                     placeholder="氏名で検索…" autocomplete="off" />
+              <ul class="ms-suggest" id="memberSuggest" style="display:none;"></ul>
+            </div>
+          </div>
+
+          <div class="ms-group">
+            <label class="ms-label">表示期限</label>
+            <select class="ms-period-select" id="memberPeriodSelect">
+              <option value="all">ALL</option>
+              <option value="3m">過去３か月</option>
+              <option value="6m">過去半年</option>
+              <option value="1y">過去１年</option>
+            </select>
+          </div>
+
+          <div class="ms-group ms-group--checks">
+            <label class="ms-check-label">
+              <input type="checkbox" id="chkMemberYamachin" class="ms-checkbox" />
+              <span class="ms-check-mark"></span>
+              山チン
+            </label>
+            <label class="ms-check-label">
+              <input type="checkbox" id="chkMemberComment" class="ms-checkbox" />
+              <span class="ms-check-mark"></span>
+              備考あり
+            </label>
+          </div>
+
+        </div><!-- /#memberSearchPanel -->
 
         <!-- テーブル -->
         <div class="info-table-wrap">
@@ -138,7 +141,7 @@
       <!-- ─ カレンダーセクション ─ -->
       <section class="calendar-section" id="calendarSection">
 
-        <!-- 月ナビ（請負管理.html スタイル） -->
+        <!-- 月ナビ -->
         <div class="control-bar">
           <div class="month-nav">
             <button class="btn btn-ghost btn-sm" id="btnPrevMonth">◀ 前月</button>
@@ -155,8 +158,7 @@
 
         <!-- カレンダーグリッド -->
         <div class="calendar-grid-wrap">
-          <div class="calendar-grid" id="calendarGrid">
-          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
       </section>
@@ -265,23 +267,6 @@
       <div class="info-modal-footer">
         <button class="info-btn info-btn--ghost" id="btnDetailCancel">キャンセル</button>
         <button class="info-btn info-btn--primary" id="btnDetailSave">保存</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       カレンダー日付ポップアップ
-  ══════════════════════════════════════════ -->
-  <div class="cal-popup-overlay" id="calPopupOverlay" style="display:none;">
-    <div class="cal-popup" id="calPopup">
-
-      <div class="cal-popup-header">
-        <h3 class="cal-popup-date" id="calPopupDate">—</h3>
-        <button class="info-modal-close" id="btnCalPopupClose">✕</button>
-      </div>
-
-      <div class="cal-popup-body" id="calPopupBody">
       </div>
 
     </div>

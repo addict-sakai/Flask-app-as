@@ -2,8 +2,9 @@
    app_cont_info.js  –  請負管理ページ ロジック
    =========================================================
    Views:
-     'flight' → フライト状況（デフォルト）
-     'work'   → 出勤可否状況
+     'flight'   → フライト状況（デフォルト）
+     'work'     → 出勤可否状況
+     'handover' → 引継ぎ報告事項
    API:
      GET /api/cont_info/flight_days?year&month
      GET /api/cont_info/detail/<uuid>?year&month
@@ -20,7 +21,7 @@ const state = {
 
   repYear:   TODAY.getFullYear(),
   repMonth:  TODAY.getMonth() + 1,
-  showAll:   true,            // 全員表示フラグ（デフォルト：全員表示）
+  showAll:   true,            // true = 全員表示 / false = フライトありのみ
 
   wcYear:    TODAY.getFullYear(),
   wcMonth:   TODAY.getMonth() + 1,
@@ -44,48 +45,32 @@ function isToday(dateStr)    { return dateStr === TODAY.toISOString().slice(0, 1
 
 /* ---- 日本の祝日判定 ---- */
 function isHoliday(dateStr) {
-  // 固定祝日
   const fixed = [
-    "01-01", // 元日
-    "02-11", // 建国記念の日
-    "02-23", // 天皇誕生日
-    "04-29", // 昭和の日
-    "05-03", // 憲法記念日
-    "05-04", // みどりの日
-    "05-05", // こどもの日
-    "08-11", // 山の日
-    "11-03", // 文化の日
-    "11-23", // 勤労感謝の日
+    "01-01", "02-11", "02-23", "04-29",
+    "05-03", "05-04", "05-05", "08-11",
+    "11-03", "11-23",
   ];
-  const mmdd = dateStr.slice(5); // "MM-DD"
+  const mmdd = dateStr.slice(5);
   if (fixed.includes(mmdd)) return true;
 
-  // 移動祝日（ハッピーマンデー等）
   const d = new Date(dateStr);
   const y = d.getFullYear();
-  const mo = d.getMonth() + 1; // 1-12
+  const mo = d.getMonth() + 1;
   const day = d.getDate();
-  const dow = d.getDay(); // 0=日
+  const dow = d.getDay();
 
-  // 成人の日: 1月第2月曜
   if (mo === 1  && dow === 1 && day >= 8  && day <= 14) return true;
-  // 海の日: 7月第3月曜
   if (mo === 7  && dow === 1 && day >= 15 && day <= 21) return true;
-  // 敬老の日: 9月第3月曜
   if (mo === 9  && dow === 1 && day >= 15 && day <= 21) return true;
-  // スポーツの日: 10月第2月曜
   if (mo === 10 && dow === 1 && day >= 8  && day <= 14) return true;
 
-  // 春分の日（近似式）
   const shunbun = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
   if (mo === 3 && day === shunbun) return true;
 
-  // 秋分の日（近似式）
   const shubun = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
   if (mo === 9 && day === shubun) return true;
 
-  // 振替休日（祝日が日曜→翌月曜）
-  if (dow === 1) { // 月曜
+  if (dow === 1) {
     const prev = new Date(d); prev.setDate(day - 1);
     const prevStr = prev.toISOString().slice(0, 10);
     if (isHoliday(prevStr)) return true;
@@ -96,7 +81,6 @@ function isHoliday(dateStr) {
 
 function statusIcon(status) {
   if (!status) return `<span class="status-null" title="未入力">　</span>`;
-/*  if (!status) return `<span class="status-null" title="未入力">△</span>`; */
   const s = String(status).toUpperCase();
   if (s === "OK") return `<span class="status-ok"  title="出勤可">○</span>`;
   if (s === "NG") return `<span class="status-ng"  title="出勤不可">×</span>`;
@@ -104,29 +88,52 @@ function statusIcon(status) {
 }
 
 /* =========================================================
-   サイドバー View 切替
+   ハンバーガーメニュー
+   ========================================================= */
+
+function toggleHamburger() {
+  const dropdown = $("hamburger-dropdown");
+  const btn      = $("hamburger-btn");
+  const isOpen   = dropdown.classList.contains("open");
+  if (isOpen) {
+    dropdown.classList.remove("open");
+    btn.classList.remove("open");
+  } else {
+    dropdown.classList.add("open");
+    btn.classList.add("open");
+  }
+}
+
+function closeHamburger() {
+  $("hamburger-dropdown").classList.remove("open");
+  $("hamburger-btn").classList.remove("open");
+}
+
+/* 外側クリックで閉じる */
+document.addEventListener("click", e => {
+  const wrap = document.querySelector(".hamburger-wrap");
+  if (wrap && !wrap.contains(e.target)) {
+    closeHamburger();
+  }
+  if (e.target.id === "detail-modal") closeDetail();
+});
+
+/* =========================================================
+   サイドバー View 切替（ハンバーガー版）
    ========================================================= */
 
 function switchView(view) {
   state.currentView = view;
 
-  /* ナビの active */
-  document.querySelectorAll(".sidebar-nav .nav-item").forEach(el => {
-    el.classList.toggle("active", el.id === `nav-${view}`);
+  /* ハンバーガーメニューの active */
+  document.querySelectorAll(".hamburger-item").forEach(el => {
+    el.classList.toggle("active", el.id === `hmenu-${view}`);
   });
 
   /* パネルの表示切替 */
-  $("view-flight").classList.toggle("hidden", view !== "flight");
-  $("view-work").classList.toggle("hidden",   view !== "work");
+  $("view-flight").classList.toggle("hidden",   view !== "flight");
+  $("view-work").classList.toggle("hidden",     view !== "work");
   $("view-handover").classList.toggle("hidden", view !== "handover");
-
-  /* トップバータイトル */
-  const titles = {
-    flight:   "✈ フライト状況",
-    work:     "📆 出勤可否状況",
-    handover: "📋 引継ぎ報告事項",
-  };
-  const titleEl = $("topbar-title"); if (titleEl) titleEl.textContent = titles[view] || "";
 
   /* 初回ロード */
   if (view === "flight")   loadFlightStatus();
@@ -138,9 +145,19 @@ function switchView(view) {
    フライト状況
    ========================================================= */
 
+function _updateShowAllBtn() {
+  const btn = $("btn-show-all");
+  if (!btn) return;
+  // showAll=true（全員表示中）→ ボタン表記「全員」
+  // showAll=false（フライトありのみ表示中）→ ボタン表記「フライトあり」
+  btn.textContent = state.showAll ? "全員" : "フライトあり";
+}
+
 async function loadFlightStatus() {
   const { repYear: y, repMonth: m } = state;
-    $("rep-month-label").textContent = `${y}年 ${m}月`;
+  $("rep-month-label").textContent = `${y}年 ${m}月`;
+  _updateShowAllBtn();
+
   const tbody = $("flight-status-body");
   tbody.innerHTML = `<tr class="loading-row"><td colspan="5">読み込み中…</td></tr>`;
 
@@ -156,7 +173,7 @@ async function loadFlightStatus() {
     }
 
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">フライトデータがありません（「全員表示」で確認できます）</td></tr>`;
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">フライトデータがありません（「全員」で確認できます）</td></tr>`;
       return;
     }
 
@@ -176,10 +193,10 @@ async function loadFlightStatus() {
 
     /* 合計行 */
     const totals = rows.reduce((acc, r) => {
-      acc.flight_days        += r.flight_days;
-      acc.total_flights      += r.total_flights;
+      acc.flight_days         += r.flight_days;
+      acc.total_flights       += r.total_flights;
       acc.mini_guarantee_days += r.mini_guarantee_days;
-      acc.total_amount       += r.total_amount;
+      acc.total_amount        += r.total_amount;
       return acc;
     }, { flight_days: 0, total_flights: 0, mini_guarantee_days: 0, total_amount: 0 });
 
@@ -215,10 +232,10 @@ function repMonthNext() {
   loadFlightStatus();
 }
 
-/* ---- 全員表示トグル ---- */
+/* ---- 全員 / フライトあり トグル ---- */
 function toggleShowAll() {
   state.showAll = !state.showAll;
-  $("btn-show-all").textContent = state.showAll ? "フライトありのみ" : "全員表示";
+  _updateShowAllBtn();
   loadFlightStatus();
 }
 
@@ -294,11 +311,6 @@ function closeDetail() {
   $("detail-modal").classList.remove("open");
 }
 
-/* オーバーレイクリックで閉じる */
-document.addEventListener("click", e => {
-  if (e.target.id === "detail-modal") closeDetail();
-});
-
 /* =========================================================
    出勤可否状況 (カレンダー版)
    ========================================================= */
@@ -316,29 +328,25 @@ async function loadWorkContract() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
 
-    const daysData = json.days || []; // APIから取得した日付ごとのデータ
-    
-    // カレンダーの生成
-    const firstDay = new Date(y, m - 1, 1).getDay(); // 月初めの曜日
-    const lastDate = new Date(y, m, 0).getDate();    // 月末の日付
-    
+    const daysData = json.days || [];
+
+    const firstDay = new Date(y, m - 1, 1).getDay();
+    const lastDate = new Date(y, m, 0).getDate();
+
     let html = `<div class="calendar-grid">`;
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-    
-    // 曜日ヘッダー
+
     weekdays.forEach(wd => html += `<div class="calendar-head">${wd}</div>`);
 
-    // 空白埋め
     for (let i = 0; i < firstDay; i++) {
       html += `<div class="calendar-day empty"></div>`;
     }
 
-    // 日付マス
     for (let d = 1; d <= lastDate; d++) {
       const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayData = daysData.find(x => x.date === dateStr);
       const okCount = dayData ? dayData.ok_count : 0;
-      
+
       const cls = [
         "calendar-day",
         isSaturday(dateStr) ? "saturday" : "",
@@ -346,7 +354,6 @@ async function loadWorkContract() {
         isToday(dateStr) ? "today" : ""
       ].filter(c => c).join(" ");
 
-      // マスの中身
       html += `
         <div class="${cls}" onclick="openWorkDetail('${dateStr}')">
           <span class="day-num">${d}</span>
@@ -358,7 +365,6 @@ async function loadWorkContract() {
     html += `</div>`;
     wrap.innerHTML = html;
 
-    // クリックイベント用にデータを保持（グローバルまたはstateに）
     state.currentMonthWorkData = daysData;
 
   } catch (e) {
@@ -473,7 +479,6 @@ async function openFlightDetailFromWork(el) {
 function wcMonthPrev() {
   let { wcYear: y, wcMonth: m } = state;
   if (--m < 1) { m = 12; y--; }
-  /* 当月より前には戻れない */
   if (y < TODAY.getFullYear() ||
      (y === TODAY.getFullYear() && m < TODAY.getMonth() + 1)) return;
   state.wcYear = y; state.wcMonth = m;
@@ -604,6 +609,5 @@ function handoverMonthNext() {
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-  /* 初期ビューはフライト状況 */
   switchView("flight");
 });

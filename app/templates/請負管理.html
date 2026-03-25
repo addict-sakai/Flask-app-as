@@ -18,55 +18,46 @@
   <div class="global-header-center">
     <span class="global-title">請負管理</span>
   </div>
-  <div class="global-header-right"></div>
+  <div class="global-header-right">
+    <!-- ハンバーガーメニュー -->
+    <div class="hamburger-wrap">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleHamburger()" aria-label="メニュー">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="hamburger-dropdown" id="hamburger-dropdown">
+        <a href="#"
+           class="hamburger-item active"
+           id="hmenu-flight"
+           onclick="switchView('flight'); closeHamburger(); return false;">
+          <span class="hamburger-icon">✈</span>
+          フライト状況
+        </a>
+        <a href="#"
+           class="hamburger-item"
+           id="hmenu-work"
+           onclick="switchView('work'); closeHamburger(); return false;">
+          <span class="hamburger-icon">📆</span>
+          出勤可否状況
+        </a>
+        <a href="#"
+           class="hamburger-item"
+           id="hmenu-handover"
+           onclick="switchView('handover'); closeHamburger(); return false;">
+          <span class="hamburger-icon">📋</span>
+          引継ぎ報告事項
+        </a>
+      </div>
+    </div>
+  </div>
 </header>
 
 <!-- ============================================================
-     ボディラッパー（サイドバー＋メイン）
+     ボディラッパー（メインのみ・サイドバーなし）
      ============================================================ -->
 <div class="body-wrapper">
 
-  <!-- ============================================================
-       Sidebar
-       ============================================================ -->
-  <aside class="sidebar">
-    <nav class="sidebar-nav-wrap">
-      <ul class="sidebar-nav">
-        <li>
-          <a href="#"
-             class="nav-item active"
-             id="nav-flight"
-             onclick="switchView('flight'); return false;">
-            <span class="sidebar-icon">✈</span>
-            フライト状況
-          </a>
-        </li>
-        <li>
-          <a href="#"
-             class="nav-item"
-             id="nav-work"
-             onclick="switchView('work'); return false;">
-            <span class="sidebar-icon">📆</span>
-            出勤可否状況
-          </a>
-        </li>
-        <li>
-          <a href="#"
-             class="nav-item"
-             id="nav-handover"
-             onclick="switchView('handover'); return false;">
-            <span class="sidebar-icon">📋</span>
-            引継ぎ報告事項
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </aside><!-- /.sidebar -->
-
-
-  <!-- ============================================================
-       Main
-       ============================================================ -->
   <div class="main-content">
 
     <!-- ======================================================
@@ -84,12 +75,12 @@
         <span class="view-title">✈ フライト状況</span>
         <div class="btn-group">
           <button class="btn btn-ghost btn-sm" id="btn-show-all" onclick="toggleShowAll()">
-            フライトありのみ
+            フライトあり
           </button>
         </div>
       </div>
 
-      <!-- テーブル（スクロール可能） -->
+      <!-- テーブル -->
       <div class="scroll-area">
         <div class="table-wrap">
           <table class="data-table">
@@ -110,7 +101,7 @@
             <tfoot id="flight-status-foot"></tfoot>
           </table>
         </div>
-      </div><!-- /.scroll-area -->
+      </div>
 
     </div><!-- /#view-flight -->
 
@@ -128,7 +119,6 @@
           <button class="btn btn-ghost btn-sm" id="wc-next-btn" onclick="wcMonthNext()">翌月 ▶</button>
         </div>
         <span class="view-title">📆 出勤可否状況</span>
-        <!-- 凡例 -->
         <div class="legend">
           <span><span class="status-ok">○</span> 出勤可</span>
           <span><span class="status-ng">×</span> 出勤不可</span>
@@ -136,12 +126,11 @@
         </div>
       </div>
 
-      <!-- テーブル（スクロール可能） -->
       <div class="scroll-area" id="wc-scroll-area">
         <div id="wc-table-wrap">
           <p class="loading-text">読み込み中…</p>
         </div>
-      </div><!-- /.scroll-area -->
+      </div>
 
     </div><!-- /#view-work -->
 
@@ -159,10 +148,9 @@
           <button class="btn btn-ghost btn-sm" onclick="handoverMonthNext()">翌月 ▶</button>
         </div>
         <span class="view-title">📋 引継ぎ報告事項</span>
-        <div></div><!-- 右側スペーサー -->
+        <div></div>
       </div>
 
-      <!-- カード一覧 -->
       <div class="scroll-area">
         <div id="handover-cards" class="handover-cards-wrap">
           <p class="loading-text">読み込み中…</p>

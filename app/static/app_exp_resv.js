@@ -14,6 +14,7 @@ const ExpApp = (() => {
     sortMode:    "reception",    // "reception" | "date_asc" (ALL時のみ選択可)
     monthSortMode: "date_asc",   // 当月・過去表示時のソート: "date_asc" | "date_desc"
     pastRange:   "",             // "" | "3m" | "6m" | "1y"
+    futureRange: "",             // "" | "3m" | "6m" | "1y"  （当日以降の表示範囲）
     filterDate:  "",             // カレンダークリック時の特定日
     calYear:     new Date().getFullYear(),
     calMonth:    new Date().getMonth() + 1,
@@ -126,9 +127,14 @@ const ExpApp = (() => {
         S.viewMode   = "all";
         S.filterDate = "";
         S.pastRange  = "";
+        S.futureRange = "";
         S.sortMode      = "reception";
         S.monthSortMode = "date_asc";
-        document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
+        // セレクトUIをリセット（初期値「当日」）
+        const sr = document.getElementById("selRange");
+        const ss = document.getElementById("selSort");
+        if (sr) { sr.value = "today"; _applyRangeSelect("today"); }
+        if (ss) ss.value = "reception";
         _updateViewButtons();
         _updateSortVisibility();
         _updateMonthSortButtons();
@@ -140,85 +146,41 @@ const ExpApp = (() => {
   }
 
   /* ════════════════════════════════════════
-     サイドバー
+     コントロール（操作バー＋統計バー）
   ════════════════════════════════════════ */
   function _bindSidebar() {
+    // ── ボタン ──
     $("btnNewResv").addEventListener("click", () => openModal(null));
     $("btnExpApp").addEventListener("click", () => {
       if (!$("btnExpApp").disabled) openExpAppModal();
     });
 
-    // ALL / 当月 ボタン
-    // 当日ボタン
-    const btnViewToday = document.getElementById("btnViewToday");
-    if (btnViewToday) {
-      btnViewToday.addEventListener("click", () => {
-        S.viewMode   = "date";
-        S.filterDate = dateToISO(TODAY);
-        S.pastRange  = "";
-        _updateViewButtons();
-        _updateSortVisibility();
-        _updateMonthSortButtons();
-        _updatePilotBtn();
-        _focusCalendarToday();
-        loadList();
-      });
-    }
-
-    $("btnViewAll").addEventListener("click", () => {
-      S.viewMode   = "all";
-      S.filterDate = "";
-      S.pastRange  = "";
-      _updateViewButtons();
-      _updateSortVisibility();
-      _updateMonthSortButtons();
-      _focusCalendarToday();
+    // ── 表示範囲・過去予約 統合セレクト ──
+    $("selRange").addEventListener("change", () => {
+      _applyRangeSelect($("selRange").value);
+      _updateSortSelect();
+      _updatePilotBtn();
       loadList();
     });
 
-    $("btnViewMonth").addEventListener("click", () => {
-      S.viewMode   = "month";
-      S.filterDate = "";
-      S.pastRange  = "";
-      _updateViewButtons();
-      _updateSortVisibility();
-      _updateMonthSortButtons();
-      _focusCalendarToday();
+    // ── ソートセレクト ──
+    $("selSort").addEventListener("change", () => {
+      const val = $("selSort").value;
+      if (S.viewMode === "all" || S.viewMode === "date") {
+        S.sortMode = val;
+      } else {
+        S.monthSortMode = val;
+      }
       loadList();
     });
 
-    // ソート（ALL時のみ有効）
-    document.querySelectorAll('input[name="sortMode"]').forEach(r => {
-      r.addEventListener("change", () => {
-        S.sortMode = r.value;
-        loadList();
-      });
-    });
-
-    // 過去範囲
-    document.querySelectorAll('input[name="pastRange"]').forEach(r => {
-      r.addEventListener("change", () => {
-        S.pastRange  = r.value;
-        S.viewMode   = r.value ? "past" : "all";
-        S.filterDate = "";
-        _updateViewButtons();
-        _updateSortVisibility();
-        _updateMonthSortButtons();
-        _focusCalendarToday();
-        loadList();
-      });
-    });
-
+    // ── キャンセルチェック ──
     $("chkShowCancel").addEventListener("change", () => {
       S.showCancel = $("chkShowCancel").checked;
       loadList();
     });
 
-    _updateViewButtons();
-    _updateSortVisibility();
-    _updateMonthSortButtons();
-
-    // パイロットボタン
+    // ── パイロットボタン ──
     const pilotBtn = document.getElementById("btnStatsPilot");
     if (pilotBtn) {
       pilotBtn.addEventListener("click", () => {
@@ -228,72 +190,97 @@ const ExpApp = (() => {
       });
     }
 
-    // ソートボタン（ALL: sortMode、当月・過去: monthSortMode）
-    ["btnSortReception","btnSortDateAsc","btnSortDateDesc"].forEach(id => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener("click", () => {
-        const sort = btn.dataset.sort;
-        if (S.viewMode === "all") {
-          S.sortMode = sort;
-        } else {
-          S.monthSortMode = sort;
-        }
-        _updateMonthSortButtons();
-        loadList();
-      });
-    });
+    // 初期値「当日」を適用
+    _applyRangeSelect("today");
+    _updateSortSelect();
+    _updatePilotBtn();
   }
 
+  /* 統合セレクトの値をStateに反映する */
+  function _applyRangeSelect(val) {
+    S.filterDate = "";
+    S.pastRange  = "";
+    S.futureRange = "";
+
+    if (val === "today") {
+      S.viewMode   = "date";
+      S.filterDate = dateToISO(TODAY);
+      _focusCalendarToday();
+    } else if (val === "3m") {
+      // 当日以降3か月分の予約
+      S.viewMode    = "future";
+      S.futureRange = "3m";
+      _focusCalendarToday();
+    } else if (val === "6m") {
+      S.viewMode    = "future";
+      S.futureRange = "6m";
+      _focusCalendarToday();
+    } else if (val === "1y") {
+      S.viewMode    = "future";
+      S.futureRange = "1y";
+      _focusCalendarToday();
+    } else if (val === "all") {
+      S.viewMode  = "all";
+      _focusCalendarToday();
+    } else if (val === "past_3m") {
+      S.viewMode  = "past";
+      S.pastRange = "3m";
+      _focusCalendarToday();
+    } else if (val === "past_6m") {
+      S.viewMode  = "past";
+      S.pastRange = "6m";
+      _focusCalendarToday();
+    } else if (val === "past_1y") {
+      S.viewMode  = "past";
+      S.pastRange = "1y";
+      _focusCalendarToday();
+    }
+  }
+
+  /* セレクトの値をStateに同期する */
   function _updateViewButtons() {
-    const todayISO = dateToISO(TODAY);
-    const btnToday = document.getElementById("btnViewToday");
-    if (btnToday) btnToday.classList.toggle("active", S.viewMode === "date" && S.filterDate === todayISO);
-    $("btnViewAll").classList.toggle("active",   S.viewMode === "all");
-    $("btnViewMonth").classList.toggle("active", S.viewMode === "month");
-    if (S.viewMode !== "past") {
-      document.querySelectorAll('input[name="pastRange"]').forEach(r => r.checked = false);
+    const sel = $("selRange");
+    if (!sel) return;
+    if (S.viewMode === "date") {
+      sel.value = "today";
+    } else if (S.viewMode === "future") {
+      sel.value = S.futureRange || "all";
+    } else if (S.viewMode === "past") {
+      const map = { "3m": "past_3m", "6m": "past_6m", "1y": "past_1y" };
+      sel.value = map[S.pastRange] || "all";
+    } else {
+      sel.value = "all";
     }
   }
 
   function _updateSortVisibility() {
-    // sortSection は削除済みのため何もしない
+    _updateSortSelect();
   }
 
-  /* カレンダーを当日の月へ移動し、当日セルを選択状態にする */
-  function _focusCalendarToday() {
-    if (S.calYear !== TODAY.getFullYear() || S.calMonth !== TODAY.getMonth() + 1) {
-      S.calYear  = TODAY.getFullYear();
-      S.calMonth = TODAY.getMonth() + 1;
-      loadCalendar();
+  /* ソートセレクトの選択値を更新 */
+  function _updateSortSelect() {
+    const sel = $("selSort");
+    if (!sel) return;
+
+    // 常に表示
+    sel.style.display = "";
+
+    // 「登録順」は ALL / 当日 のみ有効
+    const recOpt = sel.querySelector('option[value="reception"]');
+    const isAllOrDate = (S.viewMode === "all" || S.viewMode === "date");
+    if (recOpt) recOpt.style.display = isAllOrDate ? "" : "none";
+
+    const activeSort = isAllOrDate ? S.sortMode : S.monthSortMode;
+    if (!isAllOrDate && activeSort === "reception") {
+      sel.value = "date_asc";
+      S.monthSortMode = "date_asc";
     } else {
-      document.querySelectorAll(".cal-day--selected")
-        .forEach(el => el.classList.remove("cal-day--selected"));
-      document.querySelectorAll(".cal-day--today")
-        .forEach(el => el.classList.add("cal-day--selected"));
+      sel.value = activeSort;
     }
   }
 
-    /* ソートボタングループの表示・アクティブ状態を更新（ALL / 当月 / 過去） */
   function _updateMonthSortButtons() {
-    const group   = document.getElementById("statsSortGroup");
-    const recBtn  = document.getElementById("btnSortReception");
-    if (!group) return;
-
-    const showGroup = (S.viewMode === "all" || S.viewMode === "month" || S.viewMode === "past");
-    group.style.display = showGroup ? "" : "none";
-    if (!showGroup) return;
-
-    // 「登録順」ボタンは ALL のみ表示
-    if (recBtn) recBtn.style.display = (S.viewMode === "all") ? "" : "none";
-
-    // アクティブ状態を更新
-    const activeSort = (S.viewMode === "all") ? S.sortMode : S.monthSortMode;
-    ["btnSortReception","btnSortDateAsc","btnSortDateDesc"].forEach(id => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.classList.toggle("active", btn.dataset.sort === activeSort);
-    });
+    _updateSortSelect();
   }
 
   /* ════════════════════════════════════════
@@ -457,6 +444,14 @@ const ExpApp = (() => {
       url   += `&from_date=${from}&to_date=${today}&sort=${sp}`;
       label  = { "3m": "過去3か月", "6m": "過去半年", "1y": "過去1年" }[S.pastRange] || "";
 
+    } else if (S.viewMode === "future" && S.futureRange) {
+      // 当日以降の範囲 → 当日〜N か月後
+      const today = dateToISO(TODAY);
+      const to    = _futureToDate(S.futureRange);
+      const sp    = S.monthSortMode === "date_desc" ? "date_desc" : "date_asc";
+      url   += `&from_date=${today}&to_date=${to}&sort=${sp}`;
+      label  = { "3m": "3か月", "6m": "半年", "1y": "1年" }[S.futureRange] || "";
+
     } else {
       // ALL → sortMode に従う
       let sortParam = "reception_desc";
@@ -478,11 +473,24 @@ const ExpApp = (() => {
       const amount = items.reduce((s, r) => s + (r.charge_amount || 0), 0);
       $("statCount").textContent  = total;
       $("statAmount").textContent = amount.toLocaleString();
-      $("statLabel").textContent  = label;
       _updateMonthSortButtons();
       _updatePilotBtn();
     } catch (e) {
       toast("一覧の取得に失敗: " + e.message, "error");
+    }
+  }
+
+  /* カレンダーを当日の月へ移動し、当日セルを選択状態にする */
+  function _focusCalendarToday() {
+    if (S.calYear !== TODAY.getFullYear() || S.calMonth !== TODAY.getMonth() + 1) {
+      S.calYear  = TODAY.getFullYear();
+      S.calMonth = TODAY.getMonth() + 1;
+      loadCalendar();
+    } else {
+      document.querySelectorAll(".cal-day--selected")
+        .forEach(el => el.classList.remove("cal-day--selected"));
+      document.querySelectorAll(".cal-day--today")
+        .forEach(el => el.classList.add("cal-day--selected"));
     }
   }
 
@@ -491,6 +499,15 @@ const ExpApp = (() => {
     if (range === "3m") d.setMonth(d.getMonth() - 3);
     else if (range === "6m") d.setMonth(d.getMonth() - 6);
     else if (range === "1y") d.setFullYear(d.getFullYear() - 1);
+    return dateToISO(d);
+  }
+
+  // 当日以降の終了日を計算（3か月後・半年後・1年後）
+  function _futureToDate(range) {
+    const d = new Date(TODAY);
+    if (range === "3m") d.setMonth(d.getMonth() + 3);
+    else if (range === "6m") d.setMonth(d.getMonth() + 6);
+    else if (range === "1y") d.setFullYear(d.getFullYear() + 1);
     return dateToISO(d);
   }
 
