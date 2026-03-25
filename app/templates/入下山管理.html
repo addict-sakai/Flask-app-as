@@ -76,17 +76,16 @@
         <!-- ─── 個人検索パネル ─── -->
         <div class="member-search-panel" id="memberSearchPanel" style="display:none;">
 
+          <!-- 氏名入力＋検索ボタン -->
           <div class="ms-group">
-            <label class="ms-label">名前検索</label>
-            <div class="ms-input-wrap">
-              <input type="text" id="memberNameInput" class="ms-input"
-                     placeholder="氏名で検索…" autocomplete="off" />
-              <ul class="ms-suggest" id="memberSuggest" style="display:none;"></ul>
-            </div>
+            <label class="ms-label">氏名</label>
+            <input type="text" id="memberNameInput" class="ms-input"
+                   placeholder="氏名を入力…" autocomplete="off" />
+            <button class="btn ms-search-btn" id="btnMemberSearch">検索</button>
           </div>
 
+          <!-- 表示期限（ラベルなし） -->
           <div class="ms-group">
-            <label class="ms-label">表示期限</label>
             <select class="ms-period-select" id="memberPeriodSelect">
               <option value="all">ALL</option>
               <option value="3m">過去３か月</option>
@@ -95,6 +94,7 @@
             </select>
           </div>
 
+          <!-- チェックボックス（ラベルなし） -->
           <div class="ms-group ms-group--checks">
             <label class="ms-check-label">
               <input type="checkbox" id="chkMemberYamachin" class="ms-checkbox" />
@@ -109,6 +109,17 @@
           </div>
 
         </div><!-- /#memberSearchPanel -->
+
+        <!-- ─── 候補選択モーダル（複数候補ヒット時）─── -->
+        <div class="ms-candidate-overlay" id="msCandidateOverlay" style="display:none;">
+          <div class="ms-candidate-box" id="msCandidateBox">
+            <div class="ms-candidate-header">
+              <span class="ms-candidate-title">候補を選択してください</span>
+              <button class="ms-candidate-close" id="btnCandidateClose">✕</button>
+            </div>
+            <ul class="ms-candidate-list" id="msCandidateList"></ul>
+          </div>
+        </div>
 
         <!-- テーブル -->
         <div class="info-table-wrap">

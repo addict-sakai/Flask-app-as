@@ -217,13 +217,10 @@
   color: #888;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  display: none;   /* ラベルテキストは非表示 */
 }
 
-/* 名前入力＋サジェスト */
-.ms-input-wrap {
-  position: relative;
-}
-
+/* 名前入力 */
 .ms-input {
   padding: 6px 12px;
   border: 1.5px solid #c8c0e8;
@@ -232,38 +229,127 @@
   font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   color: #111;
   outline: none;
-  width: 180px;
+  width: 200px;
   transition: border-color 0.2s;
   background: #fff;
 }
 .ms-input:focus { border-color: #6644cc; }
 
-/* サジェストリスト */
-.ms-suggest {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 220px;
+/* 検索ボタン */
+.ms-search-btn {
+  padding: 6px 14px;
+  background: #111;
+  border: 1.5px solid #111;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.ms-search-btn:hover { opacity: 0.75; }
+
+
+/* ── 候補選択モーダル ────────────────────────────────────── */
+.ms-candidate-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ms-candidate-overlay.is-visible { opacity: 1; }
+
+.ms-candidate-box {
   background: #fff;
-  border: 1.5px solid #c8c0e8;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-  z-index: 200;
-  list-style: none;
-  padding: 4px 0;
-  margin: 0;
-  max-height: 220px;
-  overflow-y: auto;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 360px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,.22);
+  overflow: hidden;
 }
 
-.ms-suggest-item {
-  padding: 9px 14px;
-  font-size: 0.85rem;
-  color: #222;
-  cursor: pointer;
-  transition: background 0.1s;
+.ms-candidate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
 }
-.ms-suggest-item:hover { background: #f0ecff; color: #3311aa; }
+
+.ms-candidate-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.ms-candidate-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #aaa;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.ms-candidate-close:hover { background: #f0f0f0; color: #333; }
+
+.ms-candidate-list {
+  list-style: none;
+  padding: 6px 0;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ms-candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ms-candidate-item:last-child { border-bottom: none; }
+.ms-candidate-item:hover { background: #f0ecff; }
+
+.ms-cand-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.ms-cand-num {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.ms-cand-class {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: #f0f0f0;
+  color: #555;
+  margin-left: auto;
+}
 
 /* 期限セレクト */
 .ms-period-select {

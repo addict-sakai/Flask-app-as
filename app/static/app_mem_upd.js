@@ -1,13 +1,27 @@
 /**
- * app_mem_upd.js  会員情報更新  改定７版（2026-03-24）
+ * app_mem_upd.js  会員情報更新  改定９版（2026-03-25）
  *
- * 改定７変更点（検索フロー刷新）:
- *   1. 検索方法を「氏名入力 → 候補リスト選択 → PASSコード認証」に変更
+ * 改定９変更点:
+ *   1. コース変更申請中の挙動を制御
+ *      - 申請中はコース変更フィールドの変更を無効（UIは会員更新.html側で制御済み）
+ *      - 申請中でも「基本情報」「フライヤー情報」「連絡先」「緊急連絡先」「傷病履歴」
+ *        の情報変更はスタッフ確認なしで即時登録可能
+ *      - 申請中にコース変更を含む申請を行おうとした場合はエラートーストを表示
+ *   2. _pendingCourseApp 状態変数でコース変更申請中を管理
+ *
+ * 改定８変更点（維持）:
+ *   1. 使用機体（glider_name）を必須項目に追加
+ *   2. 申請可能条件:「基本情報」「フライヤー情報」「連絡先」「緊急連絡先」
+ *      「傷病履歴」のいずれか1項目以上に変更があれば申請ボタンを有効化
+ *   3. コース変更以外の情報変更はスタッフ確認なしで即時反映（従来仕様維持）
+ *
+ * 改定７変更点（維持）:
+ *   - 検索方法を「氏名入力 → 候補リスト選択 → PASSコード認証」に変更
  *      - 左端の「QRコード」ボタンは将来実装用プレースホルダー
  *      - 氏名の部分一致で候補リスト（氏名・生年月日）を表示
  *      - 候補行クリック → PASSコードモーダル（携帯番号下4桁）
  *      - 認証成功 → loadForm() で修正フォームを表示
- *   2. 既存の変更差分処理（コース変更・情報変更分離）はそのまま維持
+ *   - 既存の変更差分処理（コース変更・情報変更分離）はそのまま維持
  *
  * 改定５までの変更点（維持）:
  *   - 変更差分を「コース変更」と「情報変更」に分類して処理
@@ -53,7 +67,7 @@ const FIELD_LABELS = {
 // 必須フィールド
 const REQUIRED_FIELDS = [
   "full_name", "birthday",
-  "organization", "reg_no", "reglimit_date", "license",
+  "organization", "reg_no", "reglimit_date", "license", "glider_name",
   "mobile_phone", "email",
   "emergency_name", "emergency_phone",
 ];
@@ -67,10 +81,11 @@ const EDIT_FIELDS = Object.keys(FIELD_LABELS).filter(k => k !== "reg_no" && k !=
 /* =========================================
    状態
    ========================================= */
-let originalData    = {};
-let currentMemberId = null;
-let _loadedData     = null;
-let _passTarget     = null;   // PASSコード認証対象の会員情報（候補リストで選択）
+let originalData      = {};
+let currentMemberId   = null;
+let _loadedData       = null;
+let _passTarget       = null;   // PASSコード認証対象の会員情報（候補リストで選択）
+let _pendingCourseApp = false;  // コース変更申請中フラグ（申請中はコース変更不可）
 
 /* =========================================
    DOM ショートカット
@@ -455,9 +470,10 @@ function handleBackToSearch() {
   $("btnBackToSearch").classList.add("hidden");
 
   // 内部状態をリセット
-  originalData    = {};
-  currentMemberId = null;
-  _loadedData     = null;
+  originalData      = {};
+  currentMemberId   = null;
+  _loadedData       = null;
+  _pendingCourseApp = false;
 
   // ページ先頭にスクロール
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -694,7 +710,13 @@ function handleSubmitClick() {
   const hasInfo   = Object.keys(infoChanges).length > 0;
 
   if (!hasCourse && !hasInfo) {
-    showToast("変更された項目がありません");
+    showToast("変更された項目がありません。いずれかの項目を変更してから申請してください。");
+    return;
+  }
+
+  // ── コース変更申請中はコース変更を受け付けない ──
+  if (_pendingCourseApp && hasCourse) {
+    showToast("コース変更申請中のため、コース変更はできません。登録情報の修正のみ可能です。", true);
     return;
   }
 
@@ -785,6 +807,7 @@ async function _sendChanges(courseChanges, infoChanges) {
     }
 
     if (result.course_applied) {
+      _pendingCourseApp = true;
       const mt = courseChanges["member_type"] || originalData["member_type"] || "";
       if (typeof window.showStatusBadge === "function") {
         window.showStatusBadge("pending", mt, null);
@@ -810,21 +833,27 @@ async function _loadPendingApplication(memberId) {
   try {
     const res = await fetch(`/api/members/${memberId}/pending_application`);
     if (!res.ok) {
+      _pendingCourseApp = false;
       if (typeof window.showStatusBadge === "function") window.showStatusBadge(null, "");
       return;
     }
     const app = await res.json();
     if (!app) {
+      _pendingCourseApp = false;
       if (typeof window.showStatusBadge === "function") window.showStatusBadge(null, "");
       return;
     }
 
     if (app.status_type === "member_pending") {
+      _pendingCourseApp = false;
       if (typeof window.showStatusBadge === "function") {
         window.showStatusBadge("member_pending", "", { appliedAt: app.applied_at });
       }
       return;
     }
+
+    // コース変更申請中フラグをセット
+    _pendingCourseApp = (app.app_status === "pending" && app.status_type === "course_change");
 
     const changes = app.changes || {};
     const mt = changes["member_type"] || originalData["member_type"] || "";
@@ -838,6 +867,7 @@ async function _loadPendingApplication(memberId) {
     }
   } catch {
     // バッジ復元失敗は無視
+    _pendingCourseApp = false;
   }
 }
 

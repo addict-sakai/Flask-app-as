@@ -163,7 +163,6 @@ const InfoApp = (() => {
         S.specialPeriod = $("memberPeriodSelect").value;
         S.memberQuery   = "";
         S.memberUUID    = "";
-        _hideMemberSuggest();
         $("memberNameInput").value = "";
         _hideFilterLabel();
         $("col-date").style.display = "none";
@@ -201,79 +200,102 @@ const InfoApp = (() => {
     const chkYama   = $("chkMemberYamachin");
     const chkCmt    = $("chkMemberComment");
 
-    nameInput.addEventListener("input", () => {
-      clearTimeout(S.suggestTimer);
-      const q = nameInput.value.trim();
-      if (q.length < 1) { _hideMemberSuggest(); return; }
-      S.suggestTimer = setTimeout(() => _fetchSuggest(q), 260);
-    });
-
+    // Enter キーで検索実行
     nameInput.addEventListener("keydown", e => {
-      if (e.key === "Enter")  { _hideMemberSuggest(); _runMemberSearch(); }
-      if (e.key === "Escape") { _hideMemberSuggest(); }
+      if (e.key === "Enter") _startMemberSearch();
     });
 
+    // 検索ボタン
+    $("btnMemberSearch").addEventListener("click", () => _startMemberSearch());
+
+    // 期限変更 → 検索済みなら再検索
     periodSel.addEventListener("change", () => {
       S.specialPeriod = periodSel.value;
-      if (S.memberQuery) _runMemberSearch();
+      if (S.memberQuery) _execMemberSearch(S.memberQuery, S.memberUUID);
     });
 
+    // チェックボックス変更 → 検索済みなら再検索
     chkYama.addEventListener("change", () => {
       S.chkYamachin = chkYama.checked;
-      if (S.memberQuery) _runMemberSearch();
+      if (S.memberQuery) _execMemberSearch(S.memberQuery, S.memberUUID);
     });
     chkCmt.addEventListener("change", () => {
       S.chkComment = chkCmt.checked;
-      if (S.memberQuery) _runMemberSearch();
+      if (S.memberQuery) _execMemberSearch(S.memberQuery, S.memberUUID);
     });
 
-    document.addEventListener("click", e => {
-      if (!$("memberSearchPanel")?.contains(e.target)) {
-        _hideMemberSuggest();
-      }
+    // 候補選択モーダルの閉じるボタン
+    $("btnCandidateClose").addEventListener("click", _closeCandidateModal);
+    $("msCandidateOverlay").addEventListener("click", e => {
+      if (e.target === $("msCandidateOverlay")) _closeCandidateModal();
     });
   }
 
-  async function _fetchSuggest(q) {
-    try {
-      const data = await apiFetch(`/api/io/info/member_suggest?q=${encodeURIComponent(q)}`);
-      _showSuggest(data.members || []);
-    } catch {
-      _hideMemberSuggest();
-    }
-  }
-
-  function _showSuggest(list) {
-    const ul = $("memberSuggest");
-    ul.innerHTML = "";
-    if (list.length === 0) { ul.style.display = "none"; return; }
-    list.forEach(m => {
-      const li = document.createElement("li");
-      li.className   = "ms-suggest-item";
-      li.textContent = m.full_name + (m.member_number ? `（${m.member_number}）` : "");
-      li.addEventListener("mousedown", e => {
-        e.preventDefault();
-        $("memberNameInput").value = m.full_name;
-        S.memberQuery = m.full_name;
-        S.memberUUID  = m.uuid || "";
-        _hideMemberSuggest();
-        _runMemberSearch();
-      });
-      ul.appendChild(li);
-    });
-    ul.style.display = "block";
-  }
-
-  function _hideMemberSuggest() {
-    const ul = $("memberSuggest");
-    if (ul) ul.style.display = "none";
-  }
-
-  function _runMemberSearch() {
+  /* ── 検索ボタン押下・Enter → サジェストAPIで候補取得 ── */
+  async function _startMemberSearch() {
     const q = $("memberNameInput").value.trim();
     if (!q) { toast("氏名を入力してください", "error"); return; }
 
-    S.memberQuery   = q;
+    try {
+      const data = await apiFetch(`/api/io/info/member_suggest?q=${encodeURIComponent(q)}`);
+      const list  = data.members || [];
+
+      if (list.length === 0) {
+        toast("該当する会員が見つかりませんでした", "error");
+        return;
+      }
+      if (list.length === 1) {
+        // 1件 → そのまま検索
+        _execMemberSearch(list[0].full_name, list[0].uuid || "");
+      } else {
+        // 複数件 → 候補選択モーダルを表示
+        _openCandidateModal(list);
+      }
+    } catch (e) {
+      toast("検索に失敗しました: " + e.message, "error");
+    }
+  }
+
+  /* ── 候補選択モーダルを開く ── */
+  function _openCandidateModal(list) {
+    const ul = $("msCandidateList");
+    ul.innerHTML = "";
+    list.forEach(m => {
+      const li = document.createElement("li");
+      li.className = "ms-candidate-item";
+      li.innerHTML = `
+        <span class="ms-cand-name">${esc(m.full_name)}</span>
+        ${m.member_number
+          ? `<span class="ms-cand-num">（${esc(m.member_number)}）</span>`
+          : ""}
+        ${m.member_class
+          ? `<span class="ms-cand-class">${esc(m.member_class)}</span>`
+          : ""}
+      `;
+      li.addEventListener("click", () => {
+        _closeCandidateModal();
+        // 入力欄にも反映
+        $("memberNameInput").value = m.full_name;
+        _execMemberSearch(m.full_name, m.uuid || "");
+      });
+      ul.appendChild(li);
+    });
+    $("msCandidateOverlay").style.display = "flex";
+    requestAnimationFrame(() =>
+      $("msCandidateOverlay").classList.add("is-visible")
+    );
+  }
+
+  function _closeCandidateModal() {
+    const el = $("msCandidateOverlay");
+    el.classList.remove("is-visible");
+    setTimeout(() => { el.style.display = "none"; }, 200);
+  }
+
+  /* ── 確定した名前・UUIDで実際にリスト取得 ── */
+  function _execMemberSearch(fullName, uuid) {
+    S.memberQuery   = fullName;
+    S.memberUUID    = uuid;
     S.specialPeriod = $("memberPeriodSelect").value;
     S.chkYamachin   = $("chkMemberYamachin").checked;
     S.chkComment    = $("chkMemberComment").checked;
@@ -285,8 +307,13 @@ const InfoApp = (() => {
     else                                    subtype = "member";
 
     S.specialType = subtype;
-    loadSpecialFilter(subtype, S.specialPeriod, q);
+    loadSpecialFilter(subtype, S.specialPeriod, fullName);
     loadCalendar();
+  }
+
+  // 旧 _runMemberSearch の別名（他箇所から呼ばれている場合の互換用）
+  function _runMemberSearch() {
+    _startMemberSearch();
   }
 
   function _returnToDaily() {

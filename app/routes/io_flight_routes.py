@@ -91,8 +91,10 @@ def _apply_class_filter(query, class_filter: str):
     return query
 
 
-def _period_cutoff(period: str) -> date:
-    """期間文字列から開始日を返す"""
+def _period_cutoff(period: str) -> date | None:
+    """期間文字列から開始日を返す。'all' の場合は None（全期間）"""
+    if period == "all":
+        return None
     periods = {"1y": 365, "6m": 183, "3m": 91}
     days = periods.get(period, 91)
     return date.today() - timedelta(days=days)
@@ -330,6 +332,49 @@ def io_info_index():
     return render_template("入下山管理.html")
 
 
+# ─── 氏名サジェスト（部分一致） ────────────
+# GET /api/io/info/member_suggest?q=氏名
+# io_flight テーブルから部分一致で候補を返す
+# （実際に入山記録のある人のみ＋ members テーブルも参照して uuid・分類を補完）
+@io_bp.route("/api/io/info/member_suggest")
+def api_io_member_suggest():
+    q_str = (request.args.get("q", "") or "").strip()
+    if not q_str:
+        return jsonify({"members": []})
+
+    # io_flight から氏名部分一致で uuid・分類を取得（重複排除）
+    rows = (
+        db.session.query(
+            IoFlight.full_name,
+            IoFlight.uuid,
+            IoFlight.member_number,
+            IoFlight.member_class,
+        )
+        .filter(IoFlight.full_name.ilike(f"%{q_str}%"))
+        .distinct(IoFlight.uuid)
+        .order_by(IoFlight.uuid, IoFlight.full_name)
+        .limit(20)
+        .all()
+    )
+
+    # uuid ごとに1件に絞る（同一人物の重複を排除）
+    seen_uuid = set()
+    members   = []
+    for row in rows:
+        key = str(row.uuid) if row.uuid else row.full_name
+        if key in seen_uuid:
+            continue
+        seen_uuid.add(key)
+        members.append({
+            "full_name":     row.full_name,
+            "uuid":          str(row.uuid) if row.uuid else "",
+            "member_number": row.member_number or "",
+            "member_class":  row.member_class  or "",
+        })
+
+    return jsonify({"members": members})
+
+
 # ─── 日別レコード取得 ────────────────────
 @io_bp.route("/api/io/info/daily")
 def api_io_daily():
@@ -400,7 +445,8 @@ def api_io_calendar():
             except ValueError:
                 q = q.filter(IoFlight.member_number == member_query)
         cutoff = _period_cutoff(period)
-        q = q.filter(IoFlight.entry_date >= cutoff)
+        if cutoff:
+            q = q.filter(IoFlight.entry_date >= cutoff)
     else:
         q = _apply_class_filter(q, class_filter)
 
@@ -501,27 +547,48 @@ def api_io_special():
     period       = request.args.get("period",  "3m")
     class_filter = request.args.get("filter",  "all")
     member_query = (request.args.get("query",  "") or "").strip()
+    member_uuid  = (request.args.get("uuid",   "") or "").strip()
 
-    cutoff = _period_cutoff(period)
-    q      = IoFlight.query.filter(IoFlight.entry_date >= cutoff)
+    cutoff = _period_cutoff(period)  # None = 全期間
+
+    q = IoFlight.query
+    if cutoff:
+        q = q.filter(IoFlight.entry_date >= cutoff)
 
     if filter_type == "yamachin":
+        # 山チン：全期間・全員
         q = q.filter(IoFlight.yamachin == True)  # noqa: E712
 
     elif filter_type == "comment":
+        # 備考あり：全期間・全員
         q = q.filter(IoFlight.comment.isnot(None), IoFlight.comment != "")
 
-    elif filter_type == "member":
-        q = _apply_class_filter(q, class_filter)
+    elif filter_type.startswith("member"):
+        # 個人系フィルター：特定の人物に絞る
+        # まず対象人物を特定（uuid 優先、なければ氏名）
+        if member_uuid:
+            try:
+                uuid_obj = uuidlib.UUID(member_uuid)
+                q = q.filter(IoFlight.uuid == uuid_obj)
+            except ValueError:
+                pass
+        elif member_query:
+            q = q.filter(IoFlight.full_name.ilike(f"%{member_query}%"))
+        else:
+            return jsonify({"error": "氏名を入力してください"}), 400
 
-        if not member_query:
-            return jsonify({"error": "会員番号またはQRコードを入力してください"}), 400
-
-        try:
-            uuid_obj = uuidlib.UUID(member_query)
-            q = q.filter(IoFlight.uuid == uuid_obj)
-        except ValueError:
-            q = q.filter(IoFlight.member_number == member_query)
+        # subtype による追加絞り込み
+        if filter_type == "member_yamachin":
+            q = q.filter(IoFlight.yamachin == True)  # noqa: E712
+        elif filter_type == "member_comment":
+            q = q.filter(IoFlight.comment.isnot(None), IoFlight.comment != "")
+        elif filter_type == "member_yama_comment":
+            from sqlalchemy import or_
+            q = q.filter(or_(
+                IoFlight.yamachin == True,  # noqa: E712
+                (IoFlight.comment.isnot(None) & (IoFlight.comment != "")),
+            ))
+        # "member" のみ（チェックなし）は追加フィルターなし
 
     records = q.order_by(IoFlight.entry_date.desc(), IoFlight.in_time).all()
 
