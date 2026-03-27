@@ -8,62 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style_info.css') }}">
-  <style>
-    /* 新規申請・コース変更パネル */
-    .new-application-panel {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      border-radius: 8px;
-      padding: 14px 18px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 32px;
-      align-items: center;
-    }
-    .app-info-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .app-info-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      min-width: 80px;
-    }
-    .app-info-value {
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
-    }
-    .confirmed-badge {
-      display: inline-block;
-      background: #16a34a;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 12px;
-      letter-spacing: .04em;
-    }
-    /* 取消ボタン（入金確認済みチェック横） */
-    .btn-cancel-app {
-      margin-left: 10px;
-      padding: 4px 12px;
-      background: #fff;
-      color: #dc2626;
-      border: 1px solid #dc2626;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all .15s;
-    }
-    .btn-cancel-app:hover {
-      background: #fef2f2;
-    }
-  </style>
+  <!-- QRコード生成ライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <main class="main">
@@ -77,7 +23,7 @@
     <div class="list-fixed-area">
       <div class="page-header">
         <div class="page-header-left">
-          <a href="/apply_staff_manage" class="btn btn-ghost top-btn"><span class="icon">←</span>管理メニュー</a>
+          <a href="/apply_staff_manage" class="btn btn-ghost top-btn"><span class="icon">←</span>管理</a>
         </div>
         <h1 class="page-title">個人情報一覧</h1>
         <div class="page-header-right">
@@ -137,7 +83,7 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>会員番号</th>
+              <th>申請番号</th>
               <th>氏名</th>
               <th>分類</th>
               <th>使用機体</th>
@@ -161,21 +107,51 @@
   ══════════════════════════════════════ -->
   <div class="view" id="view-add">
 
-    <!-- 固定ヘッダー（削除・キャンセル・保存ボタン付き） -->
+    <!-- 固定ヘッダー（ハンバーガーメニューのみ） -->
     <div class="edit-fixed-header">
       <div class="page-header">
-        <div class="page-header-left">
-          <a href="/apply_staff_manage" class="btn btn-ghost top-btn" id="btnToMenu"><span class="icon">←</span>管理メニュー</a>
-          <button type="button" class="btn btn-ghost" id="backToList">← 一覧に戻る</button>
-        </div>
         <h1 class="page-title" id="formTitle">新規登録</h1>
         <div class="page-header-right">
-          <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none">削除</button>
-          <button type="button" class="btn btn-ghost" id="cancelBtn">キャンセル</button>
-          <button type="button" class="btn btn-primary" id="saveBtn">登録</button>
+          <!-- ハンバーガーボタン -->
+          <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="メニュー" aria-expanded="false">
+            <span class="hamburger-icon">
+              <span></span><span></span><span></span>
+            </span>
+          </button>
         </div>
       </div>
     </div><!-- /edit-fixed-header -->
+
+    <!-- ハンバーガー：背景オーバーレイ -->
+    <div class="hamburger-overlay" id="hamburgerOverlay"></div>
+
+    <!-- ハンバーガー：ドロップダウンメニュー -->
+    <div class="hamburger-dropdown" id="hamburgerDropdown" role="menu">
+      <a href="/apply_staff_manage" class="hm-item" id="hmToMenu" role="menuitem">
+        <span class="hm-item-icon">←</span>管理メニュー
+      </a>
+      <button type="button" class="hm-item" id="hmBackToList" role="menuitem">
+        <span class="hm-item-icon">☰</span>一覧に戻る
+      </button>
+      <div class="hm-divider"></div>
+      <button type="button" class="hm-item" id="hmSendInfo" role="menuitem">
+        <span class="hm-item-icon">✉️</span>案内送信
+      </button>
+      <button type="button" class="hm-item" id="hmQrCard" role="menuitem" style="display:none">
+        <span class="hm-item-icon">🪪</span>QRカード作成
+      </button>
+      <div class="hm-divider"></div>
+      <button type="button" class="hm-item primary" id="hmSave" role="menuitem">
+        <span class="hm-item-icon">💾</span>登録
+      </button>
+      <button type="button" class="hm-item" id="hmCancel" role="menuitem">
+        <span class="hm-item-icon">✕</span>キャンセル
+      </button>
+      <div class="hm-divider"></div>
+      <button type="button" class="hm-item danger" id="hmDelete" role="menuitem" style="display:none">
+        <span class="hm-item-icon">🗑</span>削除
+      </button>
+    </div>
 
     <!-- スクロールエリア（フォームのみ） -->
     <div class="edit-scroll-area">
@@ -294,7 +270,7 @@
             </div>
 
             <div class="field-group">
-              <label class="field-label">会員番号</label>
+              <label class="field-label">申請番号</label>
               <input type="text" class="field-input" id="f_member_number">
             </div>
 
@@ -304,7 +280,7 @@
             </div>
 
             <div class="field-group">
-              <label class="field-label">ふりがな</label>
+              <label class="field-label">フリガナ</label>
               <input type="text" class="field-input" id="f_furigana">
             </div>
 
@@ -343,7 +319,6 @@
             <!-- 申込日：編集時は読み取り専用 → テキスト表示 -->
             <div class="field-group">
               <label class="field-label">申込日</label>
-              <!-- 新規時：date input / 編集時：span に切り替え（JS制御） -->
               <input type="date" class="field-input" id="f_application_date">
               <span class="date-display" id="f_application_date_disp" style="display:none">—</span>
             </div>
@@ -623,6 +598,7 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 削除確認モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h3 class="modal-title">削除確認</h3>
@@ -633,6 +609,50 @@
     </div>
   </div>
 </div>
+
+<!-- QRカードモーダル -->
+<div class="qr-modal-overlay" id="qrModalOverlay">
+  <div class="qr-modal">
+    <div class="qr-modal-title">🪪 QRカード プレビュー</div>
+    <div class="qr-card-preview" id="qrCardPreview"></div>
+    <div class="qr-modal-actions">
+      <button class="btn btn-ghost" id="qrModalClose">閉じる</button>
+      <button class="btn btn-primary" id="qrPrintBtn">🖨️ 印刷</button>
+    </div>
+  </div>
+</div>
+
+<!-- 案内送信モーダル -->
+<div class="modal-overlay" id="sendInfoModalOverlay">
+  <div class="modal send-info-modal">
+    <h3 class="modal-title">✉️ 案内メール送信</h3>
+
+    <div class="send-info-field">
+      <label class="send-info-label">送信元</label>
+      <select class="send-info-input send-info-select" id="siFromEmail"></select>
+    </div>
+    <div class="send-info-field">
+      <label class="send-info-label">送信先</label>
+      <input type="email" class="send-info-input" id="siToEmail" placeholder="送信先メールアドレス">
+    </div>
+    <div class="send-info-field">
+      <label class="send-info-label">件名</label>
+      <input type="text" class="send-info-input" id="siSubject" placeholder="件名">
+    </div>
+    <div class="send-info-field">
+      <label class="send-info-label">本文</label>
+      <textarea class="send-info-body" id="siBody" rows="12" placeholder="本文"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="siCancelBtn">キャンセル</button>
+      <button class="btn btn-primary" id="siSendBtn">📨 送信する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 印刷専用エリア（通常非表示） -->
+<div id="qrPrintArea" style="display:none;"></div>
 
 <script src="{{ url_for('static', filename='app_info.js') }}"></script>
 </body>

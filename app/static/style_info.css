@@ -929,3 +929,462 @@ html, body {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* =========================================
+   ハンバーガーメニュー（編集ビュー用）
+   ========================================= */
+
+/* トグルボタン */
+.hamburger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 110;
+}
+.hamburger-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+/* 三本線アイコン */
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 18px;
+}
+.hamburger-icon span {
+  display: block;
+  height: 2px;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: all 0.22s ease;
+  transform-origin: center;
+}
+/* open 時アニメーション */
+.hamburger-btn.open .hamburger-icon span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.hamburger-btn.open .hamburger-icon span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.hamburger-btn.open .hamburger-icon span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ドロップダウンパネル */
+.hamburger-dropdown {
+  position: fixed;         /* fixed で確実に最前面 */
+  top: 0;
+  right: 0;
+  width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 0 0 0 var(--radius-lg);
+  box-shadow: -4px 8px 32px rgba(0,0,0,0.18);
+  z-index: 200;
+  padding: 8px 0;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+              opacity   0.2s ease;
+  pointer-events: none;
+}
+.hamburger-dropdown.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* メニューアイテム共通 */
+.hm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 18px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  text-align: left;
+  text-decoration: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.hm-item:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+/* アイコン */
+.hm-item-icon {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* 区切り線 */
+.hm-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 6px 0;
+}
+
+/* 危険アクション（削除） */
+.hm-item.danger {
+  color: var(--danger);
+}
+.hm-item.danger:hover {
+  background: var(--danger-dim);
+}
+
+/* 主要アクション（登録） */
+.hm-item.primary {
+  color: var(--accent);
+  font-weight: 600;
+}
+.hm-item.primary:hover {
+  background: var(--accent-dim);
+}
+
+/* オーバーレイ（背景クリックで閉じる） */
+.hamburger-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+}
+.hamburger-overlay.open {
+  display: block;
+}
+
+/* =========================================
+   QRカード モーダル
+   ========================================= */
+.qr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 950;
+}
+.qr-modal-overlay.active {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+.qr-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px 24px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: scaleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.qr-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 18px;
+}
+.qr-card-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.qr-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* =========================================
+   QRカード本体（名刺サイズ: 91mm×55mm → 画面上 420px×255px）
+   ========================================= */
+.qr-card {
+  width: 420px;
+  height: 255px;
+  background: #ffffff;
+  border: 2px solid #1a3a6b;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  font-family: 'Noto Sans JP', sans-serif;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.13);
+}
+
+/* 左ペイン：氏名 / 登録番号 */
+.qr-card-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 18px 20px 22px;
+  gap: 0;
+  border-right: 1px solid #d1d5db;
+}
+.qr-card-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  margin-bottom: 18px;
+  word-break: break-all;
+}
+.qr-card-reg-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  padding: 0 4px;
+  border-left: 3px solid #2563eb;
+}
+.qr-card-reg-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a5f;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  background: #f0f4ff;
+  border: 1px solid #c7d7f5;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* 右ペイン：QRコード + ブランド名 */
+.qr-card-right {
+  width: 190px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 12px 10px;
+  background: #f8faff;
+}
+.qr-card-qr-wrap {
+  width: 140px;
+  height: 140px;
+  background: transparent;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 10px;
+}
+.qr-card-qr-wrap canvas,
+.qr-card-qr-wrap img {
+  width: 124px !important;
+  height: 124px !important;
+  display: block;
+}
+.qr-card-brand {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1a3a6b;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* =========================================
+   QRカード 印刷スタイル
+   ========================================= */
+@media print {
+  body > * { display: none !important; }
+  #qrPrintArea {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 91mm;
+    height: 55mm;
+  }
+  @page {
+    size: 91mm 55mm;
+    margin: 0;
+  }
+  #qrPrintArea .qr-card {
+    width: 91mm;
+    height: 55mm;
+    border: 1.5pt solid #1a3a6b;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #qrPrintArea .qr-card-left      { padding: 4mm 3mm 4mm 4mm; }
+  #qrPrintArea .qr-card-name      { font-size: 6.5mm; margin-bottom: 3mm; }
+  #qrPrintArea .qr-card-reg-label { font-size: 2mm; margin-bottom: 1mm; }
+  #qrPrintArea .qr-card-reg-value { font-size: 2.8mm; padding: 1mm 2mm; }
+  #qrPrintArea .qr-card-right     { width: 35mm; padding: 2mm; justify-content: center; }
+  #qrPrintArea .qr-card-qr-wrap   { width: 28mm; height: 28mm; padding: 1.5mm; margin-bottom: 1.5mm; }
+  #qrPrintArea .qr-card-qr-wrap canvas,
+  #qrPrintArea .qr-card-qr-wrap img { width: 25mm !important; height: 25mm !important; }
+  #qrPrintArea .qr-card-brand     { font-size: 2mm; }
+}
+
+/* =========================================
+   新規申請・コース変更パネル
+   ========================================= */
+.new-application-panel {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  align-items: center;
+}
+.app-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 80px;
+}
+.app-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+.confirmed-badge {
+  display: inline-block;
+  background: #16a34a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: .04em;
+}
+/* 取消ボタン（入金確認済みチェック横） */
+.btn-cancel-app {
+  margin-left: 10px;
+  padding: 4px 12px;
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.btn-cancel-app:hover {
+  background: #fef2f2;
+}
+
+/* =========================================
+   案内送信モーダル
+   ========================================= */
+.send-info-modal {
+  max-width: 560px;
+  width: 94%;
+}
+
+.send-info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.send-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.send-info-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--surface);
+  transition: border-color .15s;
+  outline: none;
+}
+.send-info-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.send-info-body {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--surface);
+  resize: vertical;
+  line-height: 1.7;
+  outline: none;
+  transition: border-color .15s;
+}
+.send-info-body:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* ローディング中の送信ボタン */
+#siSendBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 案内送信モーダル：送信元 select */
+.send-info-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+/* 1件のみの場合はドロップダウン矢印を非表示 */
+.send-info-select.single-option {
+  appearance: auto;
+  -webkit-appearance: auto;
+  background-image: none;
+  cursor: default;
+  pointer-events: none;
+  background-color: var(--surface-2);
+}

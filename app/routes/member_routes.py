@@ -31,6 +31,11 @@ from apscheduler.triggers.cron import CronTrigger
 import uuid
 import json
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
+from sqlalchemy import text
 
 member_bp = Blueprint("member", __name__)
 
@@ -1087,6 +1092,179 @@ def verify_pass():
         return jsonify({"error": "PASSコードが正しくありません"}), 401
 
     return jsonify({"ok": True, "member_number": member.member_number})
+
+
+# =========================================
+# ★ 改定７：案内メール共通ヘルパー
+# =========================================
+
+def _get_mail_config_values(item_name):
+    """config_master カテゴリ「メール関連」から item_name に一致する
+    config_values を sort_order 順で返す"""
+    rows = db.session.execute(text("""
+        SELECT cv.value, cv.label, cv.sort_order
+        FROM config_master cm
+        JOIN config_values cv ON cv.master_id = cm.id
+        WHERE cm.category = 'メール関連'
+          AND cm.item_name = :item_name
+          AND cv.is_active = TRUE
+        ORDER BY cv.sort_order, cv.id
+    """), {"item_name": item_name}).fetchall()
+    return [dict(r._mapping) for r in rows]
+
+
+def _build_mail_preview(member_id):
+    """
+    会員IDからメールプレビュー用の辞書を生成して返す。
+    エラー時は (None, エラーメッセージ, HTTPステータス) を返す。
+    正常時は (dict, None, None) を返す。
+    """
+    member = Member.query.get(member_id)
+    if not member:
+        return None, "会員が見つかりません", 404
+
+    contact = MemberContact.query.filter_by(member_id=member.id).first()
+    to_email = (contact.email or "").strip() if contact else ""
+    full_name = (member.full_name or "").strip()
+
+    # 送信元（複数対応：labelがあればラベル付き、なければvalueをそのまま）
+    sender_vals = _get_mail_config_values("送信元")
+    if not sender_vals:
+        return None, "設定管理に「送信元」が登録されていません", 500
+    from_emails = [
+        {"value": v["value"].strip(), "label": (v["label"] or v["value"]).strip()}
+        for v in sender_vals
+        if v["value"] and v["value"].strip()
+    ]
+    if not from_emails:
+        return None, "設定管理に有効な「送信元」が登録されていません", 500
+
+    # 件名（なければデフォルト）
+    subject_vals = _get_mail_config_values("件名")
+    subject = subject_vals[0]["value"].strip() if subject_vals else "ご案内"
+
+    # 案内（本文テンプレート）
+    body_vals = _get_mail_config_values("案内")
+    if not body_vals:
+        return None, "設定管理に「案内」が登録されていません", 500
+    body_template = body_vals[0]["value"] or ""
+
+    # 署名（sort_order 順に連結）
+    sign_vals = _get_mail_config_values("署名")
+    signature_lines = [v["value"] for v in sorted(sign_vals, key=lambda x: x["sort_order"])]
+    signature_text = "\n".join(signature_lines)
+
+    # 本文組み立て: 「氏名 様」+ 空行 + テンプレート + 空行 + 署名
+    greeting = f"{full_name} 様"
+    body = f"{greeting}\n\n{body_template}\n\n{signature_text}"
+
+    return {
+        "from_emails": from_emails,
+        "to_email":    to_email,
+        "subject":     subject,
+        "body":        body,
+        "full_name":   full_name,
+    }, None, None
+
+
+# ── メールプレビュー取得 ─────────────────────────────────────────────
+# GET /api/members/<member_id>/mail_preview
+# 設定管理の値を元に組み立てたメール内容（送信元・送信先・件名・本文）を返す。
+# フロント側がプレビューモーダルに表示し、スタッフが編集してから送信ボタンを押す。
+@member_bp.route("/api/members/<int:member_id>/mail_preview", methods=["GET"])
+def mail_preview(member_id):
+    preview, err, status = _build_mail_preview(member_id)
+    if err:
+        return jsonify({"error": err}), status
+    if not preview["to_email"]:
+        return jsonify({"error": "メールアドレスが登録されていません"}), 400
+    return jsonify(preview)
+
+
+# ── 案内メール送信 ───────────────────────────────────────────────────
+# POST /api/members/<member_id>/send_info
+# リクエストボディ JSON:
+#   { "from_email": "...", "to_email": "...", "subject": "...", "body": "..." }
+# スタッフがプレビューモーダルで内容を確認・編集した後に呼び出す。
+#
+# SMTP設定は環境変数から取得:
+#   MAIL_SERVER  (default: localhost)
+#   MAIL_PORT    (default: 587)
+#   MAIL_USE_TLS (default: true)
+#   MAIL_USERNAME
+#   MAIL_PASSWORD
+@member_bp.route("/api/members/<int:member_id>/send_info", methods=["POST"])
+def send_info(member_id):
+    member = Member.query.get(member_id)
+    if not member:
+        return jsonify({"error": "会員が見つかりません"}), 404
+
+    data       = request.get_json(silent=True) or {}
+    from_email = (data.get("from_email") or "").strip()
+    to_email   = (data.get("to_email")   or "").strip()
+    subject    = (data.get("subject")    or "").strip()
+    body       = (data.get("body")       or "").strip()
+
+    if not from_email:
+        return jsonify({"error": "送信元が指定されていません"}), 400
+    if not to_email:
+        return jsonify({"error": "送信先が指定されていません"}), 400
+    if not subject:
+        return jsonify({"error": "件名が指定されていません"}), 400
+
+    # ── SMTP 送信 ─────────────────────────────────────────────────
+    # MAIL_BACKEND=dummy の場合は実際には送信せずログ出力のみ（ローカル開発用）
+    mail_backend  = os.environ.get("MAIL_BACKEND", "smtp").lower()
+    mail_server   = os.environ.get("MAIL_SERVER",   "")
+    mail_port     = int(os.environ.get("MAIL_PORT", 587))
+    use_tls       = os.environ.get("MAIL_USE_TLS", "true").lower() != "false"
+    mail_user     = os.environ.get("MAIL_USERNAME", "")
+    mail_password = os.environ.get("MAIL_PASSWORD", "")
+
+    if mail_backend == "dummy":
+        # ── ダミー送信（ローカル開発用）─────────────────────────
+        print("=" * 60)
+        print("[MAIL DUMMY] ダミー送信（実際には送信されていません）")
+        print(f"  From   : {from_email}")
+        print(f"  To     : {to_email}")
+        print(f"  Subject: {subject}")
+        print("  Body   :")
+        print(body)
+        print("=" * 60)
+    else:
+        # ── SMTP 実送信 ───────────────────────────────────────────
+        if not mail_server:
+            return jsonify({"error": "MAIL_SERVER が設定されていません。Renderの環境変数を確認してください。"}), 500
+        try:
+            msg = MIMEMultipart()
+            msg["From"]    = from_email
+            msg["To"]      = to_email
+            msg["Subject"] = Header(subject, "utf-8")
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+
+            if use_tls:
+                smtp = smtplib.SMTP(mail_server, mail_port, timeout=10)
+                smtp.ehlo()
+                smtp.starttls()
+            else:
+                smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=10)
+
+            if mail_user and mail_password:
+                smtp.login(mail_user, mail_password)
+
+            smtp.sendmail(from_email, [to_email], msg.as_bytes())
+            smtp.quit()
+
+        except Exception as e:
+            return jsonify({"error": f"メール送信に失敗しました: {str(e)}"}), 500
+
+    full_name = (member.full_name or "").strip()
+    return jsonify({
+        "ok":      True,
+        "to":      to_email,
+        "subject": subject,
+        "message": f"{full_name} 様にメールを送信しました",
+    })
 
 
 # =========================================

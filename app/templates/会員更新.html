@@ -820,6 +820,59 @@
       .search-name-input { min-width: 140px; }
     }
   </style>
+  <style>
+    /* ── QRスキャン共通スタイル ── */
+    .qrscan-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none; align-items: center; justify-content: center;
+      z-index: 300; padding: 16px;
+    }
+    .qrscan-overlay.is-visible { display: flex; }
+    .qrscan-modal {
+      background: #111; border-radius: 16px;
+      width: 100%; max-width: 400px; overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+    }
+    .qrscan-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; background: #1a1a1a; border-bottom: 1px solid #333;
+    }
+    .qrscan-title { font-size: 0.82rem; font-weight: 700; color: #fff; letter-spacing: 0.12em; }
+    .qrscan-close {
+      background: none; border: none; color: #aaa; font-size: 1rem; cursor: pointer;
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+    }
+    .qrscan-close:hover { background: #333; color: #fff; }
+    .qrscan-video-wrap { position: relative; width: 100%; aspect-ratio: 1/1; background: #000; overflow: hidden; }
+    .qrscan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .qrscan-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .qrscan-frame-inner {
+      width: 60%; aspect-ratio: 1/1;
+      border: 2.5px solid rgba(255,255,255,0.85); border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.40); position: relative;
+    }
+    .qrscan-frame-inner::before, .qrscan-frame-inner::after {
+      content: ''; position: absolute; width: 22px; height: 22px;
+      border-color: #3b82f6; border-style: solid;
+    }
+    .qrscan-frame-inner::before { top:-2px; left:-2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .qrscan-frame-inner::after  { bottom:-2px; right:-2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    .qrscan-video-wrap.scan-ok { animation: scanFlash 0.35s ease; }
+    @keyframes scanFlash { 0%,100%{filter:none} 50%{filter:brightness(2.5)} }
+    .qrscan-status { padding: 12px 18px; font-size: 0.8rem; color: #ccc; text-align: center; background: #1a1a1a; min-height: 42px; }
+    .qrscan-status.ok    { color: #4ade80; }
+    .qrscan-status.error { color: #f87171; }
+    .qrscan-spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid #555; border-top-color: #3b82f6;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin-right: 6px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
 
@@ -1231,6 +1284,24 @@
   <!-- ══ トースト ══ -->
   <div class="toast hidden" id="toast"></div>
 
+<!-- ── QRコードスキャンモーダル ── -->
+<div id="qrscan-overlay" class="qrscan-overlay" onclick="if(event.target===this)closeQrScan()">
+  <div class="qrscan-modal">
+    <div class="qrscan-header">
+      <span class="qrscan-title">📷 QRコードをかざしてください</span>
+      <button class="qrscan-close" onclick="closeQrScan()">✕</button>
+    </div>
+    <div class="qrscan-video-wrap" id="qrscan-video-wrap">
+      <video id="qrscan-video" class="qrscan-video" playsinline muted></video>
+      <canvas id="qrscan-canvas" style="position:absolute;visibility:hidden;width:1px;height:1px;"></canvas>
+      <div class="qrscan-frame"><div class="qrscan-frame-inner"></div></div>
+    </div>
+    <div class="qrscan-status" id="qrscan-status">カメラを起動しています…</div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='jsQR.js') }}"></script>
+<script src="{{ url_for('static', filename='app_qr_scan.js') }}"></script>
 <script src="{{ url_for('static', filename='app_mem_upd.js') }}"></script>
 <script>
 /* ════════════════════════════════════════

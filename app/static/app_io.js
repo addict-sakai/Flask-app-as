@@ -33,6 +33,7 @@ const IOApp = (() => {
         closeModalForce();
         closePassForce();
         closeCandidates();
+        closeQRScanForce();
       }
     });
   }
@@ -48,10 +49,20 @@ const IOApp = (() => {
     document.getElementById('today-display').textContent = `${y}年${m}月${d}日（${w}）`;
   }
 
-  /* ─── QRコードボタン（将来実装） ─── */
+  /* ─── QRコードスキャン（app_qr_scan.js の QRScanner モジュールに委譲） ─── */
+
   function openQR() {
-    // TODO: QRコードスキャン実装
-    alert('QRコード読み取り機能は準備中です。');
+    QRScanner.open((memberData) => {
+      _renderModal(memberData);  // PASSコードなしで直接入山モーダルへ
+    });
+  }
+
+  function closeQRScan(event) {
+    QRScanner.closeOnOverlay(event);
+  }
+
+  function closeQRScanForce() {
+    QRScanner.close();
   }
 
   /* ═══════════════════════════════════════
@@ -518,6 +529,8 @@ const IOApp = (() => {
     doAction,
     closeModal,
     closeModalForce,
+    closeQRScan,
+    closeQRScanForce,
   };
 
 })();

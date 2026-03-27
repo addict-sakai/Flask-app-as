@@ -125,8 +125,71 @@ function bindRegInputEvents() {
 }
 
 /* ================================================
-   ビュー切り替え
+   ハンバーガーメニュー制御
    ================================================ */
+function initHamburgerMenu() {
+  const btn      = $("hamburgerBtn");
+  const dropdown = $("hamburgerDropdown");
+  const overlay  = $("hamburgerOverlay");
+  if (!btn || !dropdown) return;
+
+  function openMenu() {
+    btn.classList.add("open");
+    dropdown.classList.add("open");
+    overlay.classList.add("open");
+    btn.setAttribute("aria-expanded", "true");
+  }
+  function closeMenu() {
+    btn.classList.remove("open");
+    dropdown.classList.remove("open");
+    overlay.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+  }
+  function toggleMenu() {
+    dropdown.classList.contains("open") ? closeMenu() : openMenu();
+  }
+
+  btn.addEventListener("click", e => { e.stopPropagation(); toggleMenu(); });
+  overlay.addEventListener("click", closeMenu);
+
+  // 各メニュー項目のアクション
+  const hmBackToList = $("hmBackToList");
+  const hmSave       = $("hmSave");
+  const hmCancel     = $("hmCancel");
+  const hmDelete     = $("hmDelete");
+  const hmQrCard     = $("hmQrCard");
+  const hmSendInfo   = $("hmSendInfo");
+
+  if (hmBackToList) hmBackToList.addEventListener("click", () => {
+    closeMenu(); clearForm(); showView("view-list");
+  });
+  if (hmSave) hmSave.addEventListener("click", () => {
+    closeMenu(); saveMember();
+  });
+  if (hmCancel) hmCancel.addEventListener("click", () => {
+    closeMenu(); handleCancel();
+  });
+  if (hmDelete) hmDelete.addEventListener("click", () => {
+    closeMenu(); confirmDelete();
+  });
+  if (hmQrCard) hmQrCard.addEventListener("click", () => {
+    closeMenu(); openQrCard();
+  });
+  if (hmSendInfo) hmSendInfo.addEventListener("click", () => {
+    closeMenu();
+    sendInfoMail();
+  });
+}
+
+/** ハンバーガーメニュー内の表示状態を編集/新規に合わせて同期する */
+function syncHamburgerState(isEdit) {
+  const hmDelete = $("hmDelete");
+  const hmQrCard = $("hmQrCard");
+  if (hmDelete) hmDelete.style.display = isEdit ? "" : "none";
+  // QRカードは openEdit 側で _currentMemberUuid の有無で制御
+}
+
+
 function showView(id) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   $(id).classList.add("active");
@@ -283,7 +346,6 @@ function clearForm() {
 function openNew() {
   clearForm();
   $("formTitle").textContent = "新規登録";
-  $("deleteBtn").style.display = "none";
 
   // 申込日：新規は date input を表示
   $("f_application_date").style.display = "";
@@ -295,6 +357,7 @@ function openNew() {
   $("f_member_number").removeAttribute("readonly");
   $("updatedAtSection").style.display = "none";
   switchRegUI("");
+  syncHamburgerState(false);
   showView("view-add");
   $("edit-scroll-area") && ($("edit-scroll-area").scrollTop = 0);
 }
@@ -310,7 +373,11 @@ async function openEdit(id) {
 
     clearForm();
     $("formTitle").textContent = "会員情報編集";
-    $("deleteBtn").style.display = "";
+    _currentMemberUuid = m.uuid || null;
+    // ハンバーガーメニューのQRカード項目を同期（uuid有り時のみ表示）
+    const hmQrCard = $("hmQrCard");
+    if (hmQrCard) hmQrCard.style.display = m.uuid ? "" : "none";
+    syncHamburgerState(true);
     $("editId").value = m.id;
 
     // 文字列フィールド（zip_code は分割入力のため別処理）
@@ -600,6 +667,219 @@ function handleCancel() {
 }
 
 /* ================================================
+   案内送信モーダル
+   ================================================ */
+
+/**
+ * 案内送信ボタン押下時：
+ *  1. GET /api/members/<id>/mail_preview でメール内容を取得
+ *  2. 案内送信モーダルに展開して表示（内容は編集可能）
+ *  3. スタッフが「送信する」ボタンを押したら POST /api/members/<id>/send_info
+ */
+async function sendInfoMail() {
+  const memberId = $("editId").value;
+  if (!memberId) {
+    showToast("送信対象の会員が選択されていません", "error");
+    return;
+  }
+
+  // プレビュー取得中はボタンを非活性
+  const hmSendInfoBtn = $("hmSendInfo");
+  if (hmSendInfoBtn) hmSendInfoBtn.disabled = true;
+
+  try {
+    const res  = await fetch(`/api/members/${memberId}/mail_preview`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error || "メール情報の取得に失敗しました", "error");
+      return;
+    }
+
+    // モーダルにデータを流し込む
+    // 送信元：複数あれば選択肢として展開、1件なら選択済み固定
+    const siFrom = $("siFromEmail");
+    siFrom.innerHTML = "";
+    const fromEmails = data.from_emails || [];
+    fromEmails.forEach(item => {
+      const opt = document.createElement("option");
+      opt.value       = item.value;
+      opt.textContent = item.label !== item.value
+        ? `${item.label}（${item.value}）`
+        : item.value;
+      siFrom.appendChild(opt);
+    });
+    if (fromEmails.length <= 1) {
+      siFrom.classList.add("single-option");
+    } else {
+      siFrom.classList.remove("single-option");
+    }
+    $("siToEmail").value   = data.to_email   || "";
+    $("siSubject").value   = data.subject     || "";
+    $("siBody").value      = data.body        || "";
+
+    // モーダルを開く
+    $("sendInfoModalOverlay").classList.add("active");
+
+  } catch (e) {
+    showToast("メール情報の取得に失敗しました: " + e.message, "error");
+  } finally {
+    if (hmSendInfoBtn) hmSendInfoBtn.disabled = false;
+  }
+}
+
+/** 案内送信モーダルを閉じる */
+function closeSendInfoModal() {
+  $("sendInfoModalOverlay").classList.remove("active");
+}
+
+/** 案内メールを実際に送信する（モーダル内「送信する」ボタン） */
+async function doSendInfoMail() {
+  const memberId = $("editId").value;
+  if (!memberId) return;
+
+  const fromEmail = $("siFromEmail").value.trim();
+  const toEmail   = $("siToEmail").value.trim();
+  const subject   = $("siSubject").value.trim();
+  const body      = $("siBody").value.trim();
+
+  if (!fromEmail || !toEmail || !subject) {
+    showToast("送信元・送信先・件名は必須です", "error");
+    return;
+  }
+
+  const sendBtn = $("siSendBtn");
+  sendBtn.disabled    = true;
+  sendBtn.textContent = "送信中...";
+
+  try {
+    const res  = await fetch(`/api/members/${memberId}/send_info`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ from_email: fromEmail, to_email: toEmail, subject, body }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error || "送信に失敗しました", "error");
+      return;
+    }
+
+    closeSendInfoModal();
+    showToast(data.message || "案内メールを送信しました", "success");
+
+  } catch (e) {
+    showToast("送信に失敗しました: " + e.message, "error");
+  } finally {
+    sendBtn.disabled    = false;
+    sendBtn.textContent = "📨 送信する";
+  }
+}
+
+/** 案内送信モーダルのイベント初期化（DOMContentLoaded で呼ぶ） */
+function initSendInfoModal() {
+  const overlay  = $("sendInfoModalOverlay");
+  if (!overlay) return;
+
+  // 「キャンセル」ボタン
+  const cancelBtn = $("siCancelBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeSendInfoModal);
+
+  // 「送信する」ボタン
+  const sendBtn = $("siSendBtn");
+  if (sendBtn) sendBtn.addEventListener("click", doSendInfoMail);
+
+  // オーバーレイ外クリックで閉じる
+  overlay.addEventListener("click", e => {
+    if (e.target === overlay) closeSendInfoModal();
+  });
+}
+
+
+/* ================================================
+   QRカード生成・表示・印刷
+   ================================================ */
+
+// 現在開いている会員の UUID をモジュールスコープで保持
+let _currentMemberUuid = null;
+
+/** QRカードモーダルを開く */
+async function openQrCard() {
+  if (!_currentMemberUuid) {
+    showToast("UUIDが登録されていません", "error");
+    return;
+  }
+  const qrUrl = `${location.origin}/api/members/by-uuid/${_currentMemberUuid}`;
+
+  // カードをプレビューに描画
+  _buildAndRenderCard("qrCardPreview", qrUrl);
+  $("qrModalOverlay").classList.add("active");
+}
+
+/** カードDOMを生成してコンテナIDの中に挿入し、QRコードを描画する
+ *  @param {string} containerId - 挿入先要素のID
+ *  @param {string} qrUrl       - QRに埋め込むURL
+ *  @param {string} [qrElId]    - QRコード描画先要素のID（省略時は自動生成）
+ */
+function _buildAndRenderCard(containerId, qrUrl, qrElId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+
+  const fullName = ($("f_full_name") ? $("f_full_name").value : "") || "—";
+  const regNo    = ($("f_reg_no")    ? $("f_reg_no").value    : "") || "—";
+  const uid      = qrElId || ("qrc-" + containerId);
+
+  const card = document.createElement("div");
+  card.className = "qr-card";
+  card.innerHTML = `
+    <div class="qr-card-left">
+      <div class="qr-card-name">${fullName}</div>
+      <div class="qr-card-reg-label">フライヤー登録番号</div>
+      <div class="qr-card-reg-value">${regNo}</div>
+    </div>
+    <div class="qr-card-right">
+      <div class="qr-card-qr-wrap" id="${uid}"></div>
+      <div class="qr-card-brand">Mt.FUJI PARAGLIDING</div>
+    </div>
+  `;
+  container.appendChild(card);
+
+  // QRコード描画（少し遅延してDOM確定後に実行）
+  setTimeout(() => {
+    const el = document.getElementById(uid);
+    if (!el || typeof QRCode === "undefined") return;
+    new QRCode(el, {
+      text:         qrUrl,
+      width:        154,
+      height:       154,
+      colorDark:    "#000000",  // ドット：黒
+      colorLight:   "#ffffff",  // 背景：白
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  }, 80);
+}
+
+/** 印刷ボタン処理 */
+function printQrCard() {
+  if (!_currentMemberUuid) return;
+  const qrUrl = `${location.origin}/api/members/by-uuid/${_currentMemberUuid}`;
+
+  // 印刷エリアにカードを生成
+  _buildAndRenderCard("qrPrintArea", qrUrl, "qrc-print");
+
+  // QRコード描画完了を待ってから印刷
+  setTimeout(() => {
+    window.print();
+    // 印刷後にエリアをクリア
+    setTimeout(() => {
+      const pa = $("qrPrintArea");
+      if (pa) pa.innerHTML = "";
+    }, 1000);
+  }, 400);
+}
+
+/* ================================================
    必須バリデーション（12項目）
    ================================================ */
 function validateRequired() {
@@ -782,13 +1062,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("addFromListBtn").addEventListener("click", openNew);
-  $("saveBtn").addEventListener("click", saveMember);
-  $("cancelBtn").addEventListener("click", handleCancel);
-  $("backToList").addEventListener("click", () => { clearForm(); showView("view-list"); });
-  $("deleteBtn").addEventListener("click", confirmDelete);
 
   $("modalConfirm").addEventListener("click", doDelete);
   $("modalCancel").addEventListener("click",  () => $("modalOverlay").classList.remove("active"));
+
+  // QRカードモーダル
+  if ($("qrModalClose")) $("qrModalClose").addEventListener("click", () => $("qrModalOverlay").classList.remove("active"));
+  if ($("qrPrintBtn"))  $("qrPrintBtn").addEventListener("click", printQrCard);
+  // モーダル外クリックで閉じる
+  if ($("qrModalOverlay")) {
+    $("qrModalOverlay").addEventListener("click", e => {
+      if (e.target === $("qrModalOverlay")) $("qrModalOverlay").classList.remove("active");
+    });
+  }
+
+  // 案内送信モーダル初期化
+  initSendInfoModal();
 
   $("btnZipSearch").addEventListener("click", searchZip);
 
@@ -828,11 +1117,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const openId   = params.get("id");
 
   if (fromSrc === "flyer" || fromSrc === "update_app") {
-    // 管理メニュー・一覧に戻る を非表示
-    const menuBtn = $("btnToMenu");
-    const backBtn = $("backToList");
-    if (menuBtn) menuBtn.style.display = "none";
-    if (backBtn) backBtn.style.display = "none";
     // fromSource に記録
     if ($("fromSource")) $("fromSource").value = fromSrc;
   }
@@ -852,4 +1136,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (openId) openEdit(openId);
+
+  // ハンバーガーメニュー初期化
+  initHamburgerMenu();
 })

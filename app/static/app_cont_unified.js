@@ -111,9 +111,35 @@ const UnifiedApp = (() => {
   // passコード入力待ちのメンバー情報
   let _pendingPassMember = null;
 
-  // QRコードボタン（将来実装用プレースホルダー）
+  // QRコードボタン
   function openQr() {
-    alert("QRコード機能は今後実装予定です");
+    QRScanner.open((memberData) => {
+      // QRから取得したuuidで/api/cont/lookupを呼び出し、_applyMemberへ
+      _lookupByUuid(memberData.uuid);
+    });
+  }
+
+  function closeQrScan() {
+    QRScanner.close();
+  }
+
+  async function _lookupByUuid(uuid) {
+    let data;
+    try {
+      const resp = await fetch('/api/cont/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: uuid }),
+      });
+      data = await resp.json();
+      if (!resp.ok) { _showAlert('search-error', data.error || '会員が見つかりません'); return; }
+    } catch { _showAlert('search-error', '通信エラーが発生しました'); return; }
+
+    if (_hasUnsavedChanges() && _memberUuid && _memberUuid !== data.uuid) {
+      _checkUnsaved(() => _applyMember(data));
+      return;
+    }
+    _applyMember(data);
   }
 
   // 氏名で検索 → 候補リスト表示
@@ -922,7 +948,7 @@ const UnifiedApp = (() => {
   }
 
   return {
-    init, lookup, searchByName, selectNameItem, verifyPass, closePassModal, openQr,
+    init, lookup, searchByName, selectNameItem, verifyPass, closePassModal, openQr, closeQrScan,
     clearMember, selectOpt,
     register, closeRegisterModal, openRegisterModal,
     openEditModal, closeModal, saveEdit,

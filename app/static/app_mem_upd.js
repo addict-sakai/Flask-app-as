@@ -448,9 +448,31 @@ async function _loadFormByMemberNumber(memberNumber) {
   }
 }
 
-/* ── QRコードボタン（将来実装） ── */
+/* ── QRコードスキャン ── */
 function handleQrBtn() {
-  showToast("QRコード読み取り機能は準備中です", true);
+  QRScanner.open(async (memberData) => {
+    // QRから取得したuuidで会員情報を取得してフォームに読み込む
+    await _loadFormByUuid(memberData.uuid);
+  });
+}
+
+function closeQrScan() {
+  QRScanner.close();
+}
+
+async function _loadFormByUuid(uuid) {
+  hideSearchError();
+  try {
+    const res = await fetch(`/api/members/by-uuid/${encodeURIComponent(uuid)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showSearchError(err.error || '会員情報の取得に失敗しました');
+      return;
+    }
+    loadForm(await res.json());
+  } catch {
+    showSearchError('通信エラーが発生しました');
+  }
 }
 
 /* =========================================
