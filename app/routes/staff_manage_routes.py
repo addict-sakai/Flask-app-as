@@ -1,14 +1,14 @@
 """
-staff_manage_routes.py  rev.4（改定２ 2026-03-23）
+staff_manage_routes.py  rev.5（改定８ 2026-03-31）
 スタッフ管理ダッシュボード API
-DB構成V2 対応
 
-改定２変更点:
-  1. confirm_member() を改修
-       confirmed_at（確認日）に当日日付をセット
-       payment_confirmed を False にリセット（確認フラグは一時的なもの）
-       member_status を 'active' に変更
-  2. _member_to_dict() に confirmed_at を追加
+改定８変更点:
+  1. _get_expiry_alerts() 追加
+       コース期限・フライヤー登録期限・リパック日の
+       期限切れ/期限前をまとめて返す
+  2. dashboard API に expiry_alerts を追加
+  3. POST /api/staff/send_expiry_alert/<member_id>
+       期限アラートの案内メールを送信する
 """
 from flask import Blueprint, jsonify, request
 from app.db import db
@@ -17,7 +17,8 @@ from app.models.member_application import MemberApplication   # ★ 追加
 from app.models.member_course   import MemberCourse             # ★ 改定６追加
 from app.models.member_contact  import MemberContact            # ★ スリム化追加
 from app.models.member_flyer    import MemberFlyer              # ★ スリム化追加
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from calendar import monthrange
 import traceback
 
 staff_manage_bp = Blueprint("staff_manage", __name__)
@@ -30,10 +31,11 @@ staff_manage_bp = Blueprint("staff_manage", __name__)
 @staff_manage_bp.route("/api/staff/dashboard", methods=["GET"])
 def staff_dashboard():
     return jsonify({
-        "flyer":       _get_flyer_pending(),
-        "experience":  _get_exp_pending(),
-        "payment":     _get_payment_pending(),
-        "update_apps": _get_update_applications(),   # ★ 追加
+        "flyer":         _get_flyer_pending(),
+        "experience":    _get_exp_pending(),
+        "payment":       _get_payment_pending(),
+        "update_apps":   _get_update_applications(),   # ★ 追加
+        "expiry_alerts": _get_expiry_alerts(),          # ★ 改定８追加
     })
 
 
@@ -354,3 +356,206 @@ def _get_update_applications():
     except Exception:
         traceback.print_exc()
         return {"total": 0, "items": [], "error": "取得失敗"}
+
+# =========================================
+# ★ 改定８追加
+# 期限前/期限切れ 案内メール送信 API
+# POST /api/staff/send_expiry_alert/<member_id>
+# =========================================
+@staff_manage_bp.route(
+    "/api/staff/send_expiry_alert/<int:member_id>", methods=["POST"]
+)
+def send_expiry_alert(member_id):
+    """
+    期限アラートの案内メールを送信する。
+    リクエストボディ: { from_email, to_email, subject, body }
+    """
+    try:
+        from app.routes.member_routes import _do_send_mail
+        data       = request.get_json(force=True) or {}
+        from_email = data.get("from_email", "").strip()
+        to_email   = data.get("to_email",   "").strip()
+        subject    = data.get("subject",    "").strip()
+        body       = data.get("body",       "").strip()
+
+        if not from_email or not to_email or not subject:
+            return jsonify({"error": "送信元・送信先・件名は必須です"}), 400
+
+        _do_send_mail(from_email, to_email, subject, body)
+        return jsonify({"status": "ok", "message": "案内メールを送信しました"})
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "メール送信に失敗しました"}), 500
+
+
+# =========================================
+# ★ 改定８追加
+# 期限前/期限切れ アラート ヘルパー
+# =========================================
+def _get_expiry_alerts():
+    """
+    フライヤー各種期限の期限切れ・期限前を一覧で返す。
+
+    期限項目:
+        course   : コース（年会員・スクール・冬季会員）
+        reglimit : フライヤー登録期限
+        repack   : リパック日（年会員・スクールのみ）
+
+    期限分類:
+        expired  : 期限日 < today
+        soon     : 期限前（各項目ごとに閾値が異なる）
+
+    期限前の閾値:
+        年会員・スクール（コース）: 2ヶ月前
+        フライヤー登録期限         : 1ヶ月前
+        リパック日                  : 1ヶ月前
+        冬季会員                    : 期限切れのみ（期限前表示なし）
+    """
+    try:
+        today  = date.today()
+        alerts = []
+
+        # active な会員を全取得
+        members = (
+            Member.query
+            .filter(Member.member_status == 'active')
+            .all()
+        )
+
+        for m in members:
+            flyer  = m.flyer
+            course = MemberCourse.get_current(m.id)
+
+            member_info = {
+                "member_id":     m.id,
+                "full_name":     m.full_name or "（不明）",
+                "member_number": m.member_number or "—",
+                "license":       flyer.license if flyer else None,
+                "email":         None,
+            }
+
+            # email を MemberContact から取得
+            try:
+                contact = MemberContact.query.filter_by(member_id=m.id).first()
+                member_info["email"] = contact.email if contact else None
+            except Exception:
+                pass
+
+            # ── 項1: コース期限 ───────────────────────────────────
+            if course and course.member_type in ("年会員", "スクール", "冬季会員"):
+                mtype      = course.member_type
+                start_date = course.start_date
+
+                if mtype in ("年会員", "スクール"):
+                    # 開始日から1年後
+                    try:
+                        exp_date = start_date.replace(year=start_date.year + 1)
+                    except ValueError:
+                        exp_date = start_date.replace(year=start_date.year + 1, day=28)
+                    warn_date = _add_months(exp_date, -2)
+                    if today > exp_date:
+                        status = "expired"
+                    elif today >= warn_date:
+                        status = "soon"
+                    else:
+                        status = None
+
+                elif mtype == "冬季会員":
+                    # 当年4月30日（start_dateより前なら翌年）
+                    exp_date = date(today.year, 4, 30)
+                    if exp_date < start_date:
+                        exp_date = date(today.year + 1, 4, 30)
+                    # 冬季会員は期限切れのみ
+                    status = "expired" if today > exp_date else None
+                else:
+                    status = None
+
+                if status:
+                    course_label = mtype
+                    if course.course_name:
+                        course_label = f"{mtype}（{course.course_name}）"
+                    alerts.append({
+                        **member_info,
+                        "item":      "コース",
+                        "item_type": mtype,
+                        "exp_date":  exp_date.isoformat(),
+                        "status":    status,
+                        "label":     course_label,
+                    })
+
+            # ── 項2: フライヤー登録期限 ───────────────────────────
+            if flyer and flyer.reglimit_date:
+                exp_date  = flyer.reglimit_date
+                warn_date = _add_months(exp_date, -1)
+                if today > exp_date:
+                    status = "expired"
+                elif today >= warn_date:
+                    status = "soon"
+                else:
+                    status = None
+
+                if status:
+                    alerts.append({
+                        **member_info,
+                        "item":      "フライヤー登録期限",
+                        "item_type": "reglimit",
+                        "exp_date":  exp_date.isoformat(),
+                        "status":    status,
+                        "label":     "フライヤー登録期限",
+                    })
+
+            # ── 項3: リパック日（年会員・スクールのみ） ───────────
+            if (flyer and flyer.repack_date
+                    and course and course.member_type in ("年会員", "スクール")):
+                exp_date  = _repack_expiry(flyer.repack_date)
+                warn_date = _add_months(exp_date, -1)
+                if today > exp_date:
+                    status = "expired"
+                elif today >= warn_date:
+                    status = "soon"
+                else:
+                    status = None
+
+                if status:
+                    alerts.append({
+                        **member_info,
+                        "item":      "リパック日",
+                        "item_type": "repack",
+                        "exp_date":  exp_date.isoformat(),
+                        "status":    status,
+                        "label":     "リパック日",
+                    })
+
+        # 期限切れ優先・期限日昇順でソート
+        def sort_key(a):
+            return (0 if a["status"] == "expired" else 1, a["exp_date"])
+
+        alerts.sort(key=sort_key)
+        return {"total": len(alerts), "items": alerts}
+
+    except Exception:
+        traceback.print_exc()
+        return {"total": 0, "items": [], "error": "取得失敗"}
+
+
+# ── 日付ユーティリティ ─────────────────────────────────────────────
+
+def _add_months(d: date, months: int) -> date:
+    """date d に months ヶ月を加算する（月末補正あり）"""
+    month = d.month - 1 + months
+    year  = d.year + month // 12
+    month = month % 12 + 1
+    day   = min(d.day, monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _repack_expiry(repack_date: date) -> date:
+    """
+    リパック日（登録月）を含む 6か月後の末日を返す。
+    例: repack_date=2025-03-01 → 6か月目=2025-08 → 2025-08-31
+    登録月を1か月目として +5か月後の月末。
+    """
+    base     = repack_date.replace(day=1)
+    exp      = _add_months(base, 5)
+    last_day = monthrange(exp.year, exp.month)[1]
+    return exp.replace(day=last_day)

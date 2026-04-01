@@ -974,6 +974,71 @@ body {
   align-items: flex-start;
 }
 
+
+/* ================================================================
+   フライト時間詳細（時刻パネル）
+   ================================================================ */
+
+/* 時間詳細ボタン */
+.btn-time-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.btn-time-detail:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* 時刻チップを並べるパネル（デフォルト非表示） */
+.time-detail-panel {
+  display: none;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+}
+
+.time-detail-panel.open {
+  display: flex;
+}
+
+/* 個々の時刻チップ */
+.time-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* 時間詳細セル（ボタン＋パネルを縦並びで収める） */
+.td-time-cell {
+  vertical-align: top;
+  min-width: 110px;
+}
+
+
 .count-badge {
   display: inline-flex;
   align-items: center;
@@ -985,5 +1050,316 @@ body {
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   選択行ハイライト
+   ================================================================ */
+
+.data-table tbody tr.clickable-row.row-selected {
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+
+.data-table tbody tr.clickable-row.row-selected:hover {
+  background: #d1e8ff;
+}
+
+/* ================================================================
+   インライン詳細パネル（フライト状況テーブル下）
+   ================================================================ */
+
+/* tfootに追加されるパネル行 */
+#inline-detail-tfoot .inline-detail-cell {
+  padding: 0;
+  border-top: 2px solid var(--accent);
+}
+
+.inline-detail-panel {
+  background: #f0f6ff;
+  border-bottom: 2px solid var(--border);
+}
+
+/* パネルヘッダー */
+.inline-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--accent-dim);
+}
+
+.inline-detail-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.inline-detail-close {
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.inline-detail-close:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ローディング・空・エラー */
+.inline-loading,
+.inline-empty,
+.inline-error {
+  padding: 20px 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.inline-error { color: var(--danger); }
+
+/* ---- 日付一覧テーブル（idd-table） ---- */
+
+.idd-table-wrap {
+  overflow-x: auto;
+  padding: 10px 16px 0;
+}
+
+.idd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.idd-table thead th {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 7px 12px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  text-align: left;
+}
+
+.idd-table thead th.center { text-align: center; }
+
+.idd-table tbody tr.idd-row {
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-surface);
+  transition: background 0.1s;
+}
+
+.idd-table tbody tr.idd-row:hover {
+  background: var(--bg-hover);
+}
+
+.idd-table tbody td {
+  padding: 9px 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.idd-table tbody td.center { text-align: center; }
+
+.idd-date { font-weight: 600; min-width: 140px; }
+.idd-count { min-width: 80px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.idd-loc { min-width: 100px; color: var(--text-secondary); }
+.idd-guar, .idd-hand { min-width: 90px; }
+.idd-btn { min-width: 70px; }
+
+/* 詳細展開ボタン */
+.btn-detail-expand {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.btn-detail-expand:hover,
+.btn-detail-expand.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* サブ行（展開詳細） */
+.idd-table tbody tr.idd-sub-row {
+  background: #f8faff;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.idd-table tbody tr.idd-sub-row.hidden {
+  display: none;
+}
+
+.idd-sub-cell {
+  padding: 0 !important;
+}
+
+.idd-sub-inner {
+  padding: 8px 20px 12px 36px;
+}
+
+/* サブテーブル（何本目リスト） */
+.sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+.sub-table thead th {
+  background: #e8f0fc;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  text-align: left;
+}
+
+.sub-table thead th.center { text-align: center; }
+
+.sub-table tbody tr {
+  border-bottom: 1px dashed var(--border-light);
+}
+
+.sub-table tbody tr:last-child { border-bottom: none; }
+
+.sub-table tbody tr.sub-guarantee-row {
+  background: #fff8e7;
+}
+
+.sub-table tbody td {
+  padding: 6px 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.sub-table tbody td.center { text-align: center; }
+
+.sub-num { font-weight: 600; min-width: 70px; }
+.sub-time { min-width: 70px; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.sub-loc  { min-width: 100px; color: var(--text-secondary); }
+.sub-hand { min-width: 80px; }
+
+/* サマリー行 */
+.idd-summary {
+  display: flex;
+  gap: 28px;
+  padding: 10px 18px 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+}
+
+.idd-summary strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+/* ================================================================
+   フライトテーブル — 合計行（thead直下）
+   ================================================================ */
+
+#flight-total-subhead .total-subhead-row {
+  background: #e8f4e8;
+  border-bottom: 2px solid var(--border);
+}
+
+#flight-total-subhead .total-subhead-row td {
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+#flight-total-subhead .total-subhead-row td.total-label {
+  color: var(--success);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* 施設料控除注記 */
+.fee-note {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--warning);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* 合計金額列 */
+.idd-amount {
+  min-width: 120px;
+  vertical-align: top;
+}
+
+.idd-table thead th.right { text-align: right; }
+.idd-table tbody td.right  { text-align: right; }
+.tag-guarantee {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tag-handover {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  background: #fef2f2;
+  color: var(--danger);
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tag-none {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
 }

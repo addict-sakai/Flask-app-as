@@ -66,14 +66,21 @@
 
   <!-- ════ ヘッダー ════ -->
   <header class="cont-header uni-header">
-    <a href="/" class="cont-back-btn">← トップ</a>
-    <div class="cont-header-center">
-      <h1 class="cont-title">請負入力</h1>
-    </div>
-    <div class="uni-header-actions">
-      <span style="color:#aaa;font-size:0.8rem;">今月 <strong id="stat-total">—</strong> 件</span>
-      <button class="uni-btn-report"   onclick="UnifiedApp.openRegisterModal()">＋ 日報登録</button>
-      <button id="save-btn" class="uni-btn-schedule" onclick="UnifiedApp.save()">📅 予定登録</button>
+    <!-- 左：タイトル -->
+    <h1 class="cont-title">請負入力</h1>
+
+    <!-- 右：ハンバーガーメニュー -->
+    <div class="uni-header-right" style="position:relative;">
+      <button class="uni-hm-btn" id="uniHmBtn" aria-label="メニュー">
+        <span class="uni-hm-line"></span>
+        <span class="uni-hm-line"></span>
+        <span class="uni-hm-line"></span>
+      </button>
+      <div class="uni-hm-dropdown" id="uniHmDropdown">
+        <a href="/" class="uni-hm-item">← トップ</a>
+        <button class="uni-hm-item uni-hm-item--primary" onclick="UnifiedApp.openRegisterModal();document.getElementById('uniHmDropdown').classList.remove('is-open')">＋ 日報入力</button>
+        <button id="save-btn" class="uni-hm-item" onclick="UnifiedApp.save();document.getElementById('uniHmDropdown').classList.remove('is-open')">📅 予定登録</button>
+      </div>
     </div>
   </header>
 
@@ -104,7 +111,6 @@
         <div class="uni-member-display">
           <div>
             <p class="work-member-name" id="member-name">—</p>
-            <p class="work-member-sub"  id="member-sub"></p>
           </div>
           <button class="uni-clear-btn" onclick="UnifiedApp.clearMember()">✕ クリア</button>
         </div>
@@ -123,7 +129,8 @@
             <span id="report-month-display" class="uni-month-label">—</span>
             <button class="uni-nav-btn" onclick="UnifiedApp.navigateReportMonth(1)">›</button>
           </div>
-          <span class="uni-cal-guide">日報の登録は上の「＋日報登録」をクリックしてください</span>
+          <span style="color:#aaa;font-size:0.8rem;white-space:nowrap;">今月 <strong id="stat-total">—</strong> 件</span>
+          <span class="uni-cal-guide">日報の登録は右上「≡」メニューから</span>
         </div>
 
         <div class="uni-report-scroll">
@@ -131,12 +138,12 @@
             <thead>
               <tr>
                 <th>日付</th><th>本数</th><th>場所</th>
-                <th>機体</th><th>サイズ</th><th>操作</th>
+                <th>引継ぎ</th><th>操作</th>
               </tr>
             </thead>
             <tbody id="report-tbody">
               <tr id="empty-row">
-                <td colspan="6" class="cont-empty">
+                <td colspan="5" class="cont-empty">
                   <div class="cont-empty-icon">🪂</div>担当者を検索してください
                 </td>
               </tr>
@@ -184,11 +191,11 @@
       </div>
       <div style="padding:4px 0 8px;">
         <p class="uni-pass-hint">携帯番号の下4桁を入力してください</p>
-        <div class="uni-pass-input-wrap">
+        <div class="uni-pass-input-wrap" style="flex-direction:column; align-items:center; gap:12px;">
           <input type="tel" id="pass-input" class="cont-input uni-pass-input"
                  maxlength="4" placeholder="0000" autocomplete="off"
                  oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
-          <button class="cont-modal-save-btn uni-pass-ok-btn" onclick="UnifiedApp.verifyPass()">確認</button>
+          <button class="cont-modal-save-btn uni-pass-ok-btn" style="width:100%;" onclick="UnifiedApp.verifyPass()">確　認</button>
         </div>
         <div id="pass-error" class="cont-alert cont-alert--danger" style="margin-top:8px;display:none;"></div>
       </div>
@@ -196,109 +203,109 @@
   </div>
 
 
-  <!-- ════ 日報登録モーダル ════ -->
+  <!-- ════ 日報入力モーダル ════ -->
   <div id="register-modal-overlay" class="cont-modal-overlay">
     <div class="cont-modal uni-wide-modal">
+      <!-- 項1: タイトル -->
       <div class="cont-modal__header">
-        <div>
-          <h3 class="cont-modal__title">日報登録</h3>
-          <p class="uni-modal-sub" id="register-modal-name">—</p>
-        </div>
+        <h3 class="cont-modal__title">日報入力</h3>
         <button class="cont-modal__close" onclick="UnifiedApp.closeRegisterModal()">✕</button>
       </div>
 
       <div class="uni-modal-body">
-        <div class="uni-modal-row">
+
+        <!-- 項2: 氏名・最低保証 -->
+        <div class="reg-name-row" style="justify-content:space-between; align-items:center;">
+          <span class="reg-name-label" id="register-modal-name">—</span>
+          <label class="reg-mini-guarantee-label">
+            <input type="checkbox" id="reg-mini-guarantee" class="reg-mini-guarantee-chk" />
+            最低保証
+          </label>
+        </div>
+
+        <!-- 項3: 日付・時間 -->
+        <div class="reg-row reg-row--date">
           <div class="cont-form-group">
-            <label class="cont-label" for="reg-flight-count">フライト本数</label>
-            <input type="number" id="reg-flight-count" class="cont-input cont-input--sm"
-                   min="0" max="99" placeholder="0" />
+            <label class="cont-label">日付</label>
+            <p class="reg-date-display" id="reg-date-display">—</p>
           </div>
           <div class="cont-form-group">
-            <label class="cont-label">場所 <span class="cont-required">必須</span></label>
-            <div class="cont-btn-group reg-grp-location">
-              <button class="cont-opt-btn" data-val="FUJIパラ"
-                      onclick="UnifiedApp.selectOpt(this,'reg-grp-location')">FUJIパラ</button>
-              <button class="cont-opt-btn" data-val="Wingキッス"
-                      onclick="UnifiedApp.selectOpt(this,'reg-grp-location')">Wingキッス</button>
-            </div>
+            <label class="cont-label" for="reg-flight-time">時間</label>
+            <input type="time" id="reg-flight-time" class="cont-input reg-time-input" />
           </div>
         </div>
 
-        <hr class="cont-divider" />
-
-        <div class="uni-modal-cols">
-          <div>
-            <p class="uni-modal-section-label">機体</p>
-            <div class="uni-modal-row">
-              <div class="cont-form-group">
-                <label class="cont-label">使用機体</label>
-                <div class="cont-btn-group reg-grp-glider cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="K24"     onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">K24</button>
-                  <button class="cont-opt-btn" data-val="BIBETA6" onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">BIBETA6</button>
-                  <button class="cont-opt-btn" data-val="持込"    onclick="UnifiedApp.selectOpt(this,'reg-grp-glider')">持込</button>
-                </div>
-              </div>
-              <div class="cont-form-group">
-                <label class="cont-label">サイズ</label>
-                <div class="cont-btn-group reg-grp-size cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="SM(38)" onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">SM(38)</button>
-                  <button class="cont-opt-btn" data-val="ML(41)" onclick="UnifiedApp.selectOpt(this,'reg-grp-size')">ML(41)</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <p class="uni-modal-section-label">ハーネス</p>
-            <div class="cont-form-group">
-              <label class="cont-label">パイロット</label>
-              <div class="cont-btn-group reg-grp-pilot cont-btn-group--col">
-                <button class="cont-opt-btn" data-val="SUPAIR ワリビ"    onclick="UnifiedApp.selectOpt(this,'reg-grp-pilot')">SUPAIR ワリビ</button>
-                <button class="cont-opt-btn" data-val="SUPAIR ワリビ2"   onclick="UnifiedApp.selectOpt(this,'reg-grp-pilot')">SUPAIR ワリビ2</button>
-                <button class="cont-opt-btn" data-val="インディペンデンス" onclick="UnifiedApp.selectOpt(this,'reg-grp-pilot')">インディペンデンス</button>
-                <button class="cont-opt-btn" data-val="BIPRO 2"         onclick="UnifiedApp.selectOpt(this,'reg-grp-pilot')">BIPRO 2</button>
-                <button class="cont-opt-btn" data-val="持込"             onclick="UnifiedApp.selectOpt(this,'reg-grp-pilot')">持込</button>
-              </div>
-            </div>
-            <div class="cont-form-group">
-              <label class="cont-label">パッセンジャー</label>
-              <div class="cont-btn-group reg-grp-pass cont-btn-group--col">
-                <button class="cont-opt-btn" data-val="BIPAX 2"        onclick="UnifiedApp.selectOpt(this,'reg-grp-pass')">BIPAX 2</button>
-                <button class="cont-opt-btn" data-val="インディペンデンス" onclick="UnifiedApp.selectOpt(this,'reg-grp-pass')">インディペンデンス</button>
-                <button class="cont-opt-btn" data-val="持込"            onclick="UnifiedApp.selectOpt(this,'reg-grp-pass')">持込</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="cont-divider" />
-
-        <p class="uni-modal-section-label">みんなへの引継ぎ報告事項</p>
+        <!-- 項4: 場所（必須・横並び選択） -->
         <div class="cont-form-group">
-          <label class="cont-label" for="reg-near-miss">ヒヤリハット報告</label>
-          <textarea id="reg-near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
-        </div>
-        <div class="cont-form-group">
-          <label class="cont-label" for="reg-improvement">営業改善点</label>
-          <textarea id="reg-improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
-        </div>
-        <div class="cont-form-group" style="margin-bottom:0;">
-          <label class="cont-label" for="reg-damaged">機材の破損部分</label>
-          <textarea id="reg-damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+          <label class="cont-label">場所 <span class="cont-required">必須</span></label>
+          <div id="reg-grp-location-wrap" class="cont-btn-group reg-grp-location reg-location-group">
+            <!-- config_masterから動的生成 -->
+          </div>
         </div>
 
-        <div id="register-result" class="cont-result-msg" style="margin-top:12px;"></div>
-
-        <div class="uni-modal-actions">
-          <button class="cont-modal-save-btn" onclick="UnifiedApp.register()">登録する</button>
-          <button class="cont-cancel-btn uni-cancel-full" onclick="UnifiedApp.closeRegisterModal()">キャンセル</button>
+        <!-- 項5: 使用機体・サイズ（コンボ） -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-glider-select">使用機体</label>
+            <select id="reg-glider-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-size-select">サイズ</label>
+            <select id="reg-size-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
         </div>
-      </div>
+
+        <!-- 項6: パイロット・パッセンジャー（コンボ） -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-pilot-select">パイロット</label>
+            <select id="reg-pilot-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-pass-select">パッセンジャー</label>
+            <select id="reg-pass-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 項7: 引継ぎ報告 -->
+        <div class="reg-handover-section">
+          <p class="uni-modal-section-label">みんなへの引継ぎ報告事項</p>
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-near-miss">ヒヤリハット報告</label>
+            <textarea id="reg-near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="reg-improvement">営業改善点</label>
+            <textarea id="reg-improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
+          </div>
+          <div class="cont-form-group" style="margin-bottom:0;">
+            <label class="cont-label" for="reg-damaged">機体の破損部分</label>
+            <textarea id="reg-damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+          </div>
+        </div>
+
+        <div id="register-result" class="cont-result-msg" style="margin-top:12px;display:none;"></div>
+
+        <!-- 項8: 登録・キャンセルボタン（下部・縦並び） -->
+        <div class="reg-footer-actions">
+          <button class="cont-modal-save-btn reg-submit-btn" onclick="UnifiedApp.register()">登　録　す　る</button>
+          <button class="cont-cancel-btn reg-cancel-btn" onclick="UnifiedApp.closeRegisterModal()">キャンセル</button>
+        </div>
+
+      </div><!-- /.uni-modal-body -->
     </div>
   </div>
 
 
-  <!-- ════ 日報編集モーダル ════ -->
+  <!-- ════ 日報編集モーダル（1フライト分） ════ -->
   <div id="edit-modal-overlay" class="cont-modal-overlay">
     <div class="cont-modal uni-wide-modal">
       <div class="cont-modal__header">
@@ -310,89 +317,101 @@
       </div>
 
       <div class="uni-modal-body">
-        <div class="uni-modal-row">
+
+        <!-- 日付・時間 -->
+        <div class="reg-row reg-row--date">
           <div class="cont-form-group">
-            <label class="cont-label" for="modal-flight-count">フライト本数</label>
-            <input type="number" id="modal-flight-count" class="cont-input cont-input--sm"
-                   min="0" max="99" />
+            <label class="cont-label">日付</label>
+            <p class="reg-date-display" id="edit-date-display">—</p>
           </div>
           <div class="cont-form-group">
-            <label class="cont-label">場所</label>
-            <div class="cont-btn-group modal-grp-location">
-              <button class="cont-opt-btn" data-val="FUJIパラ"
-                      onclick="UnifiedApp.selectOpt(this,'modal-grp-location')">FUJIパラ</button>
-              <button class="cont-opt-btn" data-val="Wingキッス"
-                      onclick="UnifiedApp.selectOpt(this,'modal-grp-location')">Wingキッス</button>
-            </div>
+            <label class="cont-label" for="edit-flight-time">時間</label>
+            <input type="time" id="edit-flight-time" class="cont-input reg-time-input" />
           </div>
         </div>
 
-        <hr class="cont-divider" />
-
-        <div class="uni-modal-cols">
-          <div>
-            <p class="uni-modal-section-label">機体</p>
-            <div class="uni-modal-row">
-              <div class="cont-form-group">
-                <label class="cont-label">使用機体</label>
-                <div class="cont-btn-group modal-grp-glider cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="K24"     onclick="UnifiedApp.selectOpt(this,'modal-grp-glider')">K24</button>
-                  <button class="cont-opt-btn" data-val="BIBETA6" onclick="UnifiedApp.selectOpt(this,'modal-grp-glider')">BIBETA6</button>
-                  <button class="cont-opt-btn" data-val="持込"    onclick="UnifiedApp.selectOpt(this,'modal-grp-glider')">持込</button>
-                </div>
-              </div>
-              <div class="cont-form-group">
-                <label class="cont-label">サイズ</label>
-                <div class="cont-btn-group modal-grp-size cont-btn-group--col">
-                  <button class="cont-opt-btn" data-val="SM(38)" onclick="UnifiedApp.selectOpt(this,'modal-grp-size')">SM(38)</button>
-                  <button class="cont-opt-btn" data-val="ML(41)" onclick="UnifiedApp.selectOpt(this,'modal-grp-size')">ML(41)</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <p class="uni-modal-section-label">ハーネス</p>
-            <div class="cont-form-group">
-              <label class="cont-label">パイロット</label>
-              <div class="cont-btn-group modal-grp-pilot cont-btn-group--col">
-                <button class="cont-opt-btn" data-val="SUPAIR ワリビ"    onclick="UnifiedApp.selectOpt(this,'modal-grp-pilot')">SUPAIR ワリビ</button>
-                <button class="cont-opt-btn" data-val="SUPAIR ワリビ2"   onclick="UnifiedApp.selectOpt(this,'modal-grp-pilot')">SUPAIR ワリビ2</button>
-                <button class="cont-opt-btn" data-val="インディペンデンス" onclick="UnifiedApp.selectOpt(this,'modal-grp-pilot')">インディペンデンス</button>
-                <button class="cont-opt-btn" data-val="BIPRO 2"         onclick="UnifiedApp.selectOpt(this,'modal-grp-pilot')">BIPRO 2</button>
-                <button class="cont-opt-btn" data-val="持込"             onclick="UnifiedApp.selectOpt(this,'modal-grp-pilot')">持込</button>
-              </div>
-            </div>
-            <div class="cont-form-group">
-              <label class="cont-label">パッセンジャー</label>
-              <div class="cont-btn-group modal-grp-pass cont-btn-group--col">
-                <button class="cont-opt-btn" data-val="BIPAX 2"        onclick="UnifiedApp.selectOpt(this,'modal-grp-pass')">BIPAX 2</button>
-                <button class="cont-opt-btn" data-val="インディペンデンス" onclick="UnifiedApp.selectOpt(this,'modal-grp-pass')">インディペンデンス</button>
-                <button class="cont-opt-btn" data-val="持込"            onclick="UnifiedApp.selectOpt(this,'modal-grp-pass')">持込</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="cont-divider" />
-
-        <p class="uni-modal-section-label">みんなへの引継ぎ報告事項</p>
+        <!-- 場所 + 最低保証（横並び） -->
         <div class="cont-form-group">
-          <label class="cont-label" for="modal-near-miss">ヒヤリハット報告</label>
-          <textarea id="modal-near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
+          <label class="cont-label">場所</label>
+          <div class="edit-location-row">
+            <div id="edit-grp-location-wrap" class="cont-btn-group reg-grp-location reg-location-group">
+              <!-- config_masterから動的生成 -->
+            </div>
+            <label class="reg-mini-guarantee-label edit-mini-label">
+              <input type="checkbox" id="edit-mini-guarantee" class="reg-mini-guarantee-chk" />
+              最低保証
+            </label>
+          </div>
         </div>
-        <div class="cont-form-group">
-          <label class="cont-label" for="modal-improvement">営業改善点</label>
-          <textarea id="modal-improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
+
+        <!-- 使用機体・サイズ -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-glider-select">使用機体</label>
+            <select id="edit-glider-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-size-select">サイズ</label>
+            <select id="edit-size-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
         </div>
-        <div class="cont-form-group" style="margin-bottom:0;">
-          <label class="cont-label" for="modal-damaged">機材の破損部分</label>
-          <textarea id="modal-damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+
+        <!-- パイロット・パッセンジャー -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-pilot-select">パイロット</label>
+            <select id="edit-pilot-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-pass-select">パッセンジャー</label>
+            <select id="edit-pass-select" class="cont-input reg-select">
+              <option value="">—（任意）</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 引継ぎ報告 -->
+        <div class="reg-handover-section">
+          <p class="uni-modal-section-label">みんなへの引継ぎ報告事項</p>
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-near-miss">ヒヤリハット報告</label>
+            <textarea id="edit-near-miss" class="cont-textarea" placeholder="気になった出来事を記入…"></textarea>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="edit-improvement">営業改善点</label>
+            <textarea id="edit-improvement" class="cont-textarea" placeholder="改善提案を記入…"></textarea>
+          </div>
+          <div class="cont-form-group" style="margin-bottom:0;">
+            <label class="cont-label" for="edit-damaged">機体の破損部分</label>
+            <textarea id="edit-damaged" class="cont-textarea" placeholder="破損箇所を記入…"></textarea>
+          </div>
         </div>
 
         <div class="uni-modal-actions">
           <button class="cont-modal-save-btn" onclick="UnifiedApp.saveEdit()">保存する</button>
           <button class="cont-cancel-btn uni-cancel-full" onclick="UnifiedApp.closeModal()">キャンセル</button>
+          <button class="cont-delete-btn" onclick="UnifiedApp.deleteRecord()">🗑 削除</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ 日報詳細ポップアップ（その日の全フライト）════ -->
+  <div id="detail-popup-overlay" class="cont-modal-overlay" onclick="if(event.target===this)UnifiedApp.closeDetailPopup()">
+    <div class="cont-modal uni-detail-modal">
+      <div class="cont-modal__header">
+        <h3 class="cont-modal__title" id="detail-popup-date">詳細</h3>
+        <button class="cont-modal__close" onclick="UnifiedApp.closeDetailPopup()">✕</button>
+      </div>
+      <div id="detail-popup-body" class="uni-detail-body">
+        <!-- 動的生成 -->
       </div>
     </div>
   </div>
@@ -444,5 +463,23 @@
   <script src="../static/jsQR.js"></script>
   <script src="../static/app_qr_scan.js"></script>
   <script src="../static/app_cont_unified.js"></script>
+  <script>
+    // ── ハンバーガーメニュー開閉 ──
+    (function () {
+      const btn  = document.getElementById("uniHmBtn");
+      const menu = document.getElementById("uniHmDropdown");
+      if (!btn || !menu) return;
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        menu.classList.toggle("is-open");
+      });
+      document.addEventListener("click", function () {
+        menu.classList.remove("is-open");
+      });
+      menu.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+    })();
+  </script>
 </body>
 </html>

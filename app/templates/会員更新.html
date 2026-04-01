@@ -64,15 +64,14 @@
       box-shadow: var(--shadow-sm);
     }
     .page-header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 10px 20px;
       gap: 12px;
     }
-    .page-header-left  { display: flex; align-items: center; }
-    .page-header-center { display: flex; align-items: center; justify-content: center; }
-    .page-header-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .page-header-left  { display: flex; align-items: center; flex: 1; }
+    .page-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .page-title {
       font-size: 16px;
       font-weight: 700;
@@ -793,8 +792,12 @@
       font-weight: 600;
       text-align: center;
     }
-    .pass-actions { display: flex; gap: 8px; }
-    .pass-actions .btn { flex: 1; justify-content: center; }
+    .pass-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pass-actions .btn { justify-content: center; }
 
     /* PASSエラーシェイク */
     @keyframes upd-shake {
@@ -818,6 +821,13 @@
       .change-row { grid-template-columns: 1fr; }
       .search-bar-row { flex-wrap: wrap; }
       .search-name-input { min-width: 140px; }
+      /* ヘッダー右ボタンをスマホで小さく */
+      .page-header-right .btn { padding: 6px 10px; font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      .page-header { padding: 8px 12px; }
+      .page-title  { font-size: 12px; }
+      .page-header-right .btn { padding: 5px 8px; font-size: 11px; letter-spacing: 0; }
     }
   </style>
   <style>
@@ -882,15 +892,12 @@
   <div class="fixed-header">
     <div class="page-header">
       <div class="page-header-left">
-        <!-- 空白スペーサー（センタリング用） -->
-      </div>
-      <div class="page-header-center">
-        <h1 class="page-title">コース変更 / 更新・登録内容修正</h1>
+        <h1 class="page-title">更新・変更修正</h1>
       </div>
       <div class="page-header-right">
-        <button type="button" class="btn btn-back hidden" id="btnBackToSearch">← 検索に戻る</button>
-        <button type="button" class="btn btn-primary" id="btnSubmit">申　請</button>
-        <button type="button" class="btn btn-ghost"   id="btnExit">終　了</button>
+        <button type="button" class="btn btn-back hidden" id="btnBackToSearch">←検索</button>
+        <button type="button" class="btn btn-primary" id="btnSubmit">申請</button>
+        <button type="button" class="btn btn-ghost"   id="btnExit">終了</button>
       </div>
     </div>
   </div>
@@ -1246,7 +1253,7 @@
       <div class="pass-modal-body">
         <div class="pass-target-name" id="passTargetName">—</div>
         <p class="pass-desc">
-          登録されている携帯番号の<strong>下4桁</strong>を入力してください
+          携帯番号の<strong>下4桁</strong>を入力
         </p>
         <div class="pass-input-wrap">
           <input
@@ -1305,7 +1312,11 @@
 <script src="{{ url_for('static', filename='app_mem_upd.js') }}"></script>
 <script>
 /* ════════════════════════════════════════
-   コース情報UI制御（改定５版 2026/3/23）
+   コース情報UI制御（改定８版 2026/03/31）
+   改定８変更点:
+     - 冬季会員のコース内容に「冬季継続」を追加
+     - 冬季継続の開始日は5/1〜11/30のみ表示
+     - 料金は config_master の「冬季継続料金」から取得
 ════════════════════════════════════════ */
 (function () {
 
@@ -1315,7 +1326,7 @@
   const courseFeeMap = {};
   const FEE_TARGETS = [
     "年会費",
-    "冬季料金","冬季1月","冬季2月","冬季3月","冬季4月",
+    "冬季料金","冬季1月","冬季2月","冬季3月","冬季4月","冬季継続料金",
     "Bコース入校料","NPコース入校料","Pコース入校料",
     "XCコース入校料","Tコース入校料",
   ];
@@ -1336,30 +1347,57 @@
     .catch(() => {});
 
   /* ──────────────────────────────────────
+     冬季継続が選択可能かどうかを判定
+     開始日（今日）が5/1〜11/30の場合のみ表示
+  ────────────────────────────────────── */
+  function isWinterContinuationAvailable() {
+    const today = new Date();
+    const m = today.getMonth() + 1; // 1-12
+    return m >= 5 && m <= 11;
+  }
+
+  /* ──────────────────────────────────────
      コース内容の選択肢定義
   ────────────────────────────────────── */
-  const COURSE_NAME_OPTIONS = {
-    "冬季会員": [
-      { value: "ALL", text: "年会費（12/1～4/30）" },
-      { value: "1",   text: "1月入会" },
-      { value: "2",   text: "2月入会" },
-      { value: "3",   text: "3月入会" },
-      { value: "4",   text: "4月入会" },
-    ],
-    "スクール": [
-      { value: "B",  text: "Bコース" },
-      { value: "NP", text: "NPコース" },
-      { value: "P",  text: "Pコース" },
-      { value: "XC", text: "XCコース" },
-      { value: "T",  text: "タンデムコース" },
-    ],
-  };
+  function buildCourseNameOptions(memberType) {
+    if (memberType === "冬季会員") {
+      const opts = [
+        { value: "ALL", text: "年会費（12/1～4/30）" },
+        { value: "1",   text: "1月入会" },
+        { value: "2",   text: "2月入会" },
+        { value: "3",   text: "3月入会" },
+        { value: "4",   text: "4月入会" },
+      ];
+      // 冬季継続は5/1〜11/30のみ表示
+      if (isWinterContinuationAvailable()) {
+        opts.push({ value: "継続", text: "冬季継続（5/1〜11/30）" });
+      }
+      return opts;
+    }
+    if (memberType === "スクール") {
+      return [
+        { value: "B",  text: "Bコース" },
+        { value: "NP", text: "NPコース" },
+        { value: "P",  text: "Pコース" },
+        { value: "XC", text: "XCコース" },
+        { value: "T",  text: "タンデムコース" },
+      ];
+    }
+    return [];
+  }
 
   /* コースタイプ + コース内容 → config item_name */
   function resolveCourseFeeKey(memberType, courseNameVal) {
     if (memberType === "年会員")   return "年会費";
     if (memberType === "冬季会員") {
-      const map = { "ALL":"冬季料金","1":"冬季1月","2":"冬季2月","3":"冬季3月","4":"冬季4月" };
+      const map = {
+        "ALL":  "冬季料金",
+        "1":    "冬季1月",
+        "2":    "冬季2月",
+        "3":    "冬季3月",
+        "4":    "冬季4月",
+        "継続": "冬季継続料金",
+      };
       return map[courseNameVal] || null;
     }
     if (memberType === "スクール") {
@@ -1384,15 +1422,13 @@
   ────────────────────────────────────── */
   function updateCourseNameOptions(memberType) {
     courseNameSel.innerHTML = '<option value="">コース内容を選択</option>';
-    const opts = COURSE_NAME_OPTIONS[memberType];
-    if (opts) {
-      opts.forEach(opt => {
-        const o = document.createElement("option");
-        o.value = opt.value;
-        o.textContent = opt.text;
-        courseNameSel.appendChild(o);
-      });
-    }
+    const opts = buildCourseNameOptions(memberType);
+    opts.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.text;
+      courseNameSel.appendChild(o);
+    });
   }
 
   /* ──────────────────────────────────────

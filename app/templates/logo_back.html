@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRカード裏面印刷</title>
+<style>
+  body {
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .button-area {
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .make-button {
+    padding: 10px 24px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .make-button:hover { background: #1d4ed8; }
+  .make-button.close-btn { background: #6b7280; }
+  .make-button.close-btn:hover { background: #4b5563; }
+  .sheet {
+    display: grid;
+    grid-template-columns: repeat(2, 91mm);
+    grid-template-rows: repeat(4, 55mm);
+    gap: 4mm;
+    padding: 8mm;
+    width: fit-content;
+  }
+  .card {
+    width: 91mm;
+    height: 55mm;
+    border: 1px solid #000;
+    background: #ffffff;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-right: 4mm;
+    box-sizing: border-box;
+  }
+  .card img {
+    height: 48mm;
+    object-fit: contain;
+  }
+  @page { size: A4 portrait; margin: 8mm; }
+  @media print {
+    .button-area { display: none !important; }
+    body { margin: 0; padding: 0; }
+    .sheet { padding: 0; gap: 4mm; }
+  }
+</style>
+</head>
+<body>
+<div class="button-area">
+  <button class="make-button" onclick="window.print()">🖨️ A4で印刷する</button>
+  <button class="make-button close-btn" onclick="window.close()">✕ 閉じる</button>
+</div>
+<div class="sheet">
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+  <div class="card"><img src="/img/logo_back.png" alt="logo"></div>
+</div>
+</body>
+</html>

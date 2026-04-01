@@ -209,3 +209,35 @@ def delete_value(value_id):
     ), {"id": value_id})
     db.session.commit()
     return jsonify({"message": "削除しました"})
+
+
+# ══════════════════════════════════════════════════════════
+# 一括取得API（日報登録モーダル等で使用）
+# GET /api/config/options
+# category ごとに config_values.value のリストを返す
+# {
+#   "場所":     ["FUJIパラ", "Wingキッス", ...],
+#   "使用機体": ["K24", "BIBETA6", ...],
+#   ...
+# }
+# ══════════════════════════════════════════════════════════
+@config_bp.route("/api/options", methods=["GET"])
+def get_options():
+    """
+    全カテゴリの選択肢（config_values.value）を一括返却。
+    is_active=true のもののみ。sort_order 昇順。
+    """
+    rows = db.session.execute(text("""
+        SELECT m.category, v.value
+        FROM config_master m
+        JOIN config_values v ON v.master_id = m.id
+        WHERE m.is_active = true
+          AND v.is_active = true
+        ORDER BY m.sort_order, m.id, v.sort_order, v.id
+    """)).fetchall()
+
+    result = {}
+    for category, value in rows:
+        result.setdefault(category, []).append(value)
+
+    return jsonify(result)

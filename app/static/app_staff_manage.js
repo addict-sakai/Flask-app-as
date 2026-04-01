@@ -1,15 +1,12 @@
 /* =============================================================
-   app_staff_manage.js  rev.4（2026-03-23）
+   app_staff_manage.js  rev.5（改定８ 2026-03-31）
 
    変更点:
-     1. toggleSection() を新規追加
-        各セクションのヘッダークリックでリスト折り畳み
-        初期状態：全セクション折り畳み（closed）
-     2. renderFlyer() の typeLabels から「クラブ」を削除し
-        「冬季会員」を追加
-     3. renderPayment() の件数表示を sub-badges スタイルに変更
-        （paySubCounts を使用）
-        旧：pay-counts / pay-count-item 構造を廃止
+     1. フライヤー各種期限前/期限切れ セクション追加
+        renderExpiryAlerts() / openExpiryMailModal() /
+        doSendExpiryMail() / closeExpiryMailModal()
+     2. SECTIONS に expirySection を追加
+     3. loadDashboard に expiry_alerts を追加
    ============================================================= */
 
 "use strict";
@@ -22,39 +19,14 @@ let _rejectMode    = false;
 // 起動
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
-  initHamburger();
   initCollapse();
   loadDashboard();
 });
 
 // =============================================================
-// ハンバーガーメニュー 開閉
-// =============================================================
-function initHamburger() {
-  const btn      = document.getElementById("hamburgerBtn");
-  const wrap     = document.getElementById("hamburgerWrap");
-  const dropdown = document.getElementById("hamburgerDropdown");
-  if (!btn || !dropdown) return;
-
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isOpen = dropdown.classList.contains("open");
-    dropdown.classList.toggle("open", !isOpen);
-    btn.setAttribute("aria-expanded", String(!isOpen));
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!wrap.contains(e.target)) {
-      dropdown.classList.remove("open");
-      btn.setAttribute("aria-expanded", "false");
-    }
-  });
-}
-
-// =============================================================
 // 折り畳み初期化（全セクション閉じた状態）
 // =============================================================
-const SECTIONS = ["flyerSection", "updateAppSection", "expSection", "paySection"];
+const SECTIONS = ["flyerSection", "updateAppSection", "expirySection", "expSection", "paySection"];
 
 function initCollapse() {
   SECTIONS.forEach(id => {
@@ -82,14 +54,16 @@ async function loadDashboard() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    renderFlyer(data.flyer        || { total: 0, by_type: {}, items: [] });
-    renderUpdateApps(data.update_apps || { total: 0, items: [] });
-    renderExp(data.experience     || { total: 0, items: [] });
-    renderPayment(data.payment    || { entrance_total: 0, yamachin_total: 0, items: [] });
+    renderFlyer(data.flyer          || { total: 0, by_type: {}, items: [] });
+    renderUpdateApps(data.update_apps  || { total: 0, items: [] });
+    renderExpiryAlerts(data.expiry_alerts || { total: 0, items: [] });
+    renderExp(data.experience       || { total: 0, items: [] });
+    renderPayment(data.payment      || { entrance_total: 0, yamachin_total: 0, items: [] });
   } catch (e) {
     console.error("ダッシュボード読み込みエラー:", e);
     setError("flyerTableBody",     4, e.message);
     setError("updateAppTableBody", 5, e.message);
+    setError("expiryTableBody",    7, e.message);
     setError("expTableBody",       6, e.message);
     setError("payTableBody",       6, e.message);
   }
@@ -287,6 +261,173 @@ async function doRejectApp() {
     loadDashboard();
   } catch (e) {
     alert("却下に失敗しました: " + e.message);
+  }
+}
+
+// =============================================================
+// ★ 改定８追加
+// ② フライヤー各種期限前/期限切れ
+// =============================================================
+
+// 設定APIから送信元メールアドレスを取得（キャッシュ）
+let _fromEmailCache = null;
+async function _getFromEmails() {
+  if (_fromEmailCache) return _fromEmailCache;
+  try {
+    const res = await fetch("/config/api/masters");
+    const masters = await res.json();
+    const master = masters.find(m => m.item_name === "送信元メール");
+    if (!master) return [];
+    const vres = await fetch("/config/api/values/" + master.id);
+    const vals = await vres.json();
+    _fromEmailCache = vals.filter(v => v.is_active).map(v => ({
+      value: v.value,
+      label: v.label || v.value,
+    }));
+    return _fromEmailCache;
+  } catch { return []; }
+}
+
+function renderExpiryAlerts(data) {
+  const badge = document.getElementById("expiryCount");
+  const tbody = document.getElementById("expiryTableBody");
+
+  badge.textContent = data.total;
+  badge.classList.toggle("zero", data.total === 0);
+
+  if (!data.items || data.items.length === 0) {
+    tbody.innerHTML =
+      `<tr><td colspan="7" class="empty-row">期限切れ・期限前の項目はありません</td></tr>`;
+    return;
+  }
+
+  const statusStyle = {
+    expired: "background:#d63031; color:#fff;",
+    soon:    "background:#e17055; color:#fff;",
+  };
+  const statusLabel = {
+    expired: "期限切れ",
+    soon:    "期限前",
+  };
+
+  tbody.innerHTML = data.items.map(row => {
+    const sstyle = statusStyle[row.status] || "background:#636e72; color:#fff;";
+    const slabel = statusLabel[row.status] || row.status;
+    // 期限日フォーマット
+    const expStr = row.exp_date
+      ? row.exp_date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1/$2/$3")
+      : "—";
+    // 分類（コースは item_type、その他は item_type そのまま）
+    const typeLabelMap = {
+      "年会員":   "年会員",
+      "スクール": "スクール",
+      "冬季会員": "冬季会員",
+      "reglimit": "—",
+      "repack":   "—",
+    };
+    const typeDisp = typeLabelMap[row.item_type] ?? row.item_type ?? "—";
+    const license  = esc(row.license || "—");
+    const memberId = row.member_id;
+
+    return `
+    <tr>
+      <td>${esc(row.label || row.item)}</td>
+      <td>
+        <span style="display:inline-block; padding:2px 8px; border-radius:4px;
+          font-size:12px; font-weight:600; ${sstyle}">${slabel}</span>
+      </td>
+      <td>${expStr}</td>
+      <td>${typeDisp}</td>
+      <td>
+        <a href="/apply_info?id=${memberId}" style="color:#2563eb; text-decoration:none; font-weight:500;">
+          ${esc(row.full_name)}
+        </a>
+      </td>
+      <td>${license}</td>
+      <td>
+        <button
+          onclick="openExpiryMailModal(${memberId}, '${esc(row.full_name)}', '${esc(row.email || '')}', '${esc(row.label || row.item)}', '${expStr}')"
+          style="padding:4px 10px; background:#2563eb; color:#fff; border:none;
+            border-radius:4px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;">
+          案内
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+// =============================================================
+// 期限アラート 案内メールモーダル
+// =============================================================
+async function openExpiryMailModal(memberId, fullName, email, itemLabel, expStr) {
+  document.getElementById("expiryMailMemberId").value = memberId;
+  document.getElementById("expiryMailTo").value       = email || "";
+
+  // 送信元セレクト構築
+  const fromSel = document.getElementById("expiryMailFrom");
+  fromSel.innerHTML = "";
+  const fromEmails = await _getFromEmails();
+  if (fromEmails.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = ""; opt.textContent = "（設定なし）";
+    fromSel.appendChild(opt);
+  } else {
+    fromEmails.forEach(f => {
+      const opt = document.createElement("option");
+      opt.value = f.value;
+      opt.textContent = f.label !== f.value ? `${f.label}（${f.value}）` : f.value;
+      fromSel.appendChild(opt);
+    });
+  }
+
+  // 件名・本文の初期値
+  document.getElementById("expiryMailSubject").value =
+    `【Mt.FUJI PARAGLIDING】${itemLabel}のご案内`;
+  document.getElementById("expiryMailBody").value =
+    `${fullName} 様\n\n` +
+    `いつもMt.FUJI PARAGLIDINGをご利用いただきありがとうございます。\n\n` +
+    `${itemLabel}（期限：${expStr}）についてお知らせします。\n\n` +
+    `お手続きのご確認をお願いいたします。\n\n` +
+    `Mt.FUJI PARAGLIDING スタッフ`;
+
+  document.getElementById("expiryMailModal").style.display = "flex";
+}
+
+function closeExpiryMailModal() {
+  document.getElementById("expiryMailModal").style.display = "none";
+}
+
+async function doSendExpiryMail() {
+  const memberId  = document.getElementById("expiryMailMemberId").value;
+  const fromEmail = document.getElementById("expiryMailFrom").value.trim();
+  const toEmail   = document.getElementById("expiryMailTo").value.trim();
+  const subject   = document.getElementById("expiryMailSubject").value.trim();
+  const body      = document.getElementById("expiryMailBody").value.trim();
+
+  if (!fromEmail || !toEmail || !subject) {
+    alert("送信元・送信先・件名は必須です");
+    return;
+  }
+
+  const sendBtn = document.getElementById("expiryMailSendBtn");
+  sendBtn.disabled    = true;
+  sendBtn.textContent = "送信中...";
+
+  try {
+    const res = await fetch(`/api/staff/send_expiry_alert/${memberId}`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ from_email: fromEmail, to_email: toEmail, subject, body }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "送信失敗");
+    closeExpiryMailModal();
+    alert(data.message || "案内メールを送信しました");
+  } catch (e) {
+    alert("送信に失敗しました: " + e.message);
+  } finally {
+    sendBtn.disabled    = false;
+    sendBtn.textContent = "📨 送信する";
   }
 }
 

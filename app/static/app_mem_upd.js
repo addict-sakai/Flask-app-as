@@ -1,15 +1,19 @@
 /**
- * app_mem_upd.js  会員情報更新  改定９版（2026-03-25）
+ * app_mem_upd.js  会員情報更新  改定１０版（2026/03/31）
  *
- * 改定９変更点:
+ * 改定１０変更点:
+ *   1. ビジターへの変更は確認不要で即時登録（visitor_instant フラグ対応）
+ *      - サーバーから visitor_instant:true が返ったらフォームをリロード
+ *   2. ビジター→ビジターへの変更はサーバー側で却下
+ *      - 400 レスポンスのエラーメッセージをトーストで表示
+ *   3. 冬季会員コースの「コース内容」に「冬季継続」を追加
+ *      - config_masterの「冬季継続料金」から料金を取得して表示
+ *      - 冬季継続の開始日は5/1〜11/30のみ選択可能（範囲外は非表示）
+ *
+ * 改定９変更点（維持）:
  *   1. コース変更申請中の挙動を制御
- *      - 申請中はコース変更フィールドの変更を無効（UIは会員更新.html側で制御済み）
- *      - 申請中でも「基本情報」「フライヤー情報」「連絡先」「緊急連絡先」「傷病履歴」
- *        の情報変更はスタッフ確認なしで即時登録可能
- *      - 申請中にコース変更を含む申請を行おうとした場合はエラートーストを表示
  *   2. _pendingCourseApp 状態変数でコース変更申請中を管理
  *
- * 改定８変更点（維持）:
  *   1. 使用機体（glider_name）を必須項目に追加
  *   2. 申請可能条件:「基本情報」「フライヤー情報」「連絡先」「緊急連絡先」
  *      「傷病履歴」のいずれか1項目以上に変更があれば申請ボタンを有効化
@@ -826,6 +830,16 @@ async function _sendChanges(courseChanges, infoChanges) {
         const el = getFieldEl(key);
         if (el) el.classList.remove("changed");
       });
+    }
+
+    // ★ 改定１０：ビジター即時変更（フォームリロード）
+    if (result.visitor_instant) {
+      setTimeout(async () => {
+        if (currentMemberId) {
+          await loadFormById(currentMemberId);
+        }
+      }, 800);
+      return;
     }
 
     if (result.course_applied) {

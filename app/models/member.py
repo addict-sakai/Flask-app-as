@@ -3,6 +3,8 @@ app/models/member.py
 members テーブル SQLAlchemy モデル
 DB構成V5 対応（2026-03-23）
 
+改定８（2026-03-31）: is_leader / instructor_role カラム追加
+
 members テーブルは個人の基本情報・ステータスのみを保持する。
 連絡先    → member_contacts
 フライヤー → member_flyers
@@ -61,6 +63,8 @@ class Member(db.Model):
 
     confirmed_at      = db.Column(db.Date)                                        # 入金確認日（開始日）
     contract          = db.Column(db.Boolean, nullable=False, default=False)      # 請負判定
+    is_leader         = db.Column(db.Boolean, nullable=False, default=False)      # 引率者フラグ
+    instructor_role   = db.Column(db.Text)                                        # 教員区分（一般/教員/助教員）
     payment_confirmed = db.Column(db.Boolean, nullable=False, default=False)      # 入金確認フラグ
     from_experience   = db.Column(db.Boolean, nullable=False, default=False)      # 体験から入校
     exp_resv_no       = db.Column(db.String(20))                                  # 体験予約番号

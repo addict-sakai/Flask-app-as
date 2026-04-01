@@ -1,195 +1,320 @@
 <!DOCTYPE html>
-<html lang="ja">
+<!-- 改定1 2026/04/01 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experience Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_app.css') }}">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
 
-  <head>
-    <meta charset="UTF-8" />
-    <title>Experience flight application</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_e.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
-    <!-- flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-  </head>
+<body data-apply-mode="exp_e">
 
-  <body>
-    <!-- 言語切替バー -->
-    <div class="lang-bar no-print">
-      <div class="lang-switch">
-        <button class="lang-btn" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
-        <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
+<!-- ══════════════════════════════════════
+     Screen UI (hidden when printing)
+══════════════════════════════════════ -->
+<div class="screen-ui no-print">
+
+  <!-- Fixed Header -->
+  <div class="fixed-header">
+    <div class="page-header">
+
+      <!-- Left: Language switcher dropdown -->
+      <div class="page-header-left">
+        <div class="lang-dropdown-wrap">
+          <button type="button" class="lang-dropdown-btn" id="langDropdownBtn">
+            <span class="lang-icon">🌐</span>
+            <span id="langDropdownLabel">English</span>
+            <span class="lang-caret">▾</span>
+          </button>
+          <ul class="lang-dropdown-menu" id="langDropdownMenu">
+            <li class="lang-dropdown-item" data-lang="ja">🇯🇵 日本語</li>
+            <li class="lang-dropdown-item lang-dropdown-item--active" data-lang="en">🇬🇧 English</li>
+          </ul>
+        </div>
       </div>
-      <div class="action-btns">
-        <button type="button" id="submitBtn" class="submit-btn">Submit</button>
-        <button type="button" id="exitBtn" class="exit-btn">Cancel</button>
-        <button class="print-btn" onclick="window.print()">🖨 Print</button>
+
+      <!-- Center: Title -->
+      <h1 class="page-title">Experience Application</h1>
+
+      <!-- Right: Hamburger menu -->
+      <div class="page-header-right">
+        <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="hamburger-menu" id="hamburgerMenu">
+          <button type="button" class="hmenu-item hmenu-item--primary" id="submitBtn">✔ Submit</button>
+          <button type="button" class="hmenu-item hmenu-item--danger"   id="cancelBtn">✖ Cancel</button>
+          <button type="button" class="hmenu-item" id="printBtn">🖨 Print</button>
+        </div>
       </div>
+
     </div>
+  </div>
 
+  <!-- Scroll area -->
+  <div class="scroll-area">
     <form id="entryForm">
-      <div class="sheet">
-        <h1>Experience flight application</h1>
-        <table>
-          <th>Application date</th>
-          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
-        </table>
 
-        <table>
-          <tr>
-            <th>Name</th>
-            <td><input type="text" id="fullName" name="full_name" class="ime-latin" inputmode="latin"></td>
-            <th>Weight（kg）</th>
-            <td><input type="text" id="weight" name="weight" class="ime-latin" inputmode="decimal"></td>
-          </tr>
-          <tr>
-            <th>Gender</th>
-            <td>
-              <select name="gender">
-                <option value="" selected>-- please select --</option>
-                <option value="man">man</option>
-                <option value="woman">woman</option>
-              </select>
-            </td>
-            <th>Blood type</th>
-            <td>
-              <select name="blood_type">
-                <option value="" selected>-- please select --</option>
-                <option value="A">Ａ</option>
-                <option value="B">Ｂ</option>
-                <option value="O">Ｏ</option>
-                <option value="AB">ＡＢ</option>
-                <option value="unkown">Unkown</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th>Birthday</th>
-            <td><input type="text" class="js-date" id="birthday" name="birthday" inputmode="latin"></td>
-            <th>age</th>
-            <td><input type="text" id="age" class="ime-latin" inputmode="numeric" readonly></td>
-          </tr>
-          <tr>
-            <th>Post code</th>
-            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
-                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
-            <th>country</th>
-            <td><input type="text" name="furigana" class="ime-latin" inputmode="latin"></td>
-          </tr>
-          <tr>
-            <th>Address</th>
-            <td colspan="3"><input type="text" id="address" name="address" class="ime-latin" inputmode="latin"></td>
-          </tr>
-          <tr>
-            <th>mobile</th>
-            <td><input type="text" name="mobile_phone" class="ime-latin" inputmode="tel"></td>
-            <th>tel</th>
-            <td><input type="text" name="home_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>The Office</th>
-            <td><input type="text" name="company_name" class="ime-latin" inputmode="latin"></td>
-            <th>tel（office）</th>
-            <td><input type="text" name="company_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>Emergency Contact</th>
-            <td><input type="text" name="emergency_name" class="ime-latin" inputmode="latin"></td>
-            <th>tel（Emergency）</th>
-            <td><input type="text" name="emergency_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>Relationship to the person</th>
-            <td><input type="text" id="relationship" name="relationship" class="ime-latin" inputmode="latin"></td>
-            <th>e-mail</th>
-            <td><input type="text" id="email" name="email" class="ime-latin" inputmode="email"></td>
-          </tr>
-          <tr>
-            <th>Injury and illness history</th>
-            <td colspan="3"><textarea name="medical_history" class="ime-latin" inputmode="latin" placeholder="（Please inform us in advance if you have any medical conditions, such as a history of dislocation, a tendency for fractures, or recent fractures (within the past few weeks.)"></textarea></td>
-          </tr>
-        </table>
+      <!-- ── Personal Information ── -->
+      <div class="form-section">
+        <h2 class="section-title">Personal Information</h2>
+        <div class="form-grid">
 
-        <table>
-          <colgroup>
-            <col style="width:25%">
-            <col style="width:25%">
-            <col style="width:25%">
-            <col style="width:25%">
-          </colgroup>
+          <div class="field-group">
+            <label class="field-label required">Application Date</label>
+            <input type="text" class="field-input js-date" id="application_date" name="application_date">
+          </div>
 
-          <tr>
-            <th colspan="2">★ Which course will you be attending today ?<br>　　　【Please choose one of the courses listed below.】</th>
-            <td colspan="2">
-              <select name="course_exp">
-                <option value="" selected>-- please select --</option>
-                <option value="1">① Ｅｘｐｅｒｉｅｎ（Half day ¥10,000）</option>
-                <option value="2">② Ｔａｎｄｅｍ　flight（¥15,000）</option>
-                <option value="3">③ Ｅｘｐｅｒｉｅｎ flight ＋ Ｔａｎｄｅｍ　flight（¥23,000）</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th colspan="4">　①Ｅｘｐｅｒｉｅｎ：【 With the support of an instructor, you will enjoy a floating experience from a 22-meter hill.】<br>
-            　②Ｔａｎｄｅｍ flight ：【 You will experience high-altitude flight in tandem with a pilot.】<br>
-          　③Ｅｘｐｅｒｉｅｎ flight ＋ Ｔａｎｄｅｍ　flight：【 This package includes both ① and ②.】</th>
-          </tr>
-          <tr>
-            <th colspan="2">★ How did you hear about our school?</th>
-            <td colspan="2">
-              <select name="school_find">
-                <option value="" selected>-- please select --</option>
-                <option value="1">① advertising</option>
-                <option value="2">② Referral from an acquaintance</option>
-                <option value="3">③ Word of mouth</option>
-                <option value="4">④ After seeing people paragliding.</option>
-                <option value="5">⑤ Online search</option>
-                <option value="6">⑥ Other</option>
-              </select>
-            </td>
-          </tr>
-        </table>
+          <div class="field-group">
+            <label class="field-label required">Full Name</label>
+            <input type="text" class="field-input" id="fullName" name="full_name"
+                   placeholder="e.g. Fuji Taro">
+          </div>
 
-        <p class="note">　　※ The price of each course includes a ¥1,000 safety management fee.</p>
+          <div class="field-group">
+            <label class="field-label">Phonetic (Furigana)</label>
+            <input type="text" class="field-input" id="furigana" name="furigana"
+                   placeholder="Auto-filled">
+          </div>
 
-        <div class="rules">
-          <h3>　※ Important Notes for Participants</h3>
-          　　　As this is an outdoor activity, it may have to be canceled due to adverse weather conditions.<br>
-          　　　If this occurs, we will issue a reflight voucher. Please note that a ¥1,000 safety management fee will apply on your next visit.<br>
-          　　　Please note that we do not offer cash refunds under any circumstances.<br>
+          <div class="field-group">
+            <label class="field-label">Gender</label>
+            <select class="field-input" name="gender">
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Blood Type</label>
+            <select class="field-input" name="blood_type">
+              <option value="">Select</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="O">O</option>
+              <option value="AB">AB</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">Date of Birth</label>
+            <input type="text" class="field-input js-date" id="birthday" name="birthday">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Age</label>
+            <input type="text" class="field-input" id="age" name="age" readonly>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Weight (kg)</label>
+            <input type="text" class="field-input" id="weight" name="weight" inputmode="decimal">
+          </div>
+
         </div>
+      </div>
 
-        <div class="agreement">
-          <strong>Waiver and Release of Liability</strong><br>
-          To: THP Holdings Co., Ltd.<br>
-          Mt. FUJI PARAGLIDING<br><br>
-          I, <span id="agreeName" class="handwrite">　　　　　　　　　　　　</span>, acknowledge and fully understand the risks associated with paragliding activities. 
-          I agree to comply with all established rules and regulations.<br>
-          While participating in activities within the flight area operated by THP Holdings Co., Ltd., 
-          I accept full responsibility for any and all injuries, damages, or losses that may occur to me, whether foreseeable or unforeseeable.
-          I agree that any compensation for injuries or damages incurred shall be limited to the coverage provided by applicable insurance policies. 
-          Neither I nor my family members or related parties shall pursue any further claims, demands, or legal actions against the school, 
-          its owners, instructors, staff members, or affiliates.<br>
-          Furthermore, in accordance with the area membership regulations, if I violate any rules or cause disadvantage or harm to THP Holdings Co., Ltd., 
-          I understand and accept that my membership may be revoked or terminated. In such cases, I shall not file objections, claims for damages, or any similar actions.<br><br>
-          <table>
-            <tr>
-              <th>Date:</th>
-              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date" inputmode="latin"></td>
-              <th>Signature:</th>
-              <td><input type="text" name="signature_name" class="ime-latin" inputmode="latin"></td>
-            </tr>
-            <tr>
-              <th>Parent/Guardian Name (Under 20)</th>
-              <td colspan="3"><input type="text" name="guardian_name" class="ime-latin" inputmode="latin"></td>
-              <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
-            </tr>
-          </table>
+      <!-- ── Contact Information ── -->
+      <div class="form-section">
+        <h2 class="section-title">Contact Information</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label required">Mobile Phone</label>
+            <input type="tel" class="field-input" name="mobile_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">E-mail</label>
+            <input type="email" class="field-input" id="email" name="email" inputmode="email">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Country of Residence</label>
+            <input type="text" class="field-input" name="country" placeholder="e.g. Japan">
+          </div>
+
+          <div class="field-group span-3">
+            <label class="field-label">Address</label>
+            <input type="text" class="field-input" id="address" name="address">
+          </div>
+
         </div>
+      </div>
+
+      <!-- ── Emergency Contact ── -->
+      <div class="form-section">
+        <h2 class="section-title">Emergency Contact</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label required">Name</label>
+            <input type="text" class="field-input" name="emergency_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">Phone Number</label>
+            <input type="tel" class="field-input" name="emergency_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Relationship</label>
+            <input type="text" class="field-input" name="relationship" placeholder="e.g. Spouse">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Course Selection ── -->
+      <div class="form-section">
+        <h2 class="section-title">Course Selection</h2>
+        <div class="form-grid">
+
+          <div class="field-group span-3">
+            <label class="field-label required">Course</label>
+            <select class="field-input" name="course_exp" id="courseExpSelect">
+              <option value="">-- Please select --</option>
+            </select>
+          </div>
+
+          <div class="field-group span-3">
+            <label class="field-label">How did you find us?</label>
+            <select class="field-input" name="school_find">
+              <option value="">Select</option>
+              <option value="Website">Website</option>
+              <option value="Jalan">Jalan</option>
+              <option value="Asoview">Asoview</option>
+              <option value="SNS">SNS</option>
+              <option value="Referral">Referral</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Participation Agreement ── -->
+      <div class="form-section">
+        <h2 class="section-title">Participation Agreement</h2>
+        <div class="pledge-box">
+          <p class="pledge-text">
+            I, <strong id="agreeName" class="agree-name">　　　　　　　　　</strong>, fully understand the risks associated with paragliding experience flights and agree to follow all instructions from the staff.
+            I hereby waive any claims against the school and its staff for any injuries or damages sustained during the experience, beyond the scope of personal accident insurance.
+          </p>
+          <div class="form-grid" style="margin-top:20px;">
+            <div class="field-group">
+              <label class="field-label required">Confirmation Date</label>
+              <input type="text" class="field-input" id="agreement_date" name="agreement_date"
+                     readonly style="background:var(--surface-alt, #f5f5f5); color:var(--text-secondary,#555); cursor:not-allowed;">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">Signature</label>
+              <input type="text" class="field-input" name="signature_name" placeholder="Please sign here">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Guardian Name (Under 18)</label>
+              <input type="text" class="field-input" name="guardian_name">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="lang" value="en">
 
     </form>
+  </div>
+</div><!-- /screen-ui -->
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-    <script src="{{ url_for('static', filename='app_exp_e.js') }}"></script>
-  </body>
+
+<!-- ══════════════════════════════════════
+     Print Layout (hidden on screen)
+══════════════════════════════════════ -->
+<div class="print-sheet print-only">
+  <h1>Experience Application</h1>
+
+  <table class="pt">
+    <tr>
+      <th>Application Date</th>
+      <td colspan="3"><span id="p_application_date"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th>Full Name</th><td><span id="p_full_name"></span></td>
+      <th>Phonetic</th><td><span id="p_furigana"></span></td>
+    </tr>
+    <tr>
+      <th>Gender</th><td><span id="p_gender"></span></td>
+      <th>Blood Type</th><td><span id="p_blood_type"></span></td>
+    </tr>
+    <tr>
+      <th>Date of Birth</th><td><span id="p_birthday"></span></td>
+      <th>Age</th><td><span id="p_age"></span></td>
+    </tr>
+    <tr>
+      <th>Weight (kg)</th><td><span id="p_weight"></span></td>
+      <th></th><td></td>
+    </tr>
+    <tr>
+      <th>Mobile Phone</th><td><span id="p_mobile_phone"></span></td>
+      <th>E-mail</th><td><span id="p_email"></span></td>
+    </tr>
+    <tr>
+      <th>Country</th><td><span id="p_country"></span></td>
+      <th></th><td></td>
+    </tr>
+    <tr>
+      <th>Address</th><td colspan="3"><span id="p_address"></span></td>
+    </tr>
+    <tr>
+      <th>Emergency Contact</th><td><span id="p_emergency_name"></span></td>
+      <th>Phone (Emergency)</th><td><span id="p_emergency_phone"></span></td>
+    </tr>
+    <tr>
+      <th>Relationship</th><td><span id="p_relationship"></span></td>
+      <th></th><td></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th class="pt-section-head" colspan="4">Course</th>
+    </tr>
+    <tr>
+      <th>Course</th><td><span id="p_course_exp"></span></td>
+      <th>How did you find us</th><td><span id="p_school_find"></span></td>
+    </tr>
+  </table>
+
+  <div class="pt-agreement">
+    <strong>Participation Agreement</strong><br>
+    I, <span id="p_agree_name" class="pt-handwrite">　　　　　　　</span>, fully understand the risks associated with paragliding experience flights and agree to follow all instructions from the staff.
+    I hereby waive any claims against the school and its staff for any injuries or damages sustained during the experience, beyond the scope of personal accident insurance.
+    <table class="pt" style="margin-top:6px;">
+      <tr>
+        <th>Confirmation Date</th><td><span id="p_agreement_date"></span></td>
+        <th>Signature</th><td><span id="p_signature_name"></span></td>
+      </tr>
+      <tr>
+        <th>Guardian Name (Under 18)</th><td colspan="3"><span id="p_guardian_name"></span></td>
+      </tr>
+    </table>
+  </div>
+</div><!-- /print-sheet -->
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='app_exp_app.js') }}"></script>
+</body>
 </html>

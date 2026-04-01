@@ -1,5 +1,7 @@
 /* ================================================
    app_info.js  会員管理
+   改定８（2026-03-31）: is_leader / instructor_role フィールド対応
+   改定９（2026-04-01）: QRカード一括作成ビュー追加・カードデザイン改修
    ================================================ */
 "use strict";
 
@@ -159,6 +161,7 @@ function initHamburgerMenu() {
   const hmDelete     = $("hmDelete");
   const hmQrCard     = $("hmQrCard");
   const hmSendInfo   = $("hmSendInfo");
+  const hmQrBulk     = $("hmQrBulk");
 
   if (hmBackToList) hmBackToList.addEventListener("click", () => {
     closeMenu(); clearForm(); showView("view-list");
@@ -178,6 +181,9 @@ function initHamburgerMenu() {
   if (hmSendInfo) hmSendInfo.addEventListener("click", () => {
     closeMenu();
     sendInfoMail();
+  });
+  if (hmQrBulk) hmQrBulk.addEventListener("click", () => {
+    closeMenu(); openQrBulkView();
   });
 }
 
@@ -325,6 +331,8 @@ function clearForm() {
     else el.value = "";
   });
   $("f_contract").checked = false;
+  if ($("f_is_leader")) $("f_is_leader").checked = false;
+  if ($("f_instructor_role")) $("f_instructor_role").value = "";
   // 新規申請・コース変更リセット
   if ($("f_payment_confirmed_new"))    $("f_payment_confirmed_new").checked = false;
   if ($("f_payment_confirmed_course")) $("f_payment_confirmed_course").checked = false;
@@ -406,6 +414,9 @@ async function openEdit(id) {
 
     // チェックボックス
     $("f_contract").checked = !!m.contract;
+    if ($("f_is_leader"))      $("f_is_leader").checked      = !!m.is_leader;
+    if ($("f_instructor_role") && m.instructor_role != null)
+      $("f_instructor_role").value = m.instructor_role;
 
     // 月フィールド
     if (m.repack_date) $("f_repack_date").value = String(m.repack_date).slice(0,7);
@@ -606,7 +617,9 @@ async function saveMember() {
     : null;
 
   payload.reg_no   = $("f_reg_no").value || null;
-  payload.contract = $("f_contract").checked ? 1 : 0;
+  payload.contract        = $("f_contract").checked ? 1 : 0;
+  payload.is_leader       = ($("f_is_leader") && $("f_is_leader").checked) ? 1 : 0;
+  payload.instructor_role = ($("f_instructor_role") ? $("f_instructor_role").value : "") || null;
   payload.birthday      = $("f_birthday").value || null;
   payload.reglimit_date = $("f_reglimit_date").value || null;
 
@@ -816,6 +829,16 @@ async function openQrCard() {
   $("qrModalOverlay").classList.add("active");
 }
 
+/** 名前の文字数に応じてフォントサイズクラスを返す */
+function _nameLenClass(name) {
+  const len = (name || "").replace(/\s/g, "").length;
+  if (len >= 13) return "name-xxl";
+  if (len >= 10) return "name-xl";
+  if (len >= 8)  return "name-lg";
+  if (len >= 6)  return "name-md";
+  return "";
+}
+
 /** カードDOMを生成してコンテナIDの中に挿入し、QRコードを描画する
  *  @param {string} containerId - 挿入先要素のID
  *  @param {string} qrUrl       - QRに埋め込むURL
@@ -826,22 +849,29 @@ function _buildAndRenderCard(containerId, qrUrl, qrElId) {
   if (!container) return;
   container.innerHTML = "";
 
-  const fullName = ($("f_full_name") ? $("f_full_name").value : "") || "—";
-  const regNo    = ($("f_reg_no")    ? $("f_reg_no").value    : "") || "—";
-  const uid      = qrElId || ("qrc-" + containerId);
+  const fullName   = ($("f_full_name")   ? $("f_full_name").value   : "") || "—";
+  const memberType = ($("f_member_type") ? $("f_member_type").value : "") || "";
+  const license    = ($("f_license")     ? $("f_license").value     : "") || "";
+  const rawRegNo   = ($("f_reg_no")      ? $("f_reg_no").value      : "") || "";
+
+  // 分類=スクール かつ 技能証=未選択 → フライヤー登録番号欄に「Aコース」と表示
+  const regNo    = (memberType === "スクール" && !license) ? "Aコース" : (rawRegNo || "—");
+  const nameClass = _nameLenClass(fullName);
+
+  const uid  = qrElId || ("qrc-" + containerId);
 
   const card = document.createElement("div");
   card.className = "qr-card";
   card.innerHTML = `
     <div class="qr-card-left">
-      <div class="qr-card-name">${fullName}</div>
+      <div class="qr-card-name${nameClass ? ' ' + nameClass : ''}">${fullName}</div>
       <div class="qr-card-reg-label">フライヤー登録番号</div>
       <div class="qr-card-reg-value">${regNo}</div>
     </div>
     <div class="qr-card-right">
       <div class="qr-card-qr-wrap" id="${uid}"></div>
-      <div class="qr-card-brand">Mt.FUJI PARAGLIDING</div>
     </div>
+    <div class="qr-card-brand">Mt.FUJI PARAGLIDING</div>
   `;
   container.appendChild(card);
 
@@ -860,7 +890,7 @@ function _buildAndRenderCard(containerId, qrUrl, qrElId) {
   }, 80);
 }
 
-/** 印刷ボタン処理 */
+/** 印刷ボタン処理（単票） */
 function printQrCard() {
   if (!_currentMemberUuid) return;
   const qrUrl = `${location.origin}/api/members/by-uuid/${_currentMemberUuid}`;
@@ -870,9 +900,10 @@ function printQrCard() {
 
   // QRコード描画完了を待ってから印刷
   setTimeout(() => {
+    document.body.classList.add("print-single");
     window.print();
-    // 印刷後にエリアをクリア
     setTimeout(() => {
+      document.body.classList.remove("print-single");
       const pa = $("qrPrintArea");
       if (pa) pa.innerHTML = "";
     }, 1000);
@@ -880,9 +911,154 @@ function printQrCard() {
 }
 
 /* ================================================
+   QRカード一括作成ビュー
+   ================================================ */
+
+/** QRカード一括作成ビューを開く（currentMembersを再利用） */
+function openQrBulkView() {
+  renderQrBulkList(currentMembers);
+  showView("view-qr-list");
+}
+
+/** 一括QRリストを描画 */
+function renderQrBulkList(members) {
+  const tbody = $("qrMemberTableBody");
+  if (!members.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">データがありません</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = members.map(m => {
+    const key      = typeToKey(m.member_type);
+    const badgeCls = key ? `badge badge-${key}` : "badge";
+    const hasApp   = m.member_status === "pending"         ? "✓" : "—";
+    const hasUpd   = m.member_status === "renewal_waiting" ? "✓" : "—";
+    // フライヤー登録番号：スクールかつ技能証なし → "Aコース"
+    const regNo    = (m.member_type === "スクール" && !m.license)
+                       ? "Aコース" : (m.reg_no || "—");
+    return `
+    <tr>
+      <td class="qr-chk-col">
+        ${m.uuid ? `<input type="checkbox" class="qr-member-chk"
+          data-name="${m.full_name || ''}"
+          data-uuid="${m.uuid}"
+          data-reg-no="${regNo}">` : '—'}
+      </td>
+      <td>${m.full_name || "—"}</td>
+      <td><span class="${badgeCls}">${m.member_type || "—"}</span></td>
+      <td class="qr-status-col">${hasApp}</td>
+      <td class="qr-status-col">${hasUpd}</td>
+    </tr>`;
+  }).join("");
+
+  // 全選択チェックボックス
+  const chkAll = $("qrCheckAll");
+  if (chkAll) {
+    chkAll.checked = false;
+    chkAll.addEventListener("change", e => {
+      document.querySelectorAll(".qr-member-chk").forEach(c => { c.checked = e.target.checked; });
+    });
+  }
+}
+
+/** 選択した会員のQRカードをA4（2列4行）で一括印刷 */
+async function printBulkQrCards() {
+  const checked = [...document.querySelectorAll(".qr-member-chk:checked")];
+  if (!checked.length) {
+    showToast("印刷する会員を1名以上選択してください", "error");
+    return;
+  }
+
+  const bulkArea = $("qrBulkPrintArea");
+  bulkArea.innerHTML = "";
+
+  // A4シート（8枠）をページ単位で作成
+  const perPage = 8;
+  const pages = Math.ceil(checked.length / perPage);
+
+  const qrJobs = []; // { el, url } を収集してまとめてQR描画
+
+  for (let p = 0; p < pages; p++) {
+    const sheet = document.createElement("div");
+    sheet.className = "qr-bulk-sheet";
+
+    const slice = checked.slice(p * perPage, (p + 1) * perPage);
+    // 8枠に満たない場合は空枠で埋める
+    for (let i = 0; i < perPage; i++) {
+      const cell = document.createElement("div");
+      cell.className = "qr-bulk-cell";
+
+      if (i < slice.length) {
+        const chk       = slice[i];
+        const uuid      = chk.dataset.uuid;
+        const name      = chk.dataset.name  || "—";
+        const regNo     = chk.dataset.regNo || "—";
+        const nameClass = _nameLenClass(name);
+        const qrUrl     = `${location.origin}/api/members/by-uuid/${uuid}`;
+        const qrId      = `qrb-${p}-${i}`;
+
+        cell.innerHTML = `
+          <div class="qr-card">
+            <div class="qr-card-left">
+              <div class="qr-card-name${nameClass ? ' ' + nameClass : ''}">${name}</div>
+              <div class="qr-card-reg-label">フライヤー登録番号</div>
+              <div class="qr-card-reg-value">${regNo}</div>
+            </div>
+            <div class="qr-card-right">
+              <div class="qr-card-qr-wrap" id="${qrId}"></div>
+            </div>
+            <div class="qr-card-brand">Mt.FUJI PARAGLIDING</div>
+          </div>`;
+        qrJobs.push({ id: qrId, url: qrUrl });
+      } else {
+        cell.innerHTML = `<div class="qr-bulk-empty"></div>`;
+      }
+      sheet.appendChild(cell);
+    }
+    bulkArea.appendChild(sheet);
+  }
+
+  // QRコードを一括描画し終わってから印刷
+  setTimeout(() => {
+    qrJobs.forEach(job => {
+      const el = document.getElementById(job.id);
+      if (!el || typeof QRCode === "undefined") return;
+      new QRCode(el, {
+        text:         job.url,
+        width:        154,
+        height:       154,
+        colorDark:    "#000000",
+        colorLight:   "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    });
+
+    // QRコード描画完了を待って印刷
+    setTimeout(() => {
+      document.body.classList.add("print-bulk");
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("print-bulk");
+        bulkArea.innerHTML = "";
+      }, 1500);
+    }, 600);
+  }, 80);
+}
+
+/* ================================================
    必須バリデーション（12項目）
    ================================================ */
 function validateRequired() {
+  // Aコース「入金済み」チェックが入っているかどうかを判定
+  // 新規申請セクションが表示中 かつ 入金確認チェック済み かつ コース名が「A」
+  const isNewAppVisible = $("newApplicationSection") && $("newApplicationSection").style.display !== "none";
+  const isPaymentConfirmed = isNewAppVisible && $("f_payment_confirmed_new") && $("f_payment_confirmed_new").checked;
+  const dispCourseName = $("disp_new_course_name") ? $("disp_new_course_name").textContent.trim() : "";
+  // course_name が "A" のとき = Aコース申請
+  const isACourse = isPaymentConfirmed && dispCourseName === "A";
+
+  const memberType = $("f_member_type") ? $("f_member_type").value : "";
+  const isOtherSchool = memberType === "他校スクール";
+
   const checks = [
     { id: "f_member_type",    label: "分類" },
     { id: "f_full_name",      label: "氏名" },
@@ -891,14 +1067,23 @@ function validateRequired() {
     { id: "f_mobile_phone",   label: "携帯番号" },
     { id: "f_emergency_name", label: "緊急連絡先氏名" },
     { id: "f_emergency_phone",label: "緊急連絡先電話番号" },
-    { id: "f_glider_name",    label: "使用機体" },
-    { id: "f_organization",   label: "所属団体" },
-    { id: "f_reg_no",         label: "フライヤー登録番号" },
-    { id: "f_reglimit_date",  label: "登録期限" },
-    { id: "f_license",        label: "技能証" },
+    // 他校スクールはホームエリア必須
+    ...(isOtherSchool ? [
+      { id: "f_home_area", label: "ホームエリア" },
+    ] : []),
+    // Aコース入金済み時はフライヤー項目をスキップ
+    ...(!isACourse ? [
+      { id: "f_glider_name",    label: "使用機体" },
+      { id: "f_organization",   label: "所属団体" },
+      { id: "f_reg_no",         label: "フライヤー登録番号" },
+      { id: "f_reglimit_date",  label: "登録期限" },
+      { id: "f_license",        label: "技能証" },
+    ] : []),
   ];
   // 登録番号は hidden に buildRegNo で反映済み
-  $("f_reg_no").value = buildRegNo($("f_organization").value) || "";
+  if (!isACourse) {
+    $("f_reg_no").value = buildRegNo($("f_organization").value) || "";
+  }
 
   const missing = checks
     .filter(c => { const el = $(c.id); return !el || !el.value.trim(); })
@@ -908,6 +1093,17 @@ function validateRequired() {
     showToast(`未入力の必須項目があります：${missing.join("、")}`, "error");
     return false;
   }
+
+  // 技能証が B / NP / P / XC の場合はリパック日も必須
+  const license = $("f_license") ? $("f_license").value : "";
+  if (["B", "NP", "P", "XC"].includes(license)) {
+    const repack = $("f_repack_date") ? $("f_repack_date").value : "";
+    if (!repack) {
+      showToast("技能証が B / NP / P / XC の場合、リパック日は必須です", "error");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -1112,9 +1308,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ?from=flyer        : フライヤー申請（未）から
   // ?from=update_app   : フライヤー更新・変更から
   // ?id=XX             : スタッフ管理画面から（一覧遷移）
+  // ?view=qr           : QRカード一括作成ビューを直接開く
   const params   = new URLSearchParams(location.search);
   const fromSrc  = params.get("from") || "";
   const openId   = params.get("id");
+  const viewParam = params.get("view");
 
   if (fromSrc === "flyer" || fromSrc === "update_app") {
     // fromSource に記録
@@ -1139,4 +1337,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ハンバーガーメニュー初期化
   initHamburgerMenu();
+
+  // QRカード一括作成ビュー
+  const qrCardBackPrintBtn = $("qrCardBackPrintBtn");
+  const qrBulkPrintBtn     = $("qrBulkPrintBtn");
+  if (qrCardBackPrintBtn) qrCardBackPrintBtn.addEventListener("click", () => window.open("/logo_back", "_blank"));
+  if (qrBulkPrintBtn)     qrBulkPrintBtn.addEventListener("click",     printBulkQrCards);
+
+  // ?view=qr で直接QRカード一括作成ビューへ遷移
+  if (viewParam === "qr") {
+    // fetchMembers完了後にビューを切り替える
+    fetchMembers().then(() => openQrBulkView());
+    return;
+  }
 })

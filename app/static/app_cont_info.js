@@ -159,7 +159,13 @@ async function loadFlightStatus() {
   _updateShowAllBtn();
 
   const tbody = $("flight-status-body");
+  const tfoot = $("flight-status-foot");
   tbody.innerHTML = `<tr class="loading-row"><td colspan="5">読み込み中…</td></tr>`;
+  if (tfoot) tfoot.innerHTML = "";
+
+  // 合計サブヘッダー行をクリア
+  const totalSubHead = $("flight-total-subhead");
+  if (totalSubHead) totalSubHead.innerHTML = "";
 
   try {
     const res  = await fetch(`/api/cont_info/flight_days?year=${y}&month=${m}`);
@@ -177,6 +183,29 @@ async function loadFlightStatus() {
       return;
     }
 
+    /* 合計計算 */
+    const totals = rows.reduce((acc, r) => {
+      acc.flight_days         += r.flight_days;
+      acc.total_flights       += r.total_flights;
+      acc.mini_guarantee_days += r.mini_guarantee_days;
+      acc.total_amount        += r.total_amount;
+      return acc;
+    }, { flight_days: 0, total_flights: 0, mini_guarantee_days: 0, total_amount: 0 });
+
+    /* 合計行をtheadの直下（subhead）に表示 */
+    if (totalSubHead) {
+      totalSubHead.innerHTML = `
+        <tr class="total-subhead-row">
+          <td class="col-name total-label">全員合計</td>
+          <td class="col-num center">${fmt(totals.flight_days)}</td>
+          <td class="col-num center">${fmt(totals.total_flights)}</td>
+          <td class="col-num center">${fmt(totals.mini_guarantee_days)}</td>
+          <td class="col-amount right amount">${yen(totals.total_amount)}</td>
+        </tr>
+      `;
+    }
+
+    /* 個人行 */
     tbody.innerHTML = rows.map(r => `
       <tr class="clickable-row"
           data-uuid="${r.uuid}"
@@ -191,28 +220,6 @@ async function loadFlightStatus() {
       </tr>
     `).join("");
 
-    /* 合計行 */
-    const totals = rows.reduce((acc, r) => {
-      acc.flight_days         += r.flight_days;
-      acc.total_flights       += r.total_flights;
-      acc.mini_guarantee_days += r.mini_guarantee_days;
-      acc.total_amount        += r.total_amount;
-      return acc;
-    }, { flight_days: 0, total_flights: 0, mini_guarantee_days: 0, total_amount: 0 });
-
-    const tfoot = $("flight-status-foot");
-    if (tfoot) {
-      tfoot.innerHTML = `
-        <tr class="total-row">
-          <td class="col-name"><strong>合計</strong></td>
-          <td class="col-num center"><strong>${fmt(totals.flight_days)}</strong></td>
-          <td class="col-num center"><strong>${fmt(totals.total_flights)}</strong></td>
-          <td class="col-num center"><strong>${fmt(totals.mini_guarantee_days)}</strong></td>
-          <td class="col-amount right amount"><strong>${yen(totals.total_amount)}</strong></td>
-        </tr>
-      `;
-    }
-
   } catch (e) {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="5">エラー: ${e.message}</td></tr>`;
   }
@@ -220,12 +227,14 @@ async function loadFlightStatus() {
 
 /* ---- rep 月ナビ ---- */
 function repMonthPrev() {
+  _closeInlineDetail();
   let { repYear: y, repMonth: m } = state;
   if (--m < 1) { m = 12; y--; }
   state.repYear = y; state.repMonth = m;
   loadFlightStatus();
 }
 function repMonthNext() {
+  _closeInlineDetail();
   let { repYear: y, repMonth: m } = state;
   if (++m > 12) { m = 1; y++; }
   state.repYear = y; state.repMonth = m;
@@ -243,15 +252,60 @@ function toggleShowAll() {
    詳細モーダル
    ========================================================= */
 
+/* ── インライン個人詳細パネル（フライト状況テーブル下に展開） ── */
+
+let _activeDetailUuid = null;  // 現在展開中のuuid
+
+/**
+ * フライト状況テーブルの行クリック → 合計行の下にインライン展開
+ */
 async function openDetail(el) {
   const uuid = el.dataset.uuid;
   const name = el.dataset.name;
   const { repYear: y, repMonth: m } = state;
 
-  $("modal-title-text").textContent  = `${name}  ${y}年${m}月 フライト詳細`;
-  $("modal-body-content").innerHTML  = `<p style="padding:28px 20px;color:var(--text-muted)">読み込み中…</p>`;
-  $("modal-summary").innerHTML       = "";
-  $("detail-modal").classList.add("open");
+  // 同じ人を再クリック → 閉じる
+  if (_activeDetailUuid === uuid) {
+    _closeInlineDetail();
+    return;
+  }
+
+  // 選択行のハイライト切替
+  document.querySelectorAll("#flight-status-body tr.clickable-row").forEach(r => {
+    r.classList.toggle("row-selected", r === el);
+  });
+
+  _activeDetailUuid = uuid;
+
+  // 既存パネルを削除して新規作成
+  _removeInlinePanel();
+
+  // 合計行（tfoot）の後に挿入するためのコンテナ行をtbodyに追加
+  const tbody = $("flight-status-body");
+  const tfoot = $("flight-status-foot");
+
+  // パネル行をtfootの直後に配置するため、tableの外にdivとして挿入する方法を使う
+  // → tfoot内の合計行の後に追加行を入れる
+  const panelRow = document.createElement("tr");
+  panelRow.id = "inline-detail-row";
+  panelRow.innerHTML = `
+    <td colspan="5" class="inline-detail-cell">
+      <div class="inline-detail-panel" id="inline-detail-panel">
+        <div class="inline-detail-header">
+          <span class="inline-detail-name">✈ ${name}　${y}年${m}月 フライト記録</span>
+          <button class="inline-detail-close" onclick="_closeInlineDetail()">✕ 閉じる</button>
+        </div>
+        <div id="inline-detail-body">
+          <p class="inline-loading">読み込み中…</p>
+        </div>
+      </div>
+    </td>`;
+
+  // tfoot の後ろに「詳細表示用tfoot」を追加
+  const detailTfoot = document.createElement("tfoot");
+  detailTfoot.id = "inline-detail-tfoot";
+  detailTfoot.appendChild(panelRow);
+  tfoot.parentNode.insertBefore(detailTfoot, tfoot.nextSibling);
 
   try {
     const res  = await fetch(`/api/cont_info/detail/${uuid}?year=${y}&month=${m}`);
@@ -260,50 +314,323 @@ async function openDetail(el) {
     const rows = json.data || [];
 
     if (rows.length === 0) {
-      $("modal-body-content").innerHTML =
-        `<p style="padding:28px 20px;color:var(--text-muted)">当月のデータがありません</p>`;
+      $("inline-detail-body").innerHTML =
+        `<p class="inline-empty">当月のフライトデータがありません</p>`;
       return;
     }
 
-    const totalFlights = rows.reduce((s, r) => s + r.daily_flight, 0);
-    const totalAmount  = rows.reduce((s, r) => s + r.total_amount,  0);
-
-    $("modal-body-content").innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>日付</th>
-            <th class="center">フライト本数</th>
-            <th class="right">金額</th>
-            <th class="center">最低保証</th>
-            <th>備考</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr>
-              <td>${r.flight_date}（${weekday(r.flight_date)}）</td>
-              <td class="center">${fmt(r.daily_flight)}</td>
-              <td class="right amount">${yen(r.total_amount)}</td>
-              <td class="center">${r.mini_guarantee
-                ? '<span class="status-ok" title="最低保証あり">○</span>'
-                : '—'}
-              </td>
-              <td style="color:var(--text-secondary)">${r.notes || '—'}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
-
-    $("modal-summary").innerHTML = `
-      <span>合計フライト：<strong>${fmt(totalFlights)} 本</strong></span>
-      <span>合計金額：<strong>${yen(totalAmount)}</strong></span>
-    `;
+    _renderInlineDetail(rows, uuid, y, m);
 
   } catch (e) {
-    $("modal-body-content").innerHTML =
-      `<p style="padding:28px 20px;color:var(--danger)">エラー: ${e.message}</p>`;
+    $("inline-detail-body").innerHTML =
+      `<p class="inline-error">エラー: ${e.message}</p>`;
+  }
+}
+
+/** インライン詳細パネルを描画 */
+function _renderInlineDetail(rows, uuid, y, m) {
+  const totalFlights = rows.reduce((s, r) => s + r.daily_flight, 0);
+  const totalAmount  = rows.reduce((s, r) => s + r.total_amount,  0);
+
+  // my_reportsを呼んで場所・引継ぎ情報を取得
+  fetch(`/api/cont/my_reports?uuid=${uuid}&year=${y}&month=${m}`)
+    .then(r => r.json())
+    .then(json2 => {
+      const days = json2.days || [];
+      const dayMap = {};
+      days.forEach(d => { dayMap[d.flight_date] = d; });
+
+      const tbody = rows.map((r, idx) => {
+        const dateLabel = `${r.flight_date}（${weekday(r.flight_date)}）`;
+        const guarantee = r.mini_guarantee
+          ? '<span class="tag-guarantee">最低保証</span>'
+          : '—';
+
+        // my_reports からその日の場所・引継ぎ情報を取得
+        const dayInfo = dayMap[r.flight_date] || {};
+        const locs = (dayInfo.locations || []).join("・") || '—';
+        const handover = dayInfo.has_handover
+          ? '<span class="tag-handover">あり</span>'
+          : '<span class="tag-none">なし</span>';
+
+        // 施設料控除の注記
+        const feeNote = r.facility_fee > 0
+          ? `<span class="fee-note">施設料 -${yen(r.facility_fee)}</span>`
+          : '';
+
+        return `
+          <tr class="idd-row">
+            <td class="idd-date">${dateLabel}</td>
+            <td class="idd-count center">${fmt(r.daily_flight)} 本</td>
+            <td class="idd-loc">${locs}</td>
+            <td class="idd-amount right amount">${yen(r.total_amount)}${feeNote}</td>
+            <td class="idd-guar center">${guarantee}</td>
+            <td class="idd-hand center">${handover}</td>
+            <td class="idd-btn center">
+              <button class="btn-detail-expand" onclick="toggleDayDetail('idd-sub-${idx}', this, '${r.flight_date}', '${uuid}')">
+                詳細
+              </button>
+            </td>
+          </tr>
+          <tr class="idd-sub-row hidden" id="idd-sub-${idx}">
+            <td colspan="7" class="idd-sub-cell">
+              <div class="idd-sub-inner" id="idd-sub-inner-${idx}">
+                <p class="inline-loading">読み込み中…</p>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+
+      const html = `
+        <div class="idd-table-wrap">
+          <table class="idd-table">
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th class="center">合計本数</th>
+                <th>場所</th>
+                <th class="right">合計金額</th>
+                <th class="center">最低保証</th>
+                <th class="center">引継ぎ</th>
+                <th class="center">詳細</th>
+              </tr>
+            </thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+        <div class="idd-summary">
+          <span>当月合計：<strong>${fmt(totalFlights)} 本</strong></span>
+          <span>合計金額：<strong>${yen(totalAmount)}</strong></span>
+        </div>`;
+
+      $("inline-detail-body").innerHTML = html;
+    })
+    .catch(e => {
+      // my_reportsが失敗した場合はrowsだけで表示
+      const tbody = rows.map((r, idx) => {
+        const dateLabel = `${r.flight_date}（${weekday(r.flight_date)}）`;
+        const guarantee = r.mini_guarantee
+          ? '<span class="tag-guarantee">最低保証</span>'
+          : '—';
+        const feeNote = r.facility_fee > 0
+          ? `<span class="fee-note">施設料 -${yen(r.facility_fee)}</span>`
+          : '';
+
+        return `
+          <tr class="idd-row">
+            <td class="idd-date">${dateLabel}</td>
+            <td class="idd-count center">${fmt(r.daily_flight)} 本</td>
+            <td class="idd-loc">—</td>
+            <td class="idd-amount right amount">${yen(r.total_amount)}${feeNote}</td>
+            <td class="idd-guar center">${guarantee}</td>
+            <td class="idd-hand center">—</td>
+            <td class="idd-btn center">
+              <button class="btn-detail-expand" onclick="toggleDayDetail('idd-sub-${idx}', this, '${r.flight_date}', '${uuid}')">
+                詳細
+              </button>
+            </td>
+          </tr>
+          <tr class="idd-sub-row hidden" id="idd-sub-${idx}">
+            <td colspan="7" class="idd-sub-cell">
+              <div class="idd-sub-inner" id="idd-sub-inner-${idx}">
+                <p class="inline-loading">読み込み中…</p>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+
+      $("inline-detail-body").innerHTML = `
+        <div class="idd-table-wrap">
+          <table class="idd-table">
+            <thead>
+              <tr>
+                <th>日付</th><th class="center">合計本数</th><th>場所</th>
+                <th class="right">合計金額</th>
+                <th class="center">最低保証</th><th class="center">引継ぎ</th><th class="center">詳細</th>
+              </tr>
+            </thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+        <div class="idd-summary">
+          <span>当月合計：<strong>${fmt(totalFlights)} 本</strong></span>
+          <span>合計金額：<strong>${yen(totalAmount)}</strong></span>
+        </div>`;
+    });
+}
+
+/**
+ * 日付別詳細（何本目・時間・場所/最低保証・引継ぎ）のトグル表示
+ */
+async function toggleDayDetail(subRowId, btn, flightDate, uuid) {
+  const subRow   = $(subRowId);
+  const innerIdx = subRowId.replace("idd-sub-", "");
+  const inner    = $(`idd-sub-inner-${innerIdx}`);
+
+  if (!subRow) return;
+
+  const isOpen = !subRow.classList.contains("hidden");
+  if (isOpen) {
+    subRow.classList.add("hidden");
+    btn.textContent = "詳細";
+    btn.classList.remove("active");
+    return;
+  }
+
+  subRow.classList.remove("hidden");
+  btn.textContent = "閉じる";
+  btn.classList.add("active");
+
+  // 既にロード済みならスキップ
+  if (inner.dataset.loaded === "1") return;
+
+  // my_reportsから該当日のrecordsを取得
+  const { repYear: y, repMonth: m } = state;
+  try {
+    const res  = await fetch(`/api/cont/my_reports?uuid=${uuid}&year=${y}&month=${m}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    const days = json.days || [];
+    const dayInfo = days.find(d => d.flight_date === flightDate);
+
+    if (!dayInfo || !dayInfo.records || dayInfo.records.length === 0) {
+      inner.innerHTML = `<p class="inline-empty">詳細データがありません</p>`;
+      inner.dataset.loaded = "1";
+      return;
+    }
+
+    const records = dayInfo.records;
+    // mini_guaranteeレコードと通常レコードを分離
+    const normalRecs = records.filter(r => !r.mini_guarantee);
+    const guarRecs   = records.filter(r => r.mini_guarantee);
+
+    const rows = [];
+
+    // 通常フライト（何本目）
+    normalRecs.forEach((r, i) => {
+      const handover = (r.near_miss || r.improvement || r.damaged_section)
+        ? '<span class="tag-handover">あり</span>'
+        : '<span class="tag-none">なし</span>';
+      rows.push(`
+        <tr>
+          <td class="sub-num">${i + 1} 本目</td>
+          <td class="sub-time">${r.flight_time || '—'}</td>
+          <td class="sub-loc">${r.takeoff_location || '—'}</td>
+          <td class="sub-hand center">${handover}</td>
+        </tr>`);
+    });
+
+    // 最低保証レコード
+    guarRecs.forEach(r => {
+      const handover = (r.near_miss || r.improvement || r.damaged_section)
+        ? '<span class="tag-handover">あり</span>'
+        : '<span class="tag-none">なし</span>';
+      rows.push(`
+        <tr class="sub-guarantee-row">
+          <td class="sub-num"><span class="tag-guarantee">最低保証</span></td>
+          <td class="sub-time">${r.flight_time || '—'}</td>
+          <td class="sub-loc">—</td>
+          <td class="sub-hand center">${handover}</td>
+        </tr>`);
+    });
+
+    inner.innerHTML = `
+      <table class="sub-table">
+        <thead>
+          <tr>
+            <th>何本目</th>
+            <th>時間</th>
+            <th>場所 / 区分</th>
+            <th class="center">引継ぎ</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>`;
+    inner.dataset.loaded = "1";
+
+  } catch (e) {
+    inner.innerHTML = `<p class="inline-error">エラー: ${e.message}</p>`;
+  }
+}
+
+/** インライン詳細パネルを閉じる */
+function _closeInlineDetail() {
+  _removeInlinePanel();
+  _activeDetailUuid = null;
+  document.querySelectorAll("#flight-status-body tr.clickable-row").forEach(r => {
+    r.classList.remove("row-selected");
+  });
+}
+
+function _removeInlinePanel() {
+  const el = $("inline-detail-tfoot");
+  if (el) el.remove();
+}
+
+/** フライト詳細テーブルHTMLを生成（openDetail / openFlightDetailFromWork 共通） */
+function _buildFlightDetailHTML(rows) {
+  const totalFlights = rows.reduce((s, r) => s + r.daily_flight, 0);
+  const totalAmount  = rows.reduce((s, r) => s + r.total_amount,  0);
+
+  const tbody = rows.map((r, idx) => {
+    const dateLabel = `${r.flight_date}（${weekday(r.flight_date)}）`;
+    const guarantee = r.mini_guarantee
+      ? '<span class="status-ok" title="最低保証あり">○</span>'
+      : '—';
+
+    // 時間詳細ボタン（時刻データがある場合のみ）
+    const hasTimes = r.flight_times && r.flight_times.length > 0;
+    const timeBtn = hasTimes
+      ? `<button class="btn-time-detail" onclick="toggleTimeDetail('td-time-${idx}')" title="時間詳細を表示">
+           🕐 時間詳細
+         </button>
+         <div class="time-detail-panel" id="td-time-${idx}">
+           ${r.flight_times.map(t => `<span class="time-chip">${t}</span>`).join("")}
+         </div>`
+      : '<span style="color:var(--text-muted);font-size:12px">—</span>';
+
+    return `
+      <tr>
+        <td>${dateLabel}</td>
+        <td class="center">${fmt(r.daily_flight)} 本</td>
+        <td class="right amount">${yen(r.total_amount)}</td>
+        <td class="center">${guarantee}</td>
+        <td class="td-time-cell">${timeBtn}</td>
+        <td style="color:var(--text-secondary);font-size:12px">${r.notes || '—'}</td>
+      </tr>`;
+  }).join("");
+
+  const html = `
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th>
+          <th class="center">合計本数</th>
+          <th class="right">金額</th>
+          <th class="center">最低保証</th>
+          <th>時間詳細</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+
+  const summary = `
+    <span>合計フライト：<strong>${fmt(totalFlights)} 本</strong></span>
+    <span>合計金額：<strong>${yen(totalAmount)}</strong></span>`;
+
+  return { html, summary };
+}
+
+/** 時間詳細パネルのトグル */
+function toggleTimeDetail(panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.classList.toggle("open");
+  // ボタンのラベルを切り替え
+  const btn = panel.previousElementSibling;
+  if (btn) {
+    btn.textContent = panel.classList.contains("open") ? "🕐 閉じる" : "🕐 時間詳細";
   }
 }
 
@@ -436,39 +763,10 @@ async function openFlightDetailFromWork(el) {
       return;
     }
 
-    const totalFlights = rows.reduce((s, r) => s + r.daily_flight, 0);
-    const totalAmount  = rows.reduce((s, r) => s + r.total_amount,  0);
+    const { html, summary } = _buildFlightDetailHTML(rows);
+    $("modal-body-content").innerHTML = html;
+    $("modal-summary").innerHTML = summary;
 
-    $("modal-body-content").innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>日付</th>
-            <th class="center">フライト本数</th>
-            <th class="right">金額</th>
-            <th class="center">最低保証</th>
-            <th>備考</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr>
-              <td>${r.flight_date}（${weekday(r.flight_date)}）</td>
-              <td class="center">${fmt(r.daily_flight)}</td>
-              <td class="right amount">${yen(r.total_amount)}</td>
-              <td class="center">${r.mini_guarantee
-                ? '<span class="status-ok" title="最低保証あり">○</span>'
-                : '—'}</td>
-              <td style="color:var(--text-secondary)">${r.notes || '—'}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
-    $("modal-summary").innerHTML = `
-      <span>合計フライト：<strong>${fmt(totalFlights)} 本</strong></span>
-      <span>合計金額：<strong>${yen(totalAmount)}</strong></span>
-    `;
   } catch (e) {
     $("modal-body-content").innerHTML =
       `<p style="padding:28px 20px;color:var(--danger)">エラー: ${e.message}</p>`;

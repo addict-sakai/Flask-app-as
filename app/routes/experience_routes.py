@@ -16,7 +16,7 @@ def apply_page_exp():
 # 🔵 体験申込書（英語）表示
 @experience_bp.route("/apply_exp_e")
 def apply_page_exp_e():
-    return render_template("体験申込書_E.html")
+    return render_template("体験申込書_e.html")
 
 # 🔵 保険案内ページ単体の表示（ポップアップ用）
 @experience_bp.route("/insurance_guide")
@@ -39,12 +39,15 @@ def _register_experience():
     birthday = request.form.get("birthday")
     birthday_date = datetime.strptime(birthday, "%Y-%m-%d").date() if birthday else None
 
-    agreement_date = request.form.get("agreement_date")
-    agre_date = datetime.strptime(agreement_date, "%Y-%m-%d").date() if agreement_date else None
+    # 確認日：JS側から agreement_date_iso（YYYY-MM-DD）を優先使用
+    agreement_date = request.form.get("agreement_date_iso") or request.form.get("agreement_date")
+    try:
+        agre_date = datetime.strptime(agreement_date, "%Y-%m-%d").date() if agreement_date else None
+    except ValueError:
+        agre_date = None
 
-    # 🔵 保険同意フラグの処理
-    # "1" なら True, それ以外（Noneや"0"）なら False
-    is_agreed = request.form.get("insurance_agreement") == "1"
+    # 保険同意フラグ：保険案内廃止のため False 固定
+    is_agreed = False
 
     # 🔵 UUIDを生成
     # new_uuid = str(uuid.uuid4())
@@ -105,6 +108,45 @@ def apply_experience():
 @experience_bp.route("/api/apply_exp_e", methods=["POST"])
 def apply_experience_e():
     return _register_experience()
+
+# ✅ 体験申込の氏名検索API（Aコース申込「体験から入校」用）
+@experience_bp.route("/api/experience/search_by_name")
+def search_experience_by_name():
+    """
+    クエリパラメータ name で experience テーブルを氏名検索し、
+    一致したレコードの resv_no を返す。
+    完全一致優先、なければ前方一致。
+    """
+    from sqlalchemy import text
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"results": []})
+    try:
+        rows = db.session.execute(text("""
+            SELECT full_name, resv_no
+            FROM experience
+            WHERE full_name = :name
+              AND resv_no IS NOT NULL
+            ORDER BY application_date DESC
+            LIMIT 10
+        """), {"name": name}).fetchall()
+
+        if not rows:
+            # 前方一致で再検索
+            rows = db.session.execute(text("""
+                SELECT full_name, resv_no
+                FROM experience
+                WHERE full_name LIKE :name
+                  AND resv_no IS NOT NULL
+                ORDER BY application_date DESC
+                LIMIT 10
+            """), {"name": name + "%"}).fetchall()
+
+        results = [{"full_name": r.full_name, "resv_no": r.resv_no} for r in rows]
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({"results": [], "error": str(e)}), 500
+
 
 # 🔵 体験コース選択肢取得API（configデータから動的取得）
 @experience_bp.route("/api/exp_course_options")

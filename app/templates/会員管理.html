@@ -107,54 +107,48 @@
   ══════════════════════════════════════ -->
   <div class="view" id="view-add">
 
-    <!-- 固定ヘッダー（ハンバーガーメニューのみ） -->
+    <!-- 固定ヘッダー -->
     <div class="edit-fixed-header">
       <div class="page-header">
         <h1 class="page-title" id="formTitle">新規登録</h1>
-        <div class="page-header-right">
-          <!-- ハンバーガーボタン -->
-          <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="メニュー" aria-expanded="false">
-            <span class="hamburger-icon">
-              <span></span><span></span><span></span>
-            </span>
-          </button>
-        </div>
       </div>
     </div><!-- /edit-fixed-header -->
 
-    <!-- ハンバーガー：背景オーバーレイ -->
-    <div class="hamburger-overlay" id="hamburgerOverlay"></div>
+    <!-- 編集ビュー：サイドバー＋スクロールエリアのレイアウト -->
+    <div class="edit-layout">
 
-    <!-- ハンバーガー：ドロップダウンメニュー -->
-    <div class="hamburger-dropdown" id="hamburgerDropdown" role="menu">
-      <a href="/apply_staff_manage" class="hm-item" id="hmToMenu" role="menuitem">
-        <span class="hm-item-icon">←</span>管理メニュー
-      </a>
-      <button type="button" class="hm-item" id="hmBackToList" role="menuitem">
-        <span class="hm-item-icon">☰</span>一覧に戻る
-      </button>
-      <div class="hm-divider"></div>
-      <button type="button" class="hm-item" id="hmSendInfo" role="menuitem">
-        <span class="hm-item-icon">✉️</span>案内送信
-      </button>
-      <button type="button" class="hm-item" id="hmQrCard" role="menuitem" style="display:none">
-        <span class="hm-item-icon">🪪</span>QRカード作成
-      </button>
-      <div class="hm-divider"></div>
-      <button type="button" class="hm-item primary" id="hmSave" role="menuitem">
-        <span class="hm-item-icon">💾</span>登録
-      </button>
-      <button type="button" class="hm-item" id="hmCancel" role="menuitem">
-        <span class="hm-item-icon">✕</span>キャンセル
-      </button>
-      <div class="hm-divider"></div>
-      <button type="button" class="hm-item danger" id="hmDelete" role="menuitem" style="display:none">
-        <span class="hm-item-icon">🗑</span>削除
-      </button>
-    </div>
+      <!-- ── サイドバー ── -->
+      <aside class="edit-sidebar">
+        <nav class="edit-sidebar-nav">
+          <a href="/apply_staff_manage" class="sidebar-item" id="hmToMenu">
+            <span class="sidebar-item-icon">←</span>管理メニュー
+          </a>
+          <button type="button" class="sidebar-item" id="hmBackToList">
+            <span class="sidebar-item-icon">☰</span>一覧に戻る
+          </button>
+          <div class="sidebar-divider"></div>
+          <button type="button" class="sidebar-item" id="hmSendInfo">
+            <span class="sidebar-item-icon">✉️</span>案内送信
+          </button>
+          <button type="button" class="sidebar-item" id="hmQrCard" style="display:none">
+            <span class="sidebar-item-icon">🪪</span>QRカード作成
+          </button>
+          <div class="sidebar-divider"></div>
+          <button type="button" class="sidebar-item sidebar-item--primary" id="hmSave">
+            <span class="sidebar-item-icon">💾</span>登録
+          </button>
+          <button type="button" class="sidebar-item" id="hmCancel">
+            <span class="sidebar-item-icon">✕</span>キャンセル
+          </button>
+          <div class="sidebar-divider"></div>
+          <button type="button" class="sidebar-item sidebar-item--danger" id="hmDelete" style="display:none">
+            <span class="sidebar-item-icon">🗑</span>削除
+          </button>
+        </nav>
+      </aside>
 
-    <!-- スクロールエリア（フォームのみ） -->
-    <div class="edit-scroll-area">
+      <!-- ── スクロールエリア（フォームのみ）── -->
+      <div class="edit-scroll-area">
       <form class="member-form" id="memberForm">
         <input type="hidden" id="editId">
         <input type="hidden" id="fromSource" value=""><!-- flyer / update_app / list -->
@@ -328,6 +322,23 @@
                 <input type="checkbox" id="f_contract">
                 <span class="checkbox-text">タンデムパイロット</span>
               </label>
+            </div>
+
+            <div class="field-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="f_is_leader">
+                <span class="checkbox-text">引率者</span>
+              </label>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">教員区分</label>
+              <select class="field-input" id="f_instructor_role">
+                <option value="">選択</option>
+                <option value="一般">一般</option>
+                <option value="教員">教員</option>
+                <option value="助教員">助教員</option>
+              </select>
             </div>
 
           </div>
@@ -590,9 +601,52 @@
         </div>
 
       </form>
-    </div><!-- /edit-scroll-area -->
+      </div><!-- /edit-scroll-area -->
+    </div><!-- /edit-layout -->
 
   </div><!-- /view-add -->
+
+
+  <!-- ══════════════════════════════════════
+       QRカード一括作成ビュー
+  ══════════════════════════════════════ -->
+  <div class="view" id="view-qr-list">
+
+    <!-- 固定ヘッダー -->
+    <div class="list-fixed-area">
+      <div class="page-header">
+        <div class="page-header-left">
+          <a href="/apply_staff_manage" class="btn btn-ghost top-btn"><span class="icon">←</span>管理</a>
+          <button class="btn btn-primary" id="qrCardBackPrintBtn" style="margin-left:8px;">🖨️ QRカード裏面印刷</button>
+        </div>
+        <h1 class="page-title">QRカード一括作成</h1>
+        <div class="page-header-right">
+          <button class="btn btn-primary" id="qrBulkPrintBtn">🪪 選択した全員を印刷</button>
+        </div>
+      </div>
+    </div><!-- /list-fixed-area -->
+
+    <!-- スクロールエリア（一覧テーブルのみ） -->
+    <div class="list-scroll-area">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="qr-chk-col"><input type="checkbox" id="qrCheckAll" title="全選択"></th>
+              <th>氏名</th>
+              <th>分類</th>
+              <th>申請</th>
+              <th>更新</th>
+            </tr>
+          </thead>
+          <tbody id="qrMemberTableBody">
+            <tr class="empty-row"><td colspan="5">データがありません</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /list-scroll-area -->
+
+  </div><!-- /view-qr-list -->
 
 </main>
 
@@ -653,6 +707,8 @@
 
 <!-- 印刷専用エリア（通常非表示） -->
 <div id="qrPrintArea" style="display:none;"></div>
+<!-- 一括印刷専用エリア（A4・複数枚） -->
+<div id="qrBulkPrintArea" style="display:none;"></div>
 
 <script src="{{ url_for('static', filename='app_info.js') }}"></script>
 </body>

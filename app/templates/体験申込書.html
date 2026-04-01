@@ -1,179 +1,335 @@
 <!DOCTYPE html>
+<!-- 改定1 2026/04/01 -->
 <html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>体験申込書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_exp_app.css') }}">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
 
-  <head>
-    <meta charset="UTF-8" />
-    <title>体験フライト申込書</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_exp.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
-    <!-- flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-  </head>
+<body data-apply-mode="exp">
 
-  <body>
-    <!-- 言語切替バー -->
-    <div class="lang-bar no-print">
-      <div class="lang-switch">
-        <button class="lang-btn lang-btn--active" onclick="location.href='/apply_exp'">🇯🇵 日本語</button>
-        <button class="lang-btn" onclick="location.href='/apply_exp_e'">🇺🇸 English</button>
+<!-- ══════════════════════════════════════
+     画面表示 UI（印刷時非表示）
+══════════════════════════════════════ -->
+<div class="screen-ui no-print">
+
+  <!-- 固定ヘッダー -->
+  <div class="fixed-header">
+    <div class="page-header">
+
+      <!-- 左：言語切替ドロップダウン -->
+      <div class="page-header-left">
+        <div class="lang-dropdown-wrap">
+          <button type="button" class="lang-dropdown-btn" id="langDropdownBtn">
+            <span class="lang-icon">🌐</span>
+            <span id="langDropdownLabel">日本語</span>
+            <span class="lang-caret">▾</span>
+          </button>
+          <ul class="lang-dropdown-menu" id="langDropdownMenu">
+            <li class="lang-dropdown-item lang-dropdown-item--active" data-lang="ja">🇯🇵 日本語</li>
+            <li class="lang-dropdown-item" data-lang="en">🇬🇧 English</li>
+          </ul>
+        </div>
       </div>
-      <div class="action-btns">
-        <button type="button" id="submitBtn" class="submit-btn">申 請</button>
-        <button type="button" id="exitBtn" class="exit-btn">キャンセル</button>
-        <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+
+      <!-- 中央：タイトル -->
+      <h1 class="page-title">体験申込書</h1>
+
+      <!-- 右：ハンバーガーメニュー -->
+      <div class="page-header-right">
+        <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="メニュー">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="hamburger-menu" id="hamburgerMenu">
+          <button type="button" class="hmenu-item hmenu-item--primary" id="submitBtn">✔ 申　請</button>
+          <button type="button" class="hmenu-item hmenu-item--danger"   id="cancelBtn">✖ キャンセル</button>
+          <button type="button" class="hmenu-item" id="printBtn">🖨 印　刷</button>
+        </div>
       </div>
+
     </div>
+  </div>
 
+  <!-- スクロールエリア -->
+  <div class="scroll-area">
     <form id="entryForm">
-      <div class="sheet">
-        <h1>体験フライト申込書</h1>
-        <table>
-          <th>申込日</th>
-          <td colspan="3"><input type="text" class="js-date" id="application_date" name="application_date"></td>
-        </table>
 
-        <table>
-          <tr>
-            <th>氏名</th>
-            <td><input type="text" id="fullName" name="full_name" class="ime-ja"></td>
-            <th>フリガナ</th>
-            <td><input type="text" id="furigana" name="furigana" class="ime-ja" placeholder="自動入力されます"></td>
-          </tr>
-          <tr>
-            <th>性別</th>
-            <td>
-              <select name="gender">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
-            </td>
-            <th>血液型</th>
-            <td>
-              <select name="blood_type">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="A">Ａ</option>
-                <option value="B">Ｂ</option>
-                <option value="O">Ｏ</option>
-                <option value="AB">ＡＢ</option>
-                <option value="不明">不明</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th>生年月日</th>
-            <td><input type="text" class="js-date" id="birthday" name="birthday" inputmode="latin"></td>
-            <th>年齢</th>
-            <td><input type="text" id="age" class="ime-latin" inputmode="numeric" readonly></td>
-          </tr>
-          <tr>
-            <th>郵便番号</th>
-            <td><input type="text" id="zip1" name="zip1" maxlength="3" inputmode="numeric" style="width: 60px;"> - 
-                <input type="text" id="zip2" name="zip2" maxlength="4" inputmode="numeric" style="width: 80px;"></td>
-            <th>体重（kg）</th>
-            <td><input type="text" id="weight" name="weight" class="ime-latin" inputmode="decimal"></td>
-          </tr>
-          <tr>
-            <th>住所</th>
-            <td colspan="3"><input type="text" id="address" name="address" class="ime-ja"></td>
-          </tr>
-          <tr>
-            <th>携帯電話</th>
-            <td><input type="text" name="mobile_phone" class="ime-latin" inputmode="tel"></td>
-            <th>自宅電話</th>
-            <td><input type="text" name="home_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>勤務先名</th>
-            <td><input type="text" name="company_name" class="ime-ja"></td>
-            <th>電話番号（勤務先）</th>
-            <td><input type="text" name="company_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>緊急連絡先氏名</th>
-            <td><input type="text" name="emergency_name" class="ime-ja"></td>
-            <th>電話番号（緊急時）</th>
-            <td><input type="text" name="emergency_phone" class="ime-latin" inputmode="tel"></td>
-          </tr>
-          <tr>
-            <th>本人との続柄</th>
-            <td><input type="text" id="relationship" name="relationship" class="ime-ja"></td>
-            <th>e-mail</th>
-            <td><input type="text" id="email" name="email" class="ime-latin" inputmode="email"></td>
-          </tr>
-          <tr>
-            <th>傷病履歴</th>
-            <td colspan="3"><textarea name="medical_history" class="ime-ja" placeholder="（脱臼・骨折癖・骨折後数週間など、その他持病があれば事前に記載して下さい）"></textarea></td>
-          </tr>
-        </table>
+      <!-- ── 基本情報 ── -->
+      <div class="form-section">
+        <h2 class="section-title">基本情報</h2>
+        <div class="form-grid">
 
-        <table>
-          <tr>
-            <th colspan="2">★ 本日はどのコースにご参加されますか？</th>
-            <td colspan="2">
-              <select name="course_exp" id="courseExpSelect">
-                <option value="">読み込み中…</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th colspan="2">★ 当スクールは何でお知りになりましたか？</th>
-            <td colspan="2">
-              <select name="school_find">
-                <option value="" selected>-- 選択してください --</option>
-                <option value="1">広告（雑誌名等を記入）</option>
-                <option value="2">知人の紹介（当校の生徒、会員の方、その他フライヤー）</option>
-                <option value="3">パラグライダーを見て（どこで見ましたか？）</option>
-                <option value="4">ホームページ検索（どの検索エンジンですか？）</option>
-                <option value="5">パンフレットどこで入手しましたか？）</option>
-                <option value="6">その他</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th>選択項目の詳細：</th>
-            <td colspan="3"><input type="text" id="school_text" name="school_text" class="ime-ja"></td>
-          </tr>
-        </table>
-        <p class="note">　※ 各コース安全管理費 ¥1,000 込みの値段になります。</p>
-        
-        <div class="rules">
-          <h3>　※ ご参加の際の注意事項</h3>
-          　　　アウトドアである為、気象条件の悪化等により、やむなく中止せざるを得ない場合があります。<br>
-          　　　その際は《リフライト券》を発行します。（次回は安全管理費として￥1,000頂きます）<br>
-          　　　現金でのお返しは一切出来ませんのでご承知の上でご参加下さい。<br>
+          <div class="field-group">
+            <label class="field-label required">申込日</label>
+            <input type="text" class="field-input js-date" id="application_date" name="application_date">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">氏名</label>
+            <input type="text" class="field-input" id="fullName" name="full_name"
+                   inputmode="hiragana" placeholder="例: 富士　太郎">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">フリガナ</label>
+            <input type="text" class="field-input" id="furigana" name="furigana"
+                   placeholder="自動入力されます">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">性別</label>
+            <select class="field-input" name="gender">
+              <option value="">選択</option>
+              <option value="男">男</option>
+              <option value="女">女</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">血液型</label>
+            <select class="field-input" name="blood_type">
+              <option value="">選択</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="O">O</option>
+              <option value="AB">AB</option>
+              <option value="不明">不明</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">生年月日</label>
+            <input type="text" class="field-input js-date" id="birthday" name="birthday">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">年齢</label>
+            <input type="text" class="field-input" id="age" name="age" readonly>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">体重（kg）</label>
+            <input type="text" class="field-input" id="weight" name="weight" inputmode="decimal">
+          </div>
+
         </div>
+      </div>
 
-        <div class="agreement">
-          <strong>参加誓約書</strong><br>
-          ＴＨＰホールディング株式会社　　　Mt.FUJI PARAGLIDING　殿<br>
-          私、<span id="agreeName" class="handwrite">　　　　　　　</span>は、パラグライダー飛行に伴う危険性を理解し、定められた規則を遵守します。
-          ＴＨＰホールディング株式会社が経営するフライトエリア内において、私自身に生じたいかなる障害及び損害に対し、
-          予測可能か否かに問わず私自身が全責任を負うものとし、私及び私の家族や関係者は私に発生した障害及び損害の補償に関しては、損害保険の範囲とし、
-          当スクール関係者に対してその他の責任追及及、損害請求を一切致しません。
-          またエリア会員規定に基づき、規約に違反した場合、もしくはＴＨＰホールディング株式会社に対して不利益をもたらした場合、会員資格の無効化及び
-          退会を申し渡されても、異議申し立て、損害賠償請求、それらにに類似した行為を一切致しません。<br><br>
-          <table>
-            <tr>
-              <th>確認日</th>
-              <td><input type="text" class="js-date" id="agreement_date" name="agreement_date" inputmode="latin"></td>
-              <th>本人署名</th>
-              <td><input type="text" name="signature_name" class="ime-ja"></td>
-            </tr>
-            <tr>
-              <th>保護者氏名（20歳未満）</th>
-              <td colspan="3"><input type="text" name="guardian_name" class="ime-ja"></td>
-              <input type="hidden" id="insurance_agreement" name="insurance_agreement" value="0">
-            </tr>
-          </table>
+      <!-- ── 連絡先 ── -->
+      <div class="form-section">
+        <h2 class="section-title">連絡先</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label">郵便番号</label>
+            <div class="zip-group">
+              <input type="text" class="field-input" id="zip1" name="zip1"
+                     maxlength="3" inputmode="numeric" placeholder="000" style="width:68px;">
+              <span class="zip-sep">-</span>
+              <input type="text" class="field-input" id="zip2" name="zip2"
+                     maxlength="4" inputmode="numeric" placeholder="0000" style="width:86px;">
+            </div>
+          </div>
+
+          <div class="field-group span-2">
+            <label class="field-label">住所</label>
+            <input type="text" class="field-input" id="address" name="address">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">携帯電話</label>
+            <input type="tel" class="field-input" name="mobile_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">e-mail</label>
+            <input type="email" class="field-input" id="email" name="email" inputmode="email">
+          </div>
+
         </div>
+      </div>
+
+      <!-- ── 緊急連絡先 ── -->
+      <div class="form-section">
+        <h2 class="section-title">緊急連絡先</h2>
+        <div class="form-grid">
+
+          <div class="field-group">
+            <label class="field-label required">氏名</label>
+            <input type="text" class="field-input" name="emergency_name">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">電話番号</label>
+            <input type="tel" class="field-input" name="emergency_phone" inputmode="tel">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">本人との続柄</label>
+            <input type="text" class="field-input" name="relationship" placeholder="例: 配偶者">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 参加コース ── -->
+      <div class="form-section">
+        <h2 class="section-title">参加コース</h2>
+        <div class="form-grid">
+
+          <div class="field-group span-2">
+            <label class="field-label required">コース選択</label>
+            <select class="field-input" name="course_exp" id="courseExpSelect">
+              <option value="">-- 選択してください --</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">予約番号</label>
+            <input type="text" class="field-input" name="resv_no" id="resvNoInput"
+                   placeholder="英数字のみ"
+                   inputmode="text"
+                   oninput="this.value=this.value.replace(/[^A-Za-z0-9\-]/g,'')">
+          </div>
+
+          <div class="field-group span-3">
+            <label class="field-label">当スクールをお知りになったきっかけ</label>
+            <select class="field-input" name="school_find">
+              <option value="">選択</option>
+              <option value="ホームページ">ホームページ</option>
+              <option value="じゃらん">じゃらん</option>
+              <option value="アソビュー">アソビュー</option>
+              <option value="SNS">SNS</option>
+              <option value="知人の紹介">知人の紹介</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 誓約書 ── -->
+      <div class="form-section">
+        <h2 class="section-title">参加誓約書</h2>
+        <div class="pledge-box">
+          <p class="pledge-text">
+            私、<strong id="agreeName" class="agree-name">　　　　　　　　　</strong>は、パラグライダー体験飛行に伴う危険性を十分理解し、スタッフの指示に従って体験に参加します。
+            体験中に私自身に生じたいかなる障害・損害に対しても、損害保険の範囲を超えた補償請求を当スクール関係者に対して一切行いません。
+          </p>
+          <div class="form-grid" style="margin-top:20px;">
+            <div class="field-group">
+              <label class="field-label required">確認日</label>
+              <input type="text" class="field-input" id="agreement_date" name="agreement_date"
+                     readonly style="background:var(--surface-alt, #f5f5f5); color:var(--text-secondary,#555); cursor:not-allowed;">
+            </div>
+            <div class="field-group">
+              <label class="field-label required">本人署名</label>
+              <input type="text" class="field-input" name="signature_name" placeholder="自署してください">
+            </div>
+            <div class="field-group">
+              <label class="field-label">保護者氏名（18歳未満）</label>
+              <input type="text" class="field-input" name="guardian_name">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="lang" value="ja">
 
     </form>
+  </div>
+</div><!-- /screen-ui -->
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-    <script src="{{ url_for('static', filename='app_exp.js') }}"></script>
-  </body>
+
+<!-- ══════════════════════════════════════
+     印刷専用レイアウト（画面では非表示）
+══════════════════════════════════════ -->
+<div class="print-sheet print-only">
+  <h1>体験申込書</h1>
+
+  <table class="pt">
+    <tr>
+      <th>申込日</th>
+      <td colspan="3"><span id="p_application_date"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th>氏名</th><td><span id="p_full_name"></span></td>
+      <th>フリガナ</th><td><span id="p_furigana"></span></td>
+    </tr>
+    <tr>
+      <th>性別</th><td><span id="p_gender"></span></td>
+      <th>血液型</th><td><span id="p_blood_type"></span></td>
+    </tr>
+    <tr>
+      <th>生年月日</th><td><span id="p_birthday"></span></td>
+      <th>年齢</th><td><span id="p_age"></span></td>
+    </tr>
+    <tr>
+      <th>体重（kg）</th><td><span id="p_weight"></span></td>
+      <th></th><td></td>
+    </tr>
+    <tr>
+      <th>携帯電話</th><td><span id="p_mobile_phone"></span></td>
+      <th>e-mail</th><td><span id="p_email"></span></td>
+    </tr>
+    <tr>
+      <th>郵便番号</th><td><span id="p_zip"></span></td>
+      <th></th><td></td>
+    </tr>
+    <tr>
+      <th>住所</th><td colspan="3"><span id="p_address"></span></td>
+    </tr>
+    <tr>
+      <th>緊急連絡先氏名</th><td><span id="p_emergency_name"></span></td>
+      <th>電話番号（緊急時）</th><td><span id="p_emergency_phone"></span></td>
+    </tr>
+    <tr>
+      <th>本人との続柄</th><td><span id="p_relationship"></span></td>
+      <th></th><td></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th class="pt-section-head" colspan="4">参加コース</th>
+    </tr>
+    <tr>
+      <th>コース</th><td><span id="p_course_exp"></span></td>
+      <th>きっかけ</th><td><span id="p_school_find"></span></td>
+    </tr>
+  </table>
+
+  <div class="pt-agreement">
+    <strong>参加誓約書</strong><br>
+    私、<span id="p_agree_name" class="pt-handwrite">　　　　　　　</span>は、パラグライダー体験飛行に伴う危険性を十分理解し、スタッフの指示に従って体験に参加します。
+    体験中に私自身に生じたいかなる障害・損害に対しても、損害保険の範囲を超えた補償請求を当スクール関係者に対して一切行いません。
+    <table class="pt" style="margin-top:6px;">
+      <tr>
+        <th>確認日</th><td><span id="p_agreement_date"></span></td>
+        <th>本人署名</th><td><span id="p_signature_name"></span></td>
+      </tr>
+      <tr>
+        <th>保護者氏名（18歳未満）</th><td colspan="3"><span id="p_guardian_name"></span></td>
+      </tr>
+    </table>
+  </div>
+</div><!-- /print-sheet -->
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+<script src="{{ url_for('static', filename='app_exp_app.js') }}"></script>
+</body>
 </html>

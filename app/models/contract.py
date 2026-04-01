@@ -8,9 +8,10 @@ class Contract(db.Model):
 
     id                 = db.Column(db.Integer, primary_key=True)
     flight_date        = db.Column(db.Date)                        # フライト日
+    flight_time        = db.Column(db.String(5))                   # フライト時刻（HH:MM）1本=1レコード
     uuid               = db.Column(db.String(36), default=lambda: str(_uuid.uuid4()))
     name               = db.Column(db.String(100))                 # 氏名（member.full_name からコピー）
-    daily_flight       = db.Column(db.Integer)                     # フライト本数
+    daily_flight       = db.Column(db.Integer)                     # フライト本数（集計用・通常1）
     takeoff_location   = db.Column(db.Text)                        # 場所
     used_glider        = db.Column(db.Text)                        # 使用機体
     size               = db.Column(db.Text)                        # サイズ

@@ -18,6 +18,26 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+  // ── ハンバーガーメニュー開閉（申込書共通） ───────────────────
+  const _hmBtn  = document.getElementById("hmMenuBtn");
+  const _hmDrop = document.getElementById("hmDropdown");
+  if (_hmBtn && _hmDrop) {
+    _hmBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      _hmDrop.classList.toggle("is-open");
+    });
+    document.addEventListener("click", function () {
+      _hmDrop.classList.remove("is-open");
+    });
+    _hmDrop.addEventListener("click", function (e) {
+      e.stopPropagation();
+      // ボタンクリック後は閉じる
+      if (e.target.closest(".hm-item")) {
+        _hmDrop.classList.remove("is-open");
+      }
+    });
+  }
+
   // ── モード判定 ──────────────────────────────────────────────
   const MODE = document.body.dataset.applyMode || "mem";
   const IS_MEM   = MODE === "mem";
@@ -366,6 +386,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const memberTypeMap = {
       "年会員": "年会員", "冬季限定会員": "冬季会員",
       "スクール": "スクール", "ビジター": "ビジター",
+      "他校スクール": "他校スクール",
     };
 
     function resolveCourseFeeKey(ct, cn) {
@@ -480,6 +501,68 @@ document.addEventListener("DOMContentLoaded", function () {
     const expResvHidden = el("exp_resv_no");
     const expResvPrev   = el("expResvNoPreview");
 
+    // 名前検索UI（動的生成：予約番号欄の前に挿入）
+    let expNameGroup = null;
+    function createExpNameGroup() {
+      if (expNameGroup) return;
+      expNameGroup = document.createElement("div");
+      expNameGroup.id = "expNameGroup";
+      expNameGroup.style.cssText = "display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;";
+      expNameGroup.innerHTML = `
+        <span style="font-size:14px; font-weight:500;">申込氏名</span>
+        <input type="text" id="exp_name_search" class="field-input"
+               placeholder="氏名を入力して検索"
+               style="width:200px;">
+        <button type="button" id="exp_name_search_btn" class="btn btn-ghost"
+                style="font-size:13px; padding:4px 12px;">検索</button>
+        <span id="exp_name_result" style="font-size:13px; color:var(--text-muted);"></span>
+      `;
+      // expResvGroup の前に挿入
+      if (expResvGroup && expResvGroup.parentNode) {
+        expResvGroup.parentNode.insertBefore(expNameGroup, expResvGroup);
+      }
+      // 氏名欄に fullName の値を自動セット
+      const nameInp = document.getElementById("exp_name_search");
+      if (nameInp && el("fullName")) nameInp.value = el("fullName").value || "";
+
+      // 検索ボタンのイベント
+      document.getElementById("exp_name_search_btn").addEventListener("click", searchExpByName);
+      // Enterキーでも検索
+      nameInp.addEventListener("keydown", e => { if (e.key === "Enter") searchExpByName(); });
+    }
+    function removeExpNameGroup() {
+      if (expNameGroup) { expNameGroup.remove(); expNameGroup = null; }
+    }
+
+    // 名前で体験予約を検索してresv_noをセット
+    async function searchExpByName() {
+      const nameInp   = document.getElementById("exp_name_search");
+      const resultSp  = document.getElementById("exp_name_result");
+      if (!nameInp || !resultSp) return;
+      const name = nameInp.value.trim();
+      if (!name) { resultSp.textContent = "氏名を入力してください"; resultSp.style.color = "var(--danger, #e53e3e)"; return; }
+      resultSp.textContent = "検索中..."; resultSp.style.color = "var(--text-muted)";
+      try {
+        const res  = await fetch("/api/experience/search_by_name?name=" + encodeURIComponent(name));
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          const hit = data.results[0];
+          // resv_no は "P-XXXXXXX" 形式
+          const rn = hit.resv_no || "";
+          const digits = rn.replace(/^P-?/, "").replace(/\D/g, "");
+          if (expDigitsInp) { expDigitsInp.value = digits; updateExpResvNo(); }
+          resultSp.textContent = `✓ ${hit.full_name}（${rn}）`;
+          resultSp.style.color = "var(--success, #38a169)";
+        } else {
+          resultSp.textContent = "一致する体験申込が見つかりませんでした";
+          resultSp.style.color = "var(--danger, #e53e3e)";
+        }
+      } catch {
+        resultSp.textContent = "検索に失敗しました";
+        resultSp.style.color = "var(--danger, #e53e3e)";
+      }
+    }
+
     function updateExpResvNo() {
       const digits = expDigitsInp.value.replace(/\D/g, "").slice(0, 7);
       expDigitsInp.value = digits;
@@ -489,10 +572,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (fromExpChk) {
       fromExpChk.addEventListener("change", function () {
-        if (expResvGroup) expResvGroup.style.display = this.checked ? "flex" : "none";
-        if (!this.checked && expDigitsInp) {
-          expDigitsInp.value = ""; expResvHidden.value = "";
-          if (expResvPrev) expResvPrev.textContent = "";
+        if (this.checked) {
+          createExpNameGroup();
+          if (expResvGroup) expResvGroup.style.display = "flex";
+        } else {
+          removeExpNameGroup();
+          if (expResvGroup) expResvGroup.style.display = "none";
+          if (expDigitsInp) {
+            expDigitsInp.value = ""; expResvHidden.value = "";
+            if (expResvPrev) expResvPrev.textContent = "";
+          }
         }
         if (el("fee_course")) el("fee_course").textContent = this.checked ? "¥0" : formatFee(feeCourse);
       });
@@ -629,6 +718,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const _reglimitVal = _reglimitFp && _reglimitFp.selectedDates.length > 0 ? _reglimitFp.selectedDates[0] : null;
         if (!_reglimitVal) { alert("登録期限を入力してください"); return; }
         if (!el("license").value) { alert("技能証を選択してください"); return; }
+        // 技能証が B / NP / P / XC の場合はリパック日も必須
+        if (["B", "NP", "P", "XC"].includes(el("license").value)) {
+          const _repackFp  = el("repack_date") && el("repack_date")._flatpickr;
+          const _repackVal = _repackFp && _repackFp.selectedDates.length > 0 ? _repackFp.selectedDates[0] : null;
+          if (!_repackVal) { alert("技能証が B / NP / P / XC の場合、リパック日は必須です"); return; }
+        }
         if (IS_VIS || (el("course_type") && el("course_type").value === "ビジター")) {
           if (!getRadioVal("visitor_fee")) { alert("ビジター料金を選択してください"); return; }
           if (!getRadioVal("experience"))  { alert("フライト経験を選択してください"); return; }
@@ -639,6 +734,15 @@ document.addEventListener("DOMContentLoaded", function () {
       if (IS_MEM) {
         const _gliderName = (document.querySelector('[name="glider_name"]') || {value:""}).value.trim();
         if (!_gliderName) { alert("使用機体名を入力してください"); return; }
+        // 他校スクールはホームエリア必須
+        const _courseType = (el("course_type") || {}).value || "";
+        // course_type ではなく API 送信値の member_type で判定
+        // ここでは course_type の直接参照はないため、hidden の member_type を参照
+        const _memberType = (el("member_type") || {}).value || "";
+        if (_memberType === "他校スクール") {
+          const _homeArea = (document.querySelector('[name="home_area"]') || {value:""}).value.trim();
+          if (!_homeArea) { alert("他校スクールの場合、ホームエリア名は必須です"); return; }
+        }
       }
 
       // ── mem_a 専用チェック ───────────────────────────────────

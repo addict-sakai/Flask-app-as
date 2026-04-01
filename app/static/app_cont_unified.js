@@ -10,6 +10,23 @@ const UnifiedApp = (() => {
   let _memberUuid   = "";
   let _memberNumber = "";
   let _editId       = null;
+  let _qrAuthenticated = false;  // QRコード認証済みフラグ（passコード不要）
+
+  // config_master キャッシュ
+  let _configCache  = null;
+
+  // 当月日報データキャッシュ（最低保証チェックに使用）
+  let _currentDays  = [];
+
+  function _todayHasMiniGuarantee() {
+    const todayStr = _isoDate(new Date());
+    const todayDay = _currentDays.find(d => d.flight_date === todayStr);
+    return todayDay ? todayDay.has_mini_guarantee === true : false;
+  }
+
+  // 前回登録値（担当者uuid別に保持・同日のみ有効）
+  // { [uuid]: { date: "2026-03-31", location, glider, size, pilot, pass } }
+  let _lastRegValues = {};
 
   // 日報
   let _reportYear  = 0;
@@ -114,8 +131,9 @@ const UnifiedApp = (() => {
   // QRコードボタン
   function openQr() {
     QRScanner.open((memberData) => {
-      // QRから取得したuuidで/api/cont/lookupを呼び出し、_applyMemberへ
-      _lookupByUuid(memberData.uuid);
+      // QRから取得したuuidで/api/cont/lookupを呼び出す
+      // QR認証はpassコード不要フラグを立てる
+      _lookupByUuid(memberData.uuid, true);
     });
   }
 
@@ -123,7 +141,7 @@ const UnifiedApp = (() => {
     QRScanner.close();
   }
 
-  async function _lookupByUuid(uuid) {
+  async function _lookupByUuid(uuid, fromQr = false) {
     let data;
     try {
       const resp = await fetch('/api/cont/lookup', {
@@ -136,10 +154,14 @@ const UnifiedApp = (() => {
     } catch { _showAlert('search-error', '通信エラーが発生しました'); return; }
 
     if (_hasUnsavedChanges() && _memberUuid && _memberUuid !== data.uuid) {
-      _checkUnsaved(() => _applyMember(data));
+      _checkUnsaved(() => {
+        _qrAuthenticated = fromQr;
+        _applyMember(data, fromQr);
+      });
       return;
     }
-    _applyMember(data);
+    _qrAuthenticated = fromQr;
+    _applyMember(data, fromQr);
   }
 
   // 氏名で検索 → 候補リスト表示
@@ -173,8 +195,6 @@ const UnifiedApp = (() => {
       return;
     }
 
-    // innerHTML + onclick属性ではJSONエスケープが壊れるため、
-    // DOM生成＋addEventListener方式で確実にクリックを処理する
     listEl.innerHTML = "";
     members.forEach(m => {
       const div = document.createElement("div");
@@ -220,12 +240,13 @@ const UnifiedApp = (() => {
     document.getElementById("pass-modal-overlay").classList.remove("open");
     document.getElementById("search-result-list").style.display = "none";
     _pendingPassMember = null;
+    _qrAuthenticated = false;
 
     if (_hasUnsavedChanges() && _memberUuid && _memberUuid !== data.uuid) {
-      _checkUnsaved(() => _applyMember(data));
+      _checkUnsaved(() => _applyMember(data, false));
       return;
     }
-    _applyMember(data);
+    _applyMember(data, false);
   }
 
   function closePassModal() {
@@ -266,14 +287,13 @@ const UnifiedApp = (() => {
     _applyMember(data);
   }
 
-  async function _applyMember(data) {
+  async function _applyMember(data, fromQr = false) {
     _memberName   = data.full_name;
     _memberUuid   = data.uuid;
     _memberNumber = data.member_number;
 
-    // 担当者表示
+    // 担当者表示（申請番号は表示しない）
     document.getElementById("member-name").textContent = data.full_name;
-    document.getElementById("member-sub").textContent  = "No." + (data.member_number || "");
     document.getElementById("member-block").style.display = "block";
     document.getElementById("search-input").value = "";
 
@@ -293,8 +313,16 @@ const UnifiedApp = (() => {
     _updateReportMonthLabel();
     _updateCalMonthLabel();
 
+    // config_master を先に取得（モーダル初期化で必要）
+    await _loadConfig();
+
     await loadMyReports();
     await _loadSchedulesAndCalendar();
+
+    // QRコード認証の場合はpassコード不要で直接日報登録モーダルを開く
+    if (fromQr) {
+      _openRegModal();
+    }
   }
 
 
@@ -305,6 +333,7 @@ const UnifiedApp = (() => {
 
   function _doClearMember() {
     _memberName = _memberUuid = _memberNumber = "";
+    _qrAuthenticated = false;
     document.getElementById("search-input").value = "";
     _hideAlert("search-error");
     document.getElementById("member-block").style.display = "none";
@@ -314,7 +343,7 @@ const UnifiedApp = (() => {
     document.getElementById("main-content").style.display = "none";
 
     document.getElementById("report-tbody").innerHTML =
-      `<tr id="empty-row"><td colspan="6" class="cont-empty">
+      `<tr id="empty-row"><td colspan="5" class="cont-empty">
          <div class="cont-empty-icon">🪂</div>担当者を検索してください
        </td></tr>`;
     document.getElementById("stat-total").textContent = "—";
@@ -357,7 +386,7 @@ const UnifiedApp = (() => {
 
     const tbody = document.getElementById("report-tbody");
     tbody.innerHTML =
-      `<tr><td colspan="6" style="text-align:center;padding:20px;color:#bbb;">読み込み中…</td></tr>`;
+      `<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb;">読み込み中…</td></tr>`;
 
     let data;
     try {
@@ -368,63 +397,90 @@ const UnifiedApp = (() => {
       if (!resp.ok) throw new Error(data.error);
     } catch {
       tbody.innerHTML =
-        `<tr><td colspan="6" class="cont-empty">読み込みエラーが発生しました</td></tr>`;
+        `<tr><td colspan="5" class="cont-empty">読み込みエラーが発生しました</td></tr>`;
       return;
     }
 
-    _renderReportTable(data.records || []);
+    _renderReportTable(data.days || []);
   }
 
-  function _renderReportTable(records) {
+  function _renderReportTable(days) {
     const tbody = document.getElementById("report-tbody");
-    const today = new Date(); today.setHours(0,0,0,0);
-    const todayStr = _isoDate(today);
+    const todayStr = _isoDate(new Date());
+    _currentDays = days;   // キャッシュ更新（最低保証チェックに使用）
 
-    if (!records.length) {
+    if (!days.length) {
       tbody.innerHTML =
-        `<tr id="empty-row"><td colspan="6" class="cont-empty">
+        `<tr id="empty-row"><td colspan="5" class="cont-empty">
            <div class="cont-empty-icon">🪂</div>この月の記録はありません
          </td></tr>`;
-      _syncStatTotal();
+      _syncStatTotal(0);
       return;
     }
 
     tbody.innerHTML = "";
-    records.forEach(r => {
-      const isToday = r.flight_date === todayStr;
+    let totalCount = 0;
+
+    days.forEach(day => {
+      totalCount += day.count;
+      const isToday = day.flight_date === todayStr;
       const tr = document.createElement("tr");
       if (isToday) tr.className = "is-today";
-      tr.dataset.id           = r.id;
-      tr.dataset.flightCount  = r.daily_flight     || 0;
-      tr.dataset.location     = r.takeoff_location || "";
-      tr.dataset.glider       = r.used_glider      || "";
-      tr.dataset.size         = r.size             || "";
-      tr.dataset.pilotHarness = r.pilot_harness    || "";
-      tr.dataset.passHarness  = r.passenger_harness|| "";
-      tr.dataset.nearMiss     = r.near_miss        || "";
-      tr.dataset.improvement  = r.improvement      || "";
-      tr.dataset.damaged      = r.damaged_section  || "";
+
+      // 当日の最低保証状態で登録ボタン制御
+      if (isToday) _setRegisterBtnDisabled(!!day.has_mini_guarantee);
+
+      // 場所（ユニーク）
+      const locHtml = (day.locations || [])
+        .map(l => `<span class="cont-chip cont-chip--loc">${_esc(l)}</span>`)
+        .join(" ") || "—";
+
+      // 引継ぎ有無バッジ
+      const handoverBadge = day.has_handover
+        ? `<span class="uni-handover-badge uni-handover-badge--yes">あり</span>`
+        : `<span class="uni-handover-badge">なし</span>`;
+
+      // 最低保証バッジ
+      const miniBadge = day.has_mini_guarantee
+        ? ` <span class="uni-mini-badge">最低保証</span>` : "";
+
+      // 操作：詳細ボタン
+      const detailBtn = `<button class="cont-btn-edit" onclick='UnifiedApp.openDetailPopup(${JSON.stringify(day)})'>詳細</button>`;
 
       tr.innerHTML = `
-        <td class="uni-td-date">${_fmtDate(r.flight_date)}</td>
-        <td>${r.daily_flight || 0}</td>
-        <td><span class="cont-chip cont-chip--loc">${_esc(r.takeoff_location || "—")}</span></td>
-        <td>${_esc(r.used_glider || "—")}</td>
-        <td>${_esc(r.size || "—")}</td>
-        <td>${isToday
-          ? `<button class="cont-btn-edit" onclick="UnifiedApp.openEditModal(${r.id})">編集</button>`
-          : `<button class="cont-btn-edit" disabled>編集不可</button>`
-        }</td>`;
+        <td class="uni-td-date">${_fmtDate(day.flight_date)}</td>
+        <td><strong>${day.count}</strong>本${miniBadge}</td>
+        <td>${locHtml}</td>
+        <td>${handoverBadge}</td>
+        <td>${detailBtn}</td>`;
       tbody.appendChild(tr);
     });
-    _syncStatTotal();
+
+    // 当日データがない場合は登録ボタン有効
+    const todayDay = days.find(d => d.flight_date === todayStr);
+    if (!todayDay) _setRegisterBtnDisabled(false);
+
+    _syncStatTotal(totalCount);
   }
 
-  function _syncStatTotal() {
-    // 当月表示のときのみカウントを更新
+  // 登録ボタンの有効/無効切替
+  function _setRegisterBtnDisabled(disabled) {
+    const btn = document.querySelector(".uni-btn-report");
+    if (!btn) return;
+    if (disabled) {
+      btn.setAttribute("disabled", "disabled");
+      btn.title = "最低保証が登録済みです。編集から変更してください。";
+      btn.style.opacity = "0.45";
+    } else {
+      btn.removeAttribute("disabled");
+      btn.title = "";
+      btn.style.opacity = "";
+    }
+  }
+
+  function _syncStatTotal(n) {
     const today = new Date();
     if (_reportYear === today.getFullYear() && _reportMonth === today.getMonth() + 1) {
-      const n = document.querySelectorAll("#report-tbody tr[data-id]").length;
       document.getElementById("stat-total").textContent = n;
     }
   }
@@ -438,6 +494,89 @@ const UnifiedApp = (() => {
 
 
   /* ═══════════════════════
+     config_master 取得
+  ═══════════════════════ */
+  async function _loadConfig() {
+    if (_configCache !== null) return _configCache;
+    _configCache = {};   // 取得中の二重呼び出し防止
+
+    // 必要なitem_name一覧
+    const targets = ["場所", "使用機体", "サイズ", "ハーネス", "パッセンジャー"];
+
+    try {
+      // 1. category=パラ の全master一覧を取得
+      const mRes = await fetch("/config/api/masters?category=" + encodeURIComponent("請負"));
+      if (!mRes.ok) throw new Error("masters取得失敗");
+      const masters = await mRes.json();
+
+      // 2. 必要なitem_nameのmasterだけ絞り込み、valuesを並行取得
+      const filtered = masters.filter(m => targets.includes(m.item_name));
+
+      await Promise.all(filtered.map(async m => {
+        const vRes = await fetch("/config/api/values/" + m.id);
+        if (!vRes.ok) return;
+        const vs = await vRes.json();
+        // is_active=trueのものをsort_order順に並べてvalueだけ取り出す
+        _configCache[m.item_name] = vs
+          .filter(v => v.is_active !== false)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map(v => v.value);
+      }));
+
+    } catch (e) {
+      console.error("config取得失敗:", e);
+    }
+
+    return _configCache;
+  }
+
+  function _getConfigItems(category) {
+    if (_configCache === null) return [];
+    return _configCache[category] || [];
+  }
+
+  function _buildLocationButtons(wrapId, groupClass, currentVal) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    const items = _getConfigItems("場所");
+    items.forEach(name => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cont-opt-btn" + (name === currentVal ? " selected" : "");
+      btn.dataset.val = name;
+      btn.textContent = name;
+      btn.addEventListener("click", () => {
+        wrap.querySelectorAll(".cont-opt-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function _buildSelect(selectId, category, currentVal) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const items = _getConfigItems(category);
+    sel.innerHTML = `<option value="">—（任意）</option>`;
+    items.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      if (name === currentVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function _getLocationSelected(wrapId) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return "";
+    const sel = wrap.querySelector(".cont-opt-btn.selected");
+    return sel ? sel.dataset.val : "";
+  }
+
+
+  /* ═══════════════════════
      日報登録モーダル
   ═══════════════════════ */
   function openRegisterModal() {
@@ -446,48 +585,28 @@ const UnifiedApp = (() => {
       return;
     }
 
-    // 当日既存チェック
+    // 当日の日報データから最低保証登録済みかチェック
     const todayStr = _isoDate(new Date());
-    const existRow = document.querySelector(`#report-tbody tr[data-id]`);
-
-    // 当月表示でない場合は当月に戻す
-    const today = new Date();
-    if (_reportYear !== today.getFullYear() || _reportMonth !== today.getMonth() + 1) {
-      _reportYear = today.getFullYear();
-      _reportMonth = today.getMonth() + 1;
-      _updateReportMonthLabel();
-      loadMyReports().then(() => {
-        const todayRow = [...document.querySelectorAll("#report-tbody tr[data-id]")]
-          .find(r => {
-            const fd = r.querySelector(".uni-td-date");
-            return r.classList.contains("is-today");
-          });
-        if (todayRow) {
-          _showAlert("search-error", "本日の日報が既に登録されています。編集画面を開きます。");
-          const errEl = document.getElementById("search-error");
-          errEl.className = "cont-alert cont-alert--info";
-          errEl.style.display = "block";
-          openEditModal(+todayRow.dataset.id);
-          return;
-        }
-        _openRegModal();
+    const todayRow = [...document.querySelectorAll("#report-tbody tr")]
+      .find(tr => {
+        // data属性にflight_dateが入っているtrを探す
+        return tr.dataset.flightDate === todayStr;
       });
+
+    // _currentDaysキャッシュから当日データを確認
+    if (_todayHasMiniGuarantee()) {
+      _showAlert("search-error",
+        "本日は最低保証で登録済みです。追加登録するには詳細から最低保証を外してください。");
+      const el = document.getElementById("search-error");
+      if (el) el.className = "cont-alert cont-alert--danger";
       return;
     }
 
-    const todayRow = document.querySelector("#report-tbody tr.is-today");
-    if (todayRow) {
-      _showAlert("search-error", "本日の日報が既に登録されています。編集画面を開きます。");
-      const errEl = document.getElementById("search-error");
-      errEl.className = "cont-alert cont-alert--info";
-      errEl.style.display = "block";
-      openEditModal(+todayRow.dataset.id);
-      return;
-    }
     _openRegModal();
   }
 
-  function _openRegModal() {
+  async function _openRegModal() {
+    await _loadConfig();   // 必ずconfig取得後にフォーム生成
     _resetRegForm();
     document.getElementById("register-modal-overlay").classList.add("open");
   }
@@ -498,14 +617,41 @@ const UnifiedApp = (() => {
   }
 
   function _resetRegForm() {
-    ["reg-flight-count","reg-near-miss","reg-improvement","reg-damaged"].forEach(id => {
+    // 今日の日付文字列
+    const today = new Date();
+    const todayStr = _isoDate(today);
+    document.getElementById("reg-date-display").textContent =
+      `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,"0")}/${String(today.getDate()).padStart(2,"0")}（${["日","月","火","水","木","金","土"][today.getDay()]}）`;
+
+    // 時間：現在時刻をセット
+    const hh = String(today.getHours()).padStart(2, "0");
+    const mm = String(today.getMinutes()).padStart(2, "0");
+    const ti = document.getElementById("reg-flight-time");
+    if (ti) ti.value = `${hh}:${mm}`;
+
+    // 前回登録値：当該担当者の同日分のみ使用
+    const myLast = _lastRegValues[_memberUuid];
+    const prev = (myLast && myLast.date === todayStr) ? myLast : null;
+
+    // 場所ボタン生成（前回値をプリセレクト）
+    _buildLocationButtons("reg-grp-location-wrap", "reg-grp-location", prev ? prev.location : "");
+
+    // コンボボックス生成（前回値をプリセレクト）
+    _buildSelect("reg-glider-select",  "使用機体",      prev ? prev.glider : "");
+    _buildSelect("reg-size-select",    "サイズ",         prev ? prev.size   : "");
+    _buildSelect("reg-pilot-select",   "ハーネス",       prev ? prev.pilot  : "");
+    _buildSelect("reg-pass-select",    "パッセンジャー", prev ? prev.pass   : "");
+
+    // 引継ぎ報告・最低保証は毎回クリア
+    ["reg-near-miss","reg-improvement","reg-damaged"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
-    document.querySelectorAll("#register-modal-overlay .cont-opt-btn")
-      .forEach(b => b.classList.remove("selected"));
+    const chk = document.getElementById("reg-mini-guarantee");
+    if (chk) chk.checked = false;
+
     const rr = document.getElementById("register-result");
-    if (rr) rr.style.display = "none";
+    if (rr) { rr.style.display = "none"; rr.textContent = ""; }
   }
 
 
@@ -515,15 +661,23 @@ const UnifiedApp = (() => {
   async function register() {
     if (!_memberName) return;
 
+    const miniGuarantee = document.getElementById("reg-mini-guarantee")?.checked || false;
+    const location = _getLocationSelected("reg-grp-location-wrap");
+    if (!location && !miniGuarantee) {
+      _showRegResult("場所を選択してください", "danger");
+      return;
+    }
+
     const payload = {
       uuid:              _memberUuid,
       name:              _memberName,
-      daily_flight:      parseInt(document.getElementById("reg-flight-count").value) || 0,
-      takeoff_location:  _getSelected("reg-grp-location"),
-      used_glider:       _getSelected("reg-grp-glider"),
-      size:              _getSelected("reg-grp-size"),
-      pilot_harness:     _getSelected("reg-grp-pilot"),
-      passenger_harness: _getSelected("reg-grp-pass"),
+      flight_time:       document.getElementById("reg-flight-time").value || "",
+      takeoff_location:  location,
+      used_glider:       document.getElementById("reg-glider-select").value || "",
+      size:              document.getElementById("reg-size-select").value || "",
+      pilot_harness:     document.getElementById("reg-pilot-select").value || "",
+      passenger_harness: document.getElementById("reg-pass-select").value || "",
+      mini_guarantee:    miniGuarantee,
       near_miss:         document.getElementById("reg-near-miss").value.trim(),
       improvement:       document.getElementById("reg-improvement").value.trim(),
       damaged_section:   document.getElementById("reg-damaged").value.trim(),
@@ -540,7 +694,15 @@ const UnifiedApp = (() => {
       if (!resp.ok) { _showRegResult(data.error || "登録に失敗しました", "danger"); return; }
     } catch { _showRegResult("通信エラーが発生しました", "danger"); return; }
 
-    _showRegResult(data.message || "登録しました ✓", "success");
+    // 前回登録値をuuid別に保存（同一担当者の同日2本目以降に引き継ぐ）
+    _lastRegValues[_memberUuid] = {
+      date:     _isoDate(new Date()),
+      location: payload.takeoff_location,
+      glider:   payload.used_glider,
+      size:     payload.size,
+      pilot:    payload.pilot_harness,
+      pass:     payload.passenger_harness,
+    };
 
     const today = new Date();
     _reportYear  = today.getFullYear();
@@ -548,40 +710,108 @@ const UnifiedApp = (() => {
     _updateReportMonthLabel();
     await loadMyReports();
 
-    setTimeout(() => closeRegisterModal(), 1400);
+    // 登録成功 → モーダルを閉じる
+    closeRegisterModal();
   }
 
 
   /* ═══════════════════════
-     日報編集モーダル
+     日報詳細ポップアップ（日付単位）
   ═══════════════════════ */
-  function openEditModal(id) {
-    _editId = id;
-    const row = document.querySelector(`tr[data-id="${id}"]`);
-    if (!row) return;
+  function openDetailPopup(day) {
+    const d = new Date(day.flight_date + "T00:00:00");
+    const dow = ["日","月","火","水","木","金","土"][d.getDay()];
+    document.getElementById("detail-popup-date").textContent =
+      `${d.getMonth()+1}月${d.getDate()}日（${dow}）の詳細`;
 
-    document.getElementById("modal-flight-count").value = row.dataset.flightCount || "0";
+    const todayStr = _isoDate(new Date());
+    const isToday  = day.flight_date === todayStr;
 
-    ["modal-grp-location","modal-grp-glider","modal-grp-size","modal-grp-pilot","modal-grp-pass"]
-      .forEach(g => document.querySelectorAll("." + g + " .cont-opt-btn").forEach(b => b.classList.remove("selected")));
+    const body = document.getElementById("detail-popup-body");
+    body.innerHTML = "";
 
-    _preselectModal("modal-grp-location", row.dataset.location     || "");
-    _preselectModal("modal-grp-glider",   row.dataset.glider       || "");
-    _preselectModal("modal-grp-size",     row.dataset.size         || "");
-    _preselectModal("modal-grp-pilot",    row.dataset.pilotHarness || "");
-    _preselectModal("modal-grp-pass",     row.dataset.passHarness  || "");
+    (day.records || []).forEach((r, idx) => {
+      const card = document.createElement("div");
+      card.className = "uni-detail-card";
 
-    document.getElementById("modal-near-miss").value   = row.dataset.nearMiss    || "";
-    document.getElementById("modal-improvement").value = row.dataset.improvement || "";
-    document.getElementById("modal-damaged").value     = row.dataset.damaged     || "";
+      // 最低保証バッジ
+      const miniBadge = r.mini_guarantee
+        ? `<span class="uni-mini-guarantee-badge">最低保証</span>` : "";
 
-    document.getElementById("edit-modal-overlay").classList.add("open");
+      // 引継ぎ報告まとめ
+      const handovers = [
+        r.near_miss      ? `<p><span class="uni-detail-label">ヒヤリハット</span>${_esc(r.near_miss)}</p>` : "",
+        r.improvement    ? `<p><span class="uni-detail-label">営業改善点</span>${_esc(r.improvement)}</p>` : "",
+        r.damaged_section? `<p><span class="uni-detail-label">機体破損</span>${_esc(r.damaged_section)}</p>` : "",
+      ].filter(Boolean).join("");
+
+      card.innerHTML = `
+        <div class="uni-detail-card-head">
+          <span class="uni-detail-no">${r.mini_guarantee ? "最低保証" : (idx + 1) + "本目"}</span>
+          <span class="uni-detail-time">${r.flight_time ? "⏱ " + r.flight_time : "—"}</span>
+          ${r.takeoff_location ? `<span class="cont-chip cont-chip--loc">${_esc(r.takeoff_location)}</span>` : ""}
+          ${miniBadge}
+          ${isToday
+            ? `<button class="cont-btn-edit uni-detail-edit-btn" onclick="UnifiedApp.openEditModal(${r.id});UnifiedApp.closeDetailPopup()">編集</button>`
+            : ""}
+        </div>
+        ${handovers ? `<div class="uni-detail-handover">${handovers}</div>` : ""}
+      `;
+      body.appendChild(card);
+    });
+
+    document.getElementById("detail-popup-overlay").classList.add("open");
   }
 
-  function _preselectModal(groupClass, value) {
-    document.querySelectorAll("." + groupClass + " .cont-opt-btn").forEach(b => {
-      if (b.dataset.val === value) b.classList.add("selected");
-    });
+  function closeDetailPopup() {
+    document.getElementById("detail-popup-overlay").classList.remove("open");
+  }
+
+
+  /* ═══════════════════════
+     日報編集モーダル（1レコード）
+  ═══════════════════════ */
+  async function openEditModal(id) {
+    _editId = id;
+
+    // config と APIデータを並行取得
+    await _loadConfig();
+
+    let r;
+    try {
+      const resp = await fetch(`/api/cont/${id}`);
+      r = await resp.json();
+    } catch { alert("読み込みに失敗しました"); return; }
+
+    // 日付表示
+    const d = new Date((r.flight_date || "") + "T00:00:00");
+    const dow = ["日","月","火","水","木","金","土"][d.getDay()];
+    const dateEl = document.getElementById("edit-date-display");
+    if (dateEl) dateEl.textContent = `${d.getMonth()+1}/${d.getDate()}（${dow}）`;
+
+    // 最低保証チェック
+    const editChk = document.getElementById("edit-mini-guarantee");
+    if (editChk) editChk.checked = !!r.mini_guarantee;
+
+    // 時間
+    const ti = document.getElementById("edit-flight-time");
+    if (ti) ti.value = r.flight_time || "";
+
+    // 場所ボタン生成（現在値をプリセレクト）
+    _buildLocationButtons("edit-grp-location-wrap", "edit-grp-location", r.takeoff_location || "");
+
+    // コンボボックス
+    _buildSelect("edit-glider-select", "使用機体",      r.used_glider       || "");
+    _buildSelect("edit-size-select",   "サイズ",        r.size              || "");
+    _buildSelect("edit-pilot-select",  "ハーネス",     r.pilot_harness     || "");
+    _buildSelect("edit-pass-select",   "パッセンジャー", r.passenger_harness || "");
+
+    // テキストエリア
+    document.getElementById("edit-near-miss").value   = r.near_miss       || "";
+    document.getElementById("edit-improvement").value = r.improvement     || "";
+    document.getElementById("edit-damaged").value     = r.damaged_section || "";
+
+    document.getElementById("edit-modal-overlay").classList.add("open");
   }
 
   function closeModal() {
@@ -592,16 +822,21 @@ const UnifiedApp = (() => {
   async function saveEdit() {
     if (!_editId) return;
 
+    const miniGuarantee = document.getElementById("edit-mini-guarantee")?.checked || false;
+    const location = _getLocationSelected("edit-grp-location-wrap");
+    if (!location && !miniGuarantee) { alert("場所を選択してください"); return; }
+
     const payload = {
-      daily_flight:      parseInt(document.getElementById("modal-flight-count").value) || 0,
-      takeoff_location:  _getSelected("modal-grp-location"),
-      used_glider:       _getSelected("modal-grp-glider"),
-      size:              _getSelected("modal-grp-size"),
-      pilot_harness:     _getSelected("modal-grp-pilot"),
-      passenger_harness: _getSelected("modal-grp-pass"),
-      near_miss:         document.getElementById("modal-near-miss").value.trim(),
-      improvement:       document.getElementById("modal-improvement").value.trim(),
-      damaged_section:   document.getElementById("modal-damaged").value.trim(),
+      flight_time:       document.getElementById("edit-flight-time").value || "",
+      takeoff_location:  location,
+      used_glider:       document.getElementById("edit-glider-select").value || "",
+      size:              document.getElementById("edit-size-select").value || "",
+      pilot_harness:     document.getElementById("edit-pilot-select").value || "",
+      passenger_harness: document.getElementById("edit-pass-select").value || "",
+      mini_guarantee:    miniGuarantee,
+      near_miss:         document.getElementById("edit-near-miss").value.trim(),
+      improvement:       document.getElementById("edit-improvement").value.trim(),
+      damaged_section:   document.getElementById("edit-damaged").value.trim(),
     };
 
     let data;
@@ -613,6 +848,25 @@ const UnifiedApp = (() => {
       });
       data = await resp.json();
       if (!resp.ok) { alert(data.error || "更新に失敗しました"); return; }
+    } catch { alert("通信エラーが発生しました"); return; }
+
+    await loadMyReports();
+    closeModal();
+  }
+
+
+  /* ═══════════════════════
+     日報削除（当日分のみ）
+  ═══════════════════════ */
+  async function deleteRecord() {
+    if (!_editId) return;
+    if (!confirm("この記録を削除します。よろしいですか？")) return;
+
+    let data;
+    try {
+      const resp = await fetch(`/api/cont/${_editId}`, { method: "DELETE" });
+      data = await resp.json();
+      if (!resp.ok) { alert(data.error || "削除に失敗しました"); return; }
     } catch { alert("通信エラーが発生しました"); return; }
 
     await loadMyReports();
@@ -951,11 +1205,13 @@ const UnifiedApp = (() => {
     init, lookup, searchByName, selectNameItem, verifyPass, closePassModal, openQr, closeQrScan,
     clearMember, selectOpt,
     register, closeRegisterModal, openRegisterModal,
-    openEditModal, closeModal, saveEdit,
+    openEditModal, closeModal, saveEdit, deleteRecord,
+    openDetailPopup, closeDetailPopup,
     navigateReportMonth, navigateCalMonth,
     save,
     closeMembersPopup,
     unsavedSaveAndContinue, unsavedDiscardAndContinue, unsavedCancel,
+    _setRegisterBtnDisabled,
   };
 
 })();

@@ -29,6 +29,7 @@ def _contract_to_dict(c: Contract) -> dict:
     return {
         "id":                c.id,
         "flight_date":       _fd(c.flight_date),
+        "flight_time":       c.flight_time or "",
         "uuid":              c.uuid,
         "name":              c.name,
         "daily_flight":      c.daily_flight,
@@ -37,10 +38,11 @@ def _contract_to_dict(c: Contract) -> dict:
         "size":              c.size,
         "pilot_harness":     c.pilot_harness,
         "repack_date":       _fd(c.repack_date),
-        "passenger_harness": c.passenger_harness,   # フロントは passenger_harness で統一
+        "passenger_harness": c.passenger_harness,
         "near_miss":         c.near_miss,
         "improvement":       c.improvement,
         "damaged_section":   c.damaged_section,
+        "mini_guarantee":    bool(c.mini_guarantee),
     }
 
 
@@ -206,78 +208,90 @@ def api_verify_pass():
 
 @contract_bp.route("/api/cont/register", methods=["POST"])
 def api_register():
+    """
+    1本飛ぶ毎に1レコード登録する方式。
+    Request JSON:
+    {
+      "uuid": "...", "name": "...",
+      "flight_time": "09:30",
+      "takeoff_location": "FUJIパラ",
+      "used_glider": "K24", "size": "ML(41)",
+      "pilot_harness": "...", "passenger_harness": "...",
+      "mini_guarantee": false,          # 最低保証チェック
+      "near_miss": "", "improvement": "", "damaged_section": ""
+    }
+    """
+    from sqlalchemy import text as _text
     data = request.get_json(silent=True) or {}
     target_uuid = data.get("uuid")
     name = (data.get("name") or "").strip()
     today = date.today()
 
-    # フライト本数
-    flight_count = int(data.get("daily_flight") or 0)
-
-    # 金額計算
-    if flight_count <= 1:
-        total_amount = 6000
-        mini_guarantee = True
-    else:
-        total_amount = 4000 * flight_count
-        mini_guarantee = False
-
-        if 2 <= flight_count <= 3:
-            total_amount -= 1000
-        elif flight_count >= 4:
-            total_amount -= 2000
-        
     if not target_uuid:
         return jsonify({"error": "UUIDが取得できません"}), 400
 
-    # 当日かつ同じUUIDのレコードが既に存在するか確認
-    record = Contract.query.filter_by(uuid=target_uuid, flight_date=today).first()
+    flight_time    = (data.get("flight_time") or "").strip()
+    mini_guarantee = bool(data.get("mini_guarantee", False))
 
-    if record:
-        # 【既存データの上書き】
-        record.name              = name # 名前が変わっている可能性も考慮
-        record.daily_flight      = data.get("daily_flight") or 0
-        record.takeoff_location  = data.get("takeoff_location") or ""
-        record.used_glider       = data.get("used_glider") or ""
-        record.size              = data.get("size") or ""
-        record.pilot_harness     = data.get("pilot_harness") or ""
-        record.passenger_harness = data.get("passenger_harness") or ""
-        record.near_miss         = data.get("near_miss") or ""
-        record.improvement       = data.get("improvement") or ""
-        record.damaged_section   = data.get("damaged_section") or ""
+    # 場所は必須（最低保証時は任意）
+    takeoff_location = (data.get("takeoff_location") or "").strip()
+    if not takeoff_location and not mini_guarantee:
+        return jsonify({"error": "場所は必須です"}), 400
+    def _get_config_value(item_name):
+        row = db.session.execute(_text("""
+            SELECT v.value FROM config_master m
+            JOIN config_values v ON v.master_id = m.id
+            WHERE m.category = '請負' AND m.item_name = :item_name
+              AND m.is_active = true AND v.is_active = true
+            ORDER BY v.sort_order, v.id LIMIT 1
+        """), {"item_name": item_name}).fetchone()
+        try:
+            return int(float(row[0])) if row else 0
+        except (ValueError, TypeError):
+            return 0
 
-        record.daily_flight = flight_count
-        record.total_amount = total_amount
-        record.mini_guarantee = mini_guarantee
-        
-        message = "本日のデータを更新しました"
+    if mini_guarantee:
+        # 最低保証：本数0・金額は最低保証料金
+        flight_count  = 0
+        total_amount  = _get_config_value("最低保証")
     else:
-        # 【新規登録】
-        record = Contract(
-            flight_date       = today,
-            uuid              = target_uuid,
-            name              = name,
-        #    daily_flight      = data.get("daily_flight") or 0,
-            takeoff_location  = data.get("takeoff_location") or "",
-            used_glider       = data.get("used_glider") or "",
-            size              = data.get("size") or "",
-            pilot_harness     = data.get("pilot_harness") or "",
-            repack_date       = None,
-            passenger_harness = data.get("passenger_harness") or "",
-            near_miss         = data.get("near_miss") or "",
-            improvement       = data.get("improvement") or "",
-            damaged_section   = data.get("damaged_section") or "",
+        # 通常：1本=1本料金（累積計算なし）
+        flight_count  = 1
+        total_amount  = _get_config_value("1本料金")
 
-            daily_flight = flight_count,
-            total_amount = total_amount,
-            mini_guarantee = mini_guarantee,
-        )
-        db.session.add(record)
-        message = "登録しました"
+    # 新規レコード登録
+    record = Contract(
+        flight_date       = today,
+        flight_time       = flight_time or None,
+        uuid              = target_uuid,
+        name              = name,
+        daily_flight      = flight_count,
+        takeoff_location  = takeoff_location,
+        used_glider       = (data.get("used_glider") or "").strip() or None,
+        size              = (data.get("size") or "").strip() or None,
+        pilot_harness     = (data.get("pilot_harness") or "").strip() or None,
+        repack_date       = None,
+        passenger_harness = (data.get("passenger_harness") or "").strip() or None,
+        near_miss         = (data.get("near_miss") or "").strip() or None,
+        improvement       = (data.get("improvement") or "").strip() or None,
+        damaged_section   = (data.get("damaged_section") or "").strip() or None,
+        total_amount      = total_amount,
+        mini_guarantee    = mini_guarantee,
+    )
+    db.session.add(record)
 
     try:
         db.session.commit()
-        return jsonify({"status": "ok", "id": record.id, "message": message}), 201
+        # 当日の通常フライト本数（最低保証除く）
+        flight_number = Contract.query.filter_by(
+            uuid=target_uuid, flight_date=today, mini_guarantee=False
+        ).count()
+        return jsonify({
+            "status":        "ok",
+            "id":            record.id,
+            "message":       "登録しました",
+            "flight_number": flight_number,
+        }), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"保存失敗: {str(e)}"}), 500
@@ -293,8 +307,31 @@ def api_get(record_id):
     return jsonify(_contract_to_dict(record))
 
 
+@contract_bp.route("/api/cont/<int:record_id>", methods=["DELETE"])
+def api_delete(record_id):
+    """
+    1レコード（1本分）の削除。当日分のみ。
+    Response JSON: { "status": "ok", "message": "削除しました" }
+    """
+    record = Contract.query.get_or_404(record_id)
+
+    if record.flight_date != date.today():
+        return jsonify({"error": "削除できるのは当日分のみです"}), 403
+
+    try:
+        db.session.delete(record)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"削除失敗: {str(e)}"}), 500
+
+    return jsonify({"status": "ok", "message": "削除しました"})
+
+
 @contract_bp.route("/api/cont/<int:record_id>", methods=["PUT"])
 def api_update(record_id):
+    """1レコード（1本分）の編集。当日分のみ。mini_guarantee対応。"""
+    from sqlalchemy import text as _text
     record = Contract.query.get_or_404(record_id)
 
     # 当日分のみ編集可
@@ -302,35 +339,46 @@ def api_update(record_id):
         return jsonify({"error": "編集できるのは当日分のみです"}), 403
 
     data = request.get_json(silent=True) or {}
-    # ▼ フライト本数取得
-    flight_count = int(data.get("daily_flight") or 0)
+    mini_guarantee = bool(data.get("mini_guarantee", record.mini_guarantee))
 
-    # ▼ 金額再計算
-    if flight_count <= 1:
-        total_amount = 6000
-        mini_guarantee = True
+    # 場所（最低保証時は任意）
+    takeoff_location = (data.get("takeoff_location") or "").strip()
+    if not takeoff_location and not mini_guarantee:
+        return jsonify({"error": "場所は必須です"}), 400
+
+    # config_masterから料金取得
+    def _get_config_value(item_name):
+        row = db.session.execute(_text("""
+            SELECT v.value FROM config_master m
+            JOIN config_values v ON v.master_id = m.id
+            WHERE m.category = '請負' AND m.item_name = :item_name
+              AND m.is_active = true AND v.is_active = true
+            ORDER BY v.sort_order, v.id LIMIT 1
+        """), {"item_name": item_name}).fetchone()
+        try:
+            return int(float(row[0])) if row else 0
+        except (ValueError, TypeError):
+            return 0
+
+    if mini_guarantee:
+        daily_flight = 0
+        total_amount = _get_config_value("最低保証")
     else:
-        total_amount = 4000 * flight_count
-        mini_guarantee = False
+        daily_flight = 1
+        total_amount = _get_config_value("1本料金")
 
-        if 2 <= flight_count <= 3:
-            total_amount -= 1000
-        elif flight_count >= 4:
-            total_amount -= 2000
-
-    # ▼ 更新
-    record.daily_flight      = flight_count
+    record.flight_time       = (data.get("flight_time") or "").strip() or None
+    record.takeoff_location  = takeoff_location or None
+    record.used_glider       = (data.get("used_glider") or "").strip() or None
+    record.size              = (data.get("size") or "").strip() or None
+    record.pilot_harness     = (data.get("pilot_harness") or "").strip() or None
+    record.passenger_harness = (data.get("passenger_harness") or "").strip() or None
+    record.near_miss         = (data.get("near_miss") or "").strip() or None
+    record.improvement       = (data.get("improvement") or "").strip() or None
+    record.damaged_section   = (data.get("damaged_section") or "").strip() or None
+    record.daily_flight      = daily_flight
     record.total_amount      = total_amount
     record.mini_guarantee    = mini_guarantee
-#    record.daily_flight      = data.get("daily_flight",     record.daily_flight)
-    record.takeoff_location  = data.get("takeoff_location", record.takeoff_location)
-    record.used_glider       = data.get("used_glider",      record.used_glider)
-    record.size              = data.get("size",             record.size)
-    record.pilot_harness     = data.get("pilot_harness",    record.pilot_harness)
-    record.passenger_harness = data.get("passenger_harness", record.passenger_harness)
-    record.near_miss         = data.get("near_miss",        record.near_miss)
-    record.improvement       = data.get("improvement",      record.improvement)
-    record.damaged_section   = data.get("damaged_section",  record.damaged_section)
 
     db.session.commit()
     return jsonify({"status": "ok", "message": "更新しました"})
@@ -499,10 +547,28 @@ def cont_info_summary():
 def cont_info_flight_days():
     """
     contract=True の全メンバーについて当月の
-    フライト日数・フライト本数・合計金額を返す。
+    フライト日数・フライト本数・施設料控除後合計金額を返す。
     """
+    from sqlalchemy import text as _text
+
     year, month = _get_year_month(request)
     members = _contract_members()
+
+    # 施設料を config_master から取得
+    def _get_facility_fee():
+        row = db.session.execute(_text("""
+            SELECT v.value FROM config_master m
+            JOIN config_values v ON v.master_id = m.id
+            WHERE m.category = '請負' AND m.item_name = '施設料'
+              AND m.is_active = true AND v.is_active = true
+            ORDER BY v.sort_order, v.id LIMIT 1
+        """)).fetchone()
+        try:
+            return int(float(row[0])) if row else 0
+        except (ValueError, TypeError):
+            return 0
+
+    facility_fee = _get_facility_fee()
 
     # 日数と合計を同時に集計
     agg = (
@@ -510,7 +576,7 @@ def cont_info_flight_days():
             Contract.uuid,
             func.count(func.distinct(Contract.flight_date)).label("flight_days"),
             func.coalesce(func.sum(Contract.daily_flight), 0).label("total_flights"),
-            func.coalesce(func.sum(Contract.total_amount),  0).label("total_amount"),
+            func.coalesce(func.sum(Contract.total_amount),  0).label("total_amount_raw"),
             func.coalesce(
                 func.sum(db.case((Contract.mini_guarantee == True, 1), else_=0)), 0
             ).label("mini_guarantee_days"),
@@ -524,20 +590,54 @@ def cont_info_flight_days():
     )
     agg_map = {str(row.uuid).lower(): row for row in agg}
 
+    # 施設料控除は日別に計算する必要があるため、
+    # 個人ごとに日別フライト本数を取得して控除額を算出する
+    # 日別集計（uuid + flight_date ごとの通常フライト本数）
+    day_agg = (
+        db.session.query(
+            Contract.uuid,
+            Contract.flight_date,
+            func.coalesce(func.sum(Contract.daily_flight), 0).label("day_flights"),
+        )
+        .filter(
+            db.extract("year",  Contract.flight_date) == year,
+            db.extract("month", Contract.flight_date) == month,
+            Contract.mini_guarantee == False,
+        )
+        .group_by(Contract.uuid, Contract.flight_date)
+        .all()
+    )
+
+    # uuid別に施設料控除額を合算
+    deduction_map: dict[str, int] = {}
+    for row in day_agg:
+        uuid_str = str(row.uuid).lower()
+        n = int(row.day_flights)
+        if n >= 4:
+            deduction = facility_fee * 2
+        elif n >= 2:
+            deduction = facility_fee
+        else:
+            deduction = 0
+        deduction_map[uuid_str] = deduction_map.get(uuid_str, 0) + deduction
+
     result = []
     for m in members:
         uuid_str = str(m.uuid).lower()
         row = agg_map.get(uuid_str)
+        total_raw  = int(row.total_amount_raw) if row else 0
+        deduction  = deduction_map.get(uuid_str, 0)
         result.append({
             "uuid":               uuid_str,
             "name":               m.full_name,
             "flight_days":        int(row.flight_days)        if row else 0,
             "total_flights":      int(row.total_flights)      if row else 0,
-            "total_amount":       int(row.total_amount)       if row else 0,
+            "total_amount":       total_raw - deduction,
             "mini_guarantee_days": int(row.mini_guarantee_days) if row else 0,
+            "facility_fee":       facility_fee,
         })
 
-    return jsonify({"year": year, "month": month, "data": result})
+    return jsonify({"year": year, "month": month, "data": result, "facility_fee": facility_fee})
 
 
 # ─────────────────────────────────────────
@@ -549,11 +649,32 @@ def cont_info_flight_days():
 def cont_info_detail(member_uuid: str):
     """
     指定した uuid のメンバーについて
-    当月の日別フライト本数・合計金額・最低保証・備考を返す。
-    備考は near_miss / improvement / damaged_section を結合して返す。
+    当月の日別フライト本数・施設料控除後金額・最低保証・備考を返す。
+    1本=1レコード方式のため、同じ日付のレコードをグループ化して返す。
+    - flight_times    : その日の飛行時刻リスト（None は除外）
+    - daily_flight    : その日の合計本数（mini_guarantee=False のレコード数）
+    - total_amount    : 施設料控除後の合計金額
+    - facility_fee    : 適用された施設料控除額（表示用）
+    - mini_guarantee  : その日に最低保証レコードが存在するか
+    - notes           : near_miss / improvement / damaged_section を結合
     """
+    from sqlalchemy import text as _text
+
     year, month = _get_year_month(request)
     member_uuid = member_uuid.lower()   # UUID 大文字/小文字を統一
+
+    # 施設料を config_master から取得
+    fee_row = db.session.execute(_text("""
+        SELECT v.value FROM config_master m
+        JOIN config_values v ON v.master_id = m.id
+        WHERE m.category = '請負' AND m.item_name = '施設料'
+          AND m.is_active = true AND v.is_active = true
+        ORDER BY v.sort_order, v.id LIMIT 1
+    """)).fetchone()
+    try:
+        facility_fee = int(float(fee_row[0])) if fee_row else 0
+    except (ValueError, TypeError):
+        facility_fee = 0
 
     records = (
         Contract.query
@@ -562,7 +683,7 @@ def cont_info_detail(member_uuid: str):
             db.extract("year",  Contract.flight_date) == year,
             db.extract("month", Contract.flight_date) == month,
         )
-        .order_by(Contract.flight_date)
+        .order_by(Contract.flight_date, Contract.flight_time, Contract.id)
         .all()
     )
 
@@ -575,30 +696,78 @@ def cont_info_detail(member_uuid: str):
         ).first()
         display_name = member.full_name if member else member_uuid
 
-    data = []
+    # 日付ごとにグループ化
+    from collections import OrderedDict
+    grouped = OrderedDict()
     for r in records:
-        # 備考を複数フィールドから結合（空文字は除外）
-        notes_parts = [
-            f"ヒヤリ:{r.near_miss}"       if r.near_miss       else "",
-            f"改善:{r.improvement}"        if r.improvement       else "",
-            f"破損:{r.damaged_section}"    if r.damaged_section   else "",
-        ]
-        notes = " / ".join([p for p in notes_parts if p])
+        key = r.flight_date.isoformat() if r.flight_date else "unknown"
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(r)
+
+    data = []
+    for flight_date_str, day_records in grouped.items():
+        # 通常フライト本数（mini_guarantee=False のレコードの daily_flight 合計）
+        normal_flights = sum(int(r.daily_flight or 0) for r in day_records if not r.mini_guarantee)
+
+        # 飛行時刻リスト（None・空文字を除外、重複も除外）
+        flight_times = []
+        seen_times = set()
+        for r in day_records:
+            t = (r.flight_time or "").strip()
+            if t and t not in seen_times:
+                flight_times.append(t)
+                seen_times.add(t)
+        flight_times.sort()
+
+        # 合計金額（各レコードの total_amount を合算）
+        day_total_amount_raw = sum(int(r.total_amount or 0) for r in day_records)
+
+        # 施設料控除（通常フライト本数に基づく）
+        if normal_flights >= 4:
+            day_deduction = facility_fee * 2
+        elif normal_flights >= 2:
+            day_deduction = facility_fee
+        else:
+            day_deduction = 0
+
+        day_total_amount = day_total_amount_raw - day_deduction
+
+        # 最低保証：その日に mini_guarantee=True のレコードが1件以上あるか
+        day_mini_guarantee = any(r.mini_guarantee for r in day_records)
+
+        # 備考を全レコードから収集（重複除外）
+        notes_set = []
+        seen_notes = set()
+        for r in day_records:
+            parts = [
+                f"ヒヤリ:{r.near_miss}"       if r.near_miss       else "",
+                f"改善:{r.improvement}"        if r.improvement       else "",
+                f"破損:{r.damaged_section}"    if r.damaged_section   else "",
+            ]
+            note = " / ".join([p for p in parts if p])
+            if note and note not in seen_notes:
+                notes_set.append(note)
+                seen_notes.add(note)
+        notes = "　".join(notes_set)
 
         data.append({
-            "flight_date":      r.flight_date.isoformat() if r.flight_date else None,
-            "daily_flight":     int(r.daily_flight) if r.daily_flight else 0,
-            "total_amount":     int(r.total_amount) if r.total_amount else 0,
-            "mini_guarantee":   bool(r.mini_guarantee),
+            "flight_date":      flight_date_str,
+            "daily_flight":     normal_flights,
+            "flight_times":     flight_times,
+            "total_amount":     day_total_amount,
+            "facility_fee":     day_deduction,
+            "mini_guarantee":   day_mini_guarantee,
             "notes":            notes,
         })
 
     return jsonify({
-        "uuid":   member_uuid,
-        "name":   display_name,
-        "year":   year,
-        "month":  month,
-        "data":   data,
+        "uuid":         member_uuid,
+        "name":         display_name,
+        "year":         year,
+        "month":        month,
+        "facility_fee": facility_fee,
+        "data":         data,
     })
 
 
@@ -702,12 +871,20 @@ def cont_info_handover_detail():
 def api_my_reports():
     """
     指定会員の月別日報一覧を返す。
-    統合ページ（請負日報）から呼び出される。
+    1本=1レコードなので、日付ごとにグループ化して返す。
 
     Response JSON:
     {
       "year": 2026, "month": 3,
-      "records": [ { ...contract fields... }, ... ]
+      "days": [
+        {
+          "flight_date": "2026-03-15",
+          "count": 3,                    # その日の本数（レコード件数）
+          "locations": ["FUJIパラ"],     # ユニークな場所リスト
+          "has_handover": true,          # 引継ぎ報告有無
+          "records": [ { ...各フライト詳細... }, ... ]
+        }, ...
+      ]
     }
     """
     today = date.today()
@@ -725,13 +902,44 @@ def api_my_reports():
             db.extract("year",  Contract.flight_date) == year,
             db.extract("month", Contract.flight_date) == month,
         )
-        .order_by(Contract.flight_date.desc(), Contract.id.desc())
+        .order_by(Contract.flight_date.desc(), Contract.flight_time.asc(), Contract.id.asc())
         .all()
     )
 
+    # 日付ごとにグループ化
+    from collections import defaultdict, OrderedDict
+    day_map = OrderedDict()
+    for r in records:
+        ds = _fd(r.flight_date)
+        if ds not in day_map:
+            day_map[ds] = []
+        day_map[ds].append(r)
+
+    days = []
+    for ds, recs in day_map.items():
+        has_handover = any(
+            (r.near_miss or "") or (r.improvement or "") or (r.damaged_section or "")
+            for r in recs
+        )
+        locs = list(dict.fromkeys(
+            r.takeoff_location for r in recs if r.takeoff_location
+        ))
+        # 本数は daily_flight の合計（最低保証レコードは0なので加算されない）
+        flight_count = sum(int(r.daily_flight or 0) for r in recs)
+        # 当日に最低保証レコードが1件でもあるか
+        has_mini_guarantee = any(r.mini_guarantee for r in recs)
+        days.append({
+            "flight_date":       ds,
+            "count":             flight_count,
+            "has_mini_guarantee": has_mini_guarantee,
+            "locations":         locs,
+            "has_handover":      has_handover,
+            "records":           [_contract_to_dict(r) for r in recs],
+        })
+
     return jsonify({
-        "year":    year,
-        "month":   month,
-        "records": [_contract_to_dict(r) for r in records],
+        "year":  year,
+        "month": month,
+        "days":  days,
     })
 

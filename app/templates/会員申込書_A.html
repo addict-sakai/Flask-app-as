@@ -21,15 +21,20 @@
   <!-- 固定ヘッダー -->
   <div class="fixed-header">
     <div class="page-header">
-      <div class="page-header-left">
-        <!-- <a href="/apply_flyer" class="btn btn-ghost top-btn"><span class="icon">←</span>戻る</a> -->
-        <a></a>
+      <div class="page-header-left" style="position:static; flex:1;">
+        <h1 class="page-title" style="font-size:16px;">Ａコース入校申込</h1>
       </div>
-      <h1 class="page-title">Ａコース　入校申込書</h1>
-      <div class="page-header-right">
-        <button type="button" class="btn btn-ghost" id="printBtn">🖨 印刷</button>
-        <button type="button" class="btn btn-primary" id="submitBtn">申 請</button>
-        <button type="button" class="btn btn-ghost" id="exitBtn">終 了</button>
+      <div class="page-header-right" style="position:static; flex-shrink:0;">
+        <button type="button" class="hamburger-btn" id="hmMenuBtn" aria-label="メニュー">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="hm-dropdown" id="hmDropdown">
+          <button type="button" class="hm-item hm-item--primary" id="submitBtn">✔ 申　請</button>
+          <button type="button" class="hm-item" id="printBtn">🖨 印　刷</button>
+          <button type="button" class="hm-item hm-item--ghost" id="exitBtn">✖ 終　了</button>
+        </div>
       </div>
     </div>
   </div>

@@ -17,42 +17,35 @@
   <header class="global-header">
     <div class="global-header-left">
       <a href="/apply_staff_manage" class="btn-back-header">
-        ← 管理メニュー
+        ← 管理
       </a>
     </div>
     <div class="global-header-center">
       <span class="global-brand-title">設定管理</span>
     </div>
     <div class="global-header-right">
-
-      <!-- ＋大項目を追加ボタン（現在非表示） -->
-      <!-- <button class="btn-add-category" id="btnAddCategory" style="display:none;"> -->
-      <button class="btn-add-category" id="btnAddCategory" style="display:block;">
-        ＋ 大項目を追加
-      </button>
-
-      <!-- ハンバーガーメニュー -->
-      <div class="hamburger-wrap" id="hamburgerWrap">
-        <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く" aria-expanded="false">
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-        </button>
-        <!-- ドロップダウンパネル -->
-        <div class="hamburger-dropdown" id="hamburgerDropdown">
-          <ul id="categoryList" class="hamburger-cat-list">
-            <li class="hamburger-cat-item loading">読み込み中…</li>
-          </ul>
-        </div>
-      </div>
-
+      <!-- 右側は空（メニューはサイドバーへ移動） -->
     </div>
   </header>
 
   <!-- ══════════════════════════════════════════
-       ボディ（メインのみ）
+       ボディ（サイドバー＋メイン）
        ══════════════════════════════════════════ -->
   <div class="body-wrapper">
+
+    <!-- ── サイドバー ── -->
+    <aside class="config-sidebar">
+      <div class="config-sidebar-top">
+        <button class="btn-add-category-side" id="btnAddCategory">
+          ＋ 大項目を追加
+        </button>
+      </div>
+      <nav class="config-sidebar-nav">
+        <ul id="categoryList" class="config-cat-list">
+          <li class="config-cat-item loading">読み込み中…</li>
+        </ul>
+      </nav>
+    </aside>
 
     <!-- メインコンテンツ -->
     <main class="main">
@@ -60,7 +53,7 @@
       <!-- サブヘッダー -->
       <header class="main-header">
         <div class="header-left">
-          <h1 class="header-title" id="headerTitle">メニューから項目を選択してください</h1>
+          <h1 class="header-title" id="headerTitle">サイドバーから項目を選択してください</h1>
           <span class="header-badge" id="headerBadge" hidden></span>
         </div>
         <div class="header-right">
@@ -78,7 +71,7 @@
         <div class="table-wrapper" id="tableWrapper">
           <div class="empty-state">
             <div class="empty-icon">📋</div>
-            <p>上のメニューから大項目を選択してください</p>
+            <p>左のサイドバーから大項目を選択してください</p>
           </div>
         </div>
       </div>
