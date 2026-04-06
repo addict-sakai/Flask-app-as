@@ -130,31 +130,15 @@ function bindRegInputEvents() {
    ハンバーガーメニュー制御
    ================================================ */
 function initHamburgerMenu() {
-  const btn      = $("hamburgerBtn");
-  const dropdown = $("hamburgerDropdown");
-  const overlay  = $("hamburgerOverlay");
-  if (!btn || !dropdown) return;
+  // サイドバー形式：hamburgerBtn/hamburgerDropdown は不要
+  // 各サイドバーアイテムに直接イベントを登録する
 
-  function openMenu() {
-    btn.classList.add("open");
-    dropdown.classList.add("open");
-    overlay.classList.add("open");
-    btn.setAttribute("aria-expanded", "true");
-  }
-  function closeMenu() {
-    btn.classList.remove("open");
-    dropdown.classList.remove("open");
-    overlay.classList.remove("open");
-    btn.setAttribute("aria-expanded", "false");
-  }
-  function toggleMenu() {
-    dropdown.classList.contains("open") ? closeMenu() : openMenu();
+  function closeMenu() { /* サイドバーはトグル不要 */ }
+  function dummyToggle() {
+    return false ? closeMenu() : closeMenu();
   }
 
-  btn.addEventListener("click", e => { e.stopPropagation(); toggleMenu(); });
-  overlay.addEventListener("click", closeMenu);
-
-  // 各メニュー項目のアクション
+  // 各サイドバー項目のアクション
   const hmBackToList = $("hmBackToList");
   const hmSave       = $("hmSave");
   const hmCancel     = $("hmCancel");
@@ -287,6 +271,7 @@ function renderList(members) {
       <td>${m.member_number || "—"}</td>
       <td>${m.full_name || "—"}</td>
       <td><span class="${badgeCls}">${m.member_type || "—"}</span></td>
+      <td>${m.course_name || "—"}</td>
       <td>${m.glider_name || "—"}</td>
       <td>${fmtDateWarning(m.reglimit_date)}</td>
       <td>${fmtRepackWarning(m.repack_date)}</td>
@@ -325,6 +310,7 @@ function clearForm() {
     "f_experience","f_home_area","f_leader","f_visitor_fee",
     "f_agreement_date","f_signature_name","f_guardian_name","f_medical_history",
     "f_reg_jhf1","f_reg_jhf2","f_reg_jpa",
+    "f_member_course_name",
   ].forEach(id => {
     const el = $(id); if (!el) return;
     if (el.type === "checkbox") el.checked = false;
@@ -342,6 +328,7 @@ function clearForm() {
   if ($("confirmedApplicationArea")) $("confirmedApplicationArea").style.display = "none";
   if ($("pendingCourseArea"))      $("pendingCourseArea").style.display      = "";
   if ($("confirmedCourseArea"))    $("confirmedCourseArea").style.display    = "none";
+  _originalMemberType = null;
   $("regNoPreview").textContent = "";
   $("f_application_date_disp").style.display = "none";
   $("f_application_date_disp").textContent = "—";
@@ -461,6 +448,15 @@ async function openEdit(id) {
       if (org === "JHF") { $("f_reg_jhf1").value = parsed.jhf1; $("f_reg_jhf2").value = parsed.jhf2; }
       if (org === "JPA") { $("f_reg_jpa").value = parsed.jpa; }
       updateRegPreview();
+    }
+
+    // 元の分類を記録（保存時の変更検出に使用）
+    _originalMemberType = m.member_type || "";
+
+    // コース内容（現時点）を読み取り専用フィールドに表示
+    const courseNameDisp = $("f_member_course_name");
+    if (courseNameDisp) {
+      courseNameDisp.value = m.course_name || "";
     }
 
     // 新規申請・コース変更パネル表示
@@ -640,6 +636,25 @@ async function saveMember() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "保存失敗");
 
+    // 分類（member_type）が変更された場合、コース履歴を更新
+    if (isEdit) {
+      const newMemberType = ($("f_member_type") ? $("f_member_type").value : "") || "";
+      if (newMemberType && newMemberType !== _originalMemberType) {
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          await fetch(`/api/members/${id}/courses`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              member_type:  newMemberType,
+              start_date:   today,
+              confirmed_by: "staff",
+            }),
+          });
+        } catch { /* コース更新失敗は無視してトースト表示へ */ }
+      }
+    }
+
     // 新規申請：入金確認済み処理
     if (isEdit && $("newApplicationSection").style.display !== "none" &&
         $("f_payment_confirmed_new") && $("f_payment_confirmed_new").checked) {
@@ -815,6 +830,8 @@ function initSendInfoModal() {
 
 // 現在開いている会員の UUID をモジュールスコープで保持
 let _currentMemberUuid = null;
+// openEdit 時点の member_type（分類変更検出用）
+let _originalMemberType = null;
 
 /** QRカードモーダルを開く */
 async function openQrCard() {

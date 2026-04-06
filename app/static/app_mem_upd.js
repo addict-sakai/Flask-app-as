@@ -6,9 +6,6 @@
  *      - サーバーから visitor_instant:true が返ったらフォームをリロード
  *   2. ビジター→ビジターへの変更はサーバー側で却下
  *      - 400 レスポンスのエラーメッセージをトーストで表示
- *   3. 冬季会員コースの「コース内容」に「冬季継続」を追加
- *      - config_masterの「冬季継続料金」から料金を取得して表示
- *      - 冬季継続の開始日は5/1〜11/30のみ選択可能（範囲外は非表示）
  *
  * 改定９変更点（維持）:
  *   1. コース変更申請中の挙動を制御
@@ -941,3 +938,494 @@ function esc(str) {
     .replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
+
+
+/* =========================================
+   以下: 会員更新.html インラインスクリプト移行分
+   コース情報UI制御（改定８版 2026/03/31）
+   ========================================= */
+/* ════════════════════════════════════════
+   コース情報UI制御（改定８版 2026/03/31）
+   改定８変更点:
+     - 冬季会員のコース内容に「冬季継続」を追加
+     - 冬季継続の開始日は5/1〜11/30のみ表示
+     - 料金は config_master の「冬季継続料金」から取得
+════════════════════════════════════════ */
+(function () {
+
+  /* ──────────────────────────────────────
+     configから料金マップを取得
+  ────────────────────────────────────── */
+  const courseFeeMap = {};
+  const FEE_TARGETS = [
+    "年会費",
+    "冬季料金","冬季1月","冬季2月","冬季3月","冬季4月","冬季継続料金",
+    "Bコース入校料","NPコース入校料","Pコース入校料",
+    "XCコース入校料","Tコース入校料",
+  ];
+
+  function formatFee(n) { return "￥" + Number(n).toLocaleString("ja-JP"); }
+
+  fetch("/config/api/masters?category=" + encodeURIComponent("パラ"))
+    .then(r => r.json())
+    .then(masters => Promise.all(
+      masters
+        .filter(m => FEE_TARGETS.includes(m.item_name))
+        .map(m => fetch("/config/api/values/" + m.id).then(r => r.json()).then(vals => {
+          const a = vals.find(v => v.is_active);
+          if (a && a.value) courseFeeMap[m.item_name] = Number(a.value);
+        }))
+    ))
+    .then(() => { updateCourseFeeDisplay(); })
+    .catch(() => {});
+
+  /* ──────────────────────────────────────
+     コース内容の選択肢定義
+  ────────────────────────────────────── */
+  function buildCourseNameOptions(memberType) {
+    if (memberType === "冬季会員") {
+      return [
+        { value: "ALL", text: "年会費（12/1～4/30）" },
+        { value: "1",   text: "1月入会" },
+        { value: "2",   text: "2月入会" },
+        { value: "3",   text: "3月入会" },
+        { value: "4",   text: "4月入会" },
+        { value: "継続", text: "継続会員（5/1～11/30）" },
+      ];
+    }
+    if (memberType === "スクール") {
+      return [
+        { value: "B",  text: "Bコース" },
+        { value: "NP", text: "NPコース" },
+        { value: "P",  text: "Pコース" },
+        { value: "XC", text: "XCコース" },
+        { value: "T",  text: "タンデムコース" },
+      ];
+    }
+    return [];
+  }
+
+  /* コースタイプ + コース内容 → config item_name */
+  function resolveCourseFeeKey(memberType, courseNameVal) {
+    if (memberType === "年会員")   return "年会費";
+    if (memberType === "冬季会員") {
+      const map = {
+        "ALL":  "冬季料金",
+        "1":    "冬季1月",
+        "2":    "冬季2月",
+        "3":    "冬季3月",
+        "4":    "冬季4月",
+        "継続": "冬季継続料金",
+      };
+      return map[courseNameVal] || null;
+    }
+    if (memberType === "スクール") {
+      const map = { "B":"Bコース入校料","NP":"NPコース入校料","P":"Pコース入校料",
+                    "XC":"XCコース入校料","T":"Tコース入校料" };
+      return map[courseNameVal] || null;
+    }
+    return null;
+  }
+
+  /* ──────────────────────────────────────
+     DOM参照
+  ────────────────────────────────────── */
+  const memberTypeSel    = document.getElementById("member_type");
+  const schoolCourseWrap = document.getElementById("schoolCourseWrap");
+  const courseFeeDisplay = document.getElementById("courseFeeDisplay");
+  const courseFeeAmount  = document.getElementById("courseFeeAmount");
+  const courseNameSel    = document.getElementById("course_name");
+
+  /* ──────────────────────────────────────
+     コース内容セレクトの選択肢を更新
+  ────────────────────────────────────── */
+  function updateCourseNameOptions(memberType) {
+    courseNameSel.innerHTML = '<option value="">コース内容を選択</option>';
+    const opts = buildCourseNameOptions(memberType);
+    opts.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.text;
+      courseNameSel.appendChild(o);
+    });
+  }
+
+  /* ──────────────────────────────────────
+     料金表示を更新
+  ────────────────────────────────────── */
+  function updateCourseFeeDisplay() {
+    const mt = memberTypeSel ? memberTypeSel.value : "";
+    const cn = courseNameSel ? courseNameSel.value : "";
+
+    if (!mt || mt === "ビジター") {
+      courseFeeDisplay.classList.remove("visible");
+      return;
+    }
+    if (mt === "年会員") {
+      const fee = courseFeeMap["年会費"];
+      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeDisplay.classList.add("visible");
+      return;
+    }
+    if (mt === "冬季会員" || mt === "スクール") {
+      if (!cn) { courseFeeDisplay.classList.remove("visible"); return; }
+      const key = resolveCourseFeeKey(mt, cn);
+      const fee = key ? courseFeeMap[key] : undefined;
+      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeDisplay.classList.add("visible");
+      return;
+    }
+    courseFeeDisplay.classList.remove("visible");
+  }
+
+  /* ──────────────────────────────────────
+     コースタイプ変更イベント
+  ────────────────────────────────────── */
+  if (memberTypeSel) {
+    memberTypeSel.addEventListener("change", function () {
+      const val = this.value;
+      updateCourseNameOptions(val);
+      if (val === "冬季会員" || val === "スクール") {
+        schoolCourseWrap.classList.add("visible");
+      } else {
+        schoolCourseWrap.classList.remove("visible");
+        courseNameSel.value = "";
+      }
+      updateCourseFeeDisplay();
+    });
+  }
+  if (courseNameSel) {
+    courseNameSel.addEventListener("change", function () { updateCourseFeeDisplay(); });
+  }
+
+  /* ──────────────────────────────────────
+     期限切れ判定ユーティリティ
+  ────────────────────────────────────── */
+  function isDateExpired(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    return d < today;
+  }
+
+  /* リパック日期限切れ判定：リパック月含め6か月後の月末を超えたら期限切れ */
+  function isRepackExpired(yearMonth) {
+    if (!yearMonth) return false;
+    const parts = yearMonth.slice(0,7).split("-");
+    if (parts.length < 2) return false;
+    const year  = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    if (isNaN(year) || isNaN(month)) return false;
+    let limitYear = year, limitMonth = month + 5;
+    if (limitMonth > 12) {
+      limitYear  += Math.floor((limitMonth - 1) / 12);
+      limitMonth  = ((limitMonth - 1) % 12) + 1;
+    }
+    const limitDate = new Date(limitYear, limitMonth, 0);
+    limitDate.setHours(23,59,59,999);
+    return new Date() > limitDate;
+  }
+
+  /* ──────────────────────────────────────
+     期限切れチェック（バッジ＋日付赤文字）
+     返値: { reglimitExpired, repackExpired }
+  ────────────────────────────────────── */
+  function updateExpiredBadges() {
+    const reglimitEl    = document.getElementById("reglimit_date");
+    const reglimitBadge = document.getElementById("reglimitExpiredBadge");
+    const repackEl      = document.getElementById("repack_date");
+    const repackBadge   = document.getElementById("repackExpiredBadge");
+
+    const reglimitExpired = reglimitEl ? isDateExpired(reglimitEl.value) : false;
+    const repackExpired   = repackEl   ? isRepackExpired(repackEl.value) : false;
+
+    /* バッジ表示 */
+    if (reglimitBadge) reglimitBadge.classList.toggle("hidden", !reglimitExpired);
+    if (repackBadge)   repackBadge.classList.toggle("hidden",   !repackExpired);
+
+    /* 日付フィールド自体を赤文字に */
+    if (reglimitEl) {
+      reglimitEl.style.color = reglimitExpired ? "var(--danger)" : "";
+    }
+    if (repackEl) {
+      repackEl.style.color = repackExpired ? "var(--danger)" : "";
+    }
+
+    return { reglimitExpired, repackExpired };
+  }
+
+  /* 入力変更時にも都度チェック */
+  const reglimitEl = document.getElementById("reglimit_date");
+  const repackEl   = document.getElementById("repack_date");
+  if (reglimitEl) reglimitEl.addEventListener("change", updateExpiredBadges);
+  if (repackEl)   repackEl.addEventListener("change",   updateExpiredBadges);
+
+  /* ──────────────────────────────────────
+     期限切れ状態を外部（app_mem_upd.js）から
+     参照できるように公開
+  ────────────────────────────────────── */
+  window.getExpiredStatus = function () {
+    return updateExpiredBadges();
+  };
+
+  /* ──────────────────────────────────────
+     ★ 申請状態パネル表示（改定５追加）
+     app_status: 'pending' | 'approved' | 'rejected' | null
+     memberType : コース名（変更後）
+     extra      : { appliedAt, confirmedAt, confirmedBy, notes }
+  ────────────────────────────────────── */
+  window.showStatusBadge = function (appStatus, memberType, extra) {
+    const panel    = document.getElementById("appStatusPanel");
+    const bar      = document.getElementById("appStatusBar");
+    const icon     = document.getElementById("appStatusIcon");
+    const label    = document.getElementById("appStatusLabel");
+    const dateEl   = document.getElementById("appStatusDate");
+    const targetEl = document.getElementById("appStatusTarget");
+    const noteEl   = document.getElementById("appStatusNote");
+
+    if (!panel) return;
+
+    if (!appStatus) {
+      panel.classList.remove("visible");
+      return;
+    }
+
+    extra = extra || {};
+    const mtLabel = memberType ? "「" + memberType + "」" : "";
+
+    panel.classList.add("visible");
+    bar.className = "app-status-bar " + appStatus;
+
+    if (appStatus === "member_pending") {
+      icon.textContent  = "⏳";
+      label.textContent = "新規申込　申請中";
+      dateEl.textContent = extra.appliedAt ? extra.appliedAt + " 申請日" : "";
+      targetEl.textContent = "スタッフが内容を確認中です。確認後に有効化されます。";
+    } else if (appStatus === "pending") {
+      icon.textContent  = "⏳";
+      label.textContent = "コース変更　申請中";
+      dateEl.textContent = extra.appliedAt ? extra.appliedAt + " 申請日" : "";
+      targetEl.innerHTML = mtLabel
+        ? "変更後コース：<span class='app-status-target'>" + mtLabel + "</span>　／　スタッフ確認後に反映されます。"
+        : "スタッフ確認後に反映されます。";
+    } else if (appStatus === "approved") {
+      icon.textContent  = "✅";
+      label.textContent = "コース変更　承認済み";
+      dateEl.textContent = extra.confirmedAt ? extra.confirmedAt + " 承認" : "";
+      targetEl.innerHTML = mtLabel
+        ? "変更後コース：<span class='app-status-target'>" + mtLabel + "</span>"
+        : "承認済み";
+    } else if (appStatus === "rejected") {
+      icon.textContent  = "❌";
+      label.textContent = "コース変更　却下";
+      dateEl.textContent = extra.confirmedAt ? extra.confirmedAt + " 処理" : "";
+      targetEl.textContent = "申請は却下されました。内容を確認して再申請してください。";
+    }
+
+    // 却下理由
+    if (appStatus === "rejected" && extra.notes) {
+      noteEl.textContent = "却下理由：" + extra.notes;
+      noteEl.classList.remove("hidden");
+    } else {
+      noteEl.textContent = "";
+      noteEl.classList.add("hidden");
+    }
+  };
+
+  /* 後方互換：showApplyingBadge も showStatusBadge を呼ぶ */
+  window.showApplyingBadge = function (memberType) {
+    if (!memberType || memberType === "ビジター") {
+      window.showStatusBadge(null, "");
+    } else {
+      window.showStatusBadge("pending", memberType, null);
+    }
+  };
+
+  /* ──────────────────────────────────────
+     期限日計算（開始日基準）
+     年会員・スクール：開始日から1年（1年後の前日）
+     冬季会員：当年or翌年の4/30
+  ────────────────────────────────────── */
+  function calcExpireDate(mt, base) {
+    if (!base) return null;
+    const d = new Date(base);
+    if (isNaN(d)) return null;
+    if (mt === "年会員" || mt === "スクール") {
+      // 開始日から1年後（例: 2025-03-01 → 2026-02-28）
+      const e = new Date(d);
+      e.setFullYear(e.getFullYear() + 1);
+      e.setDate(e.getDate() - 1);
+      return e;
+    }
+    if (mt === "冬季会員") {
+      const mon = d.getMonth() + 1;
+      return new Date(mon === 12 ? d.getFullYear() + 1 : d.getFullYear(), 3, 30);
+    }
+    return null;
+  }
+
+  function fmtJp(d) {
+    if (!d) return "―";
+    return `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,"0")}月${String(d.getDate()).padStart(2,"0")}日`;
+  }
+
+  function remainDays(exp) {
+    if (!exp) return null;
+    const t = new Date(); t.setHours(0,0,0,0);
+    return Math.ceil((exp - t) / 86400000);
+  }
+
+  /* 更新ボタンのトグル状態 */
+  let _renewalPending = false;
+  window.handleRenewalBtn = function () {
+    _renewalPending = !_renewalPending;
+    const waitEl  = document.getElementById("renewalWaiting");
+    const ccsWrap = document.querySelector(".course-change-row");
+    if (waitEl)  waitEl.classList.toggle("hidden", !_renewalPending);
+    // コース変更セレクトを無効化
+    if (ccsWrap) {
+      const selects = ccsWrap.querySelectorAll("select");
+      selects.forEach(s => { s.disabled = _renewalPending; });
+    }
+    const btn = document.getElementById("btnRenewal");
+    if (btn) btn.textContent = _renewalPending ? "更新をキャンセル" : "更新";
+  };
+
+  /* ──────────────────────────────────────
+     現在コース表示更新（loadForm後に呼ぶ）
+     改定６: course_start_date を使用、申請中はコース変更不可
+     ★ appData を省略した場合は API から自動取得する
+  ────────────────────────────────────── */
+  window.updateCurrentCourseDisplay = async function (data, appData) {
+    // appData が渡されていない場合は API から取得
+    if (appData === undefined && data && data.id) {
+      try {
+        const res = await fetch(`/api/members/${data.id}/pending_application`);
+        appData = res.ok ? await res.json() : null;
+      } catch { appData = null; }
+    }
+
+    const mt        = data.member_type || data.member_class || "";
+    // 開始日: course_start_date（member_courses.start_date）を優先
+    const startDate = data.course_start_date || data.confirmed_at || data.application_date || data.updated_at || null;
+
+    const el = id => document.getElementById(id);
+
+    if (el("currentCourseValue")) el("currentCourseValue").textContent = mt || "未設定";
+    if (el("currentApplyDate"))   el("currentApplyDate").textContent   = startDate ? fmtJp(new Date(startDate.slice(0,10))) : "―";
+
+    const exp = calcExpireDate(mt, startDate ? startDate.slice(0,10) : null);
+    const expEl = el("currentExpireDate");
+    if (expEl) {
+      expEl.textContent = exp ? fmtJp(exp) : "―";
+      if (exp) {
+        const days = remainDays(exp);
+        expEl.style.color = days < 0 ? "var(--danger)" : "";
+      } else {
+        expEl.style.color = "";
+      }
+    }
+
+    const rem = el("remainingDays");
+    if (rem) {
+      if (!exp) { rem.textContent = ""; rem.className = "remaining-days none"; }
+      else {
+        const days = remainDays(exp);
+        rem.textContent = days >= 0 ? `【残${days}日】` : `【超過${Math.abs(days)}日】`;
+        rem.className = "remaining-days " + (days > 30 ? "ok" : days > 0 ? "warn" : "danger");
+      }
+    }
+
+    // ── 申請中の処理 ──
+    const isPending = appData && appData.app_status === "pending" && appData.status_type === "course_change";
+
+    // 申請中コース情報を右端に表示
+    const pendingInfoEl = el("pendingCourseInfo");
+    if (pendingInfoEl) {
+      if (isPending && appData.changes) {
+        const ch = appData.changes;
+        const parts = [];
+        if (ch.member_type)  parts.push(ch.member_type);
+        if (ch.course_name)  parts.push(ch.course_name);
+        if (ch.course_fee)   parts.push(`¥${Number(ch.course_fee).toLocaleString()}`);
+        pendingInfoEl.textContent = parts.length ? "→ 申請中：" + parts.join(" ／ ") : "";
+        pendingInfoEl.classList.toggle("hidden", parts.length === 0);
+      } else {
+        pendingInfoEl.classList.add("hidden");
+      }
+    }
+
+    // ── 申請中はコース変更を無効化 ──
+    const changeRow = document.querySelector(".course-change-row");
+    if (changeRow) {
+      if (isPending) {
+        changeRow.style.opacity = "0.4";
+        changeRow.style.pointerEvents = "none";
+      } else {
+        changeRow.style.opacity = "";
+        changeRow.style.pointerEvents = "";
+      }
+    }
+
+    // ── 年会員の「更新」ボタン ──
+    const btnRenewal     = el("btnRenewal");
+    const renewalWaiting = el("renewalWaiting");
+    _renewalPending = false;
+    if (btnRenewal) {
+      btnRenewal.textContent = "更新";
+      if (isPending || mt !== "年会員") {
+        btnRenewal.classList.add("hidden");
+        if (renewalWaiting) renewalWaiting.classList.add("hidden");
+      } else {
+        // 期限2ヶ月前から使用可能
+        const twoMonthsBefore = exp ? new Date(exp) : null;
+        if (twoMonthsBefore) twoMonthsBefore.setMonth(twoMonthsBefore.getMonth() - 2);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const canRenew = twoMonthsBefore && today >= twoMonthsBefore;
+        btnRenewal.classList.toggle("hidden", !canRenew);
+        btnRenewal.disabled = !canRenew;
+        if (renewalWaiting) renewalWaiting.classList.add("hidden");
+      }
+    }
+
+    /* ★ 申請状態パネル：申請中なら表示、それ以外はリセット
+       （_loadPendingApplicationがない場合もここで確定表示する） */
+    if (typeof window.showStatusBadge === "function") {
+      if (appData && appData.app_status === "pending") {
+        const changes = appData.changes || {};
+        const changesMt = changes.member_type || "";
+        const changesCn = changes.course_name || "";
+        const mtLabel   = [changesMt, changesCn].filter(Boolean).join(" ");
+        window.showStatusBadge("pending", mtLabel, {
+          appliedAt: appData.applied_at ? appData.applied_at.slice(0, 10) : "",
+        });
+      } else if (appData && appData.status_type === "member_pending") {
+        window.showStatusBadge("member_pending", "", {
+          appliedAt: appData.applied_at || "",
+        });
+      } else {
+        // 申請なし → パネル非表示（app_mem_upd.jsが別途呼ぶ場合もある）
+        window.showStatusBadge(null, "");
+      }
+    }
+
+    /* コース選択リセット（未選択＝現在のコースのまま申請） */
+    if (memberTypeSel)    { memberTypeSel.value = ""; }
+    if (schoolCourseWrap) { schoolCourseWrap.classList.remove("visible"); }
+    if (courseFeeDisplay) { courseFeeDisplay.classList.remove("visible"); }
+    if (courseNameSel)    { courseNameSel.innerHTML = '<option value="">コース内容を選択</option>'; }
+
+    /* 期限切れバッジを更新 */
+    updateExpiredBadges();
+  };
+
+  /* ──────────────────────────────────────
+     現在のコースをJS側で参照できるよう公開
+  ────────────────────────────────────── */
+  window.getCurrentMemberTypeForSubmit = function (originalMemberType) {
+    const sel = document.getElementById("member_type");
+    return sel && sel.value ? sel.value : originalMemberType;
+  };
+
+})();

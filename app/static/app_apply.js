@@ -352,7 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(masters => {
         const targets = [
           "年会費",
-          "冬季料金", "冬季1月", "冬季2月", "冬季3月", "冬季4月",
+          "冬季料金", "冬季1月", "冬季2月", "冬季3月", "冬季4月", "冬季継続料金",
           "Bコース入校料", "NPコース入校料", "Pコース入校料", "XCコース入校料", "Tコース入校料",
         ];
         return Promise.all(
@@ -368,12 +368,13 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(() => {});
 
     const courseNameOptions = {
-      "冬季限定会員": [
-        { value: "ALL", text: "年会費（12/1～4/30）" },
-        { value: "1",   text: "1月入会" },
-        { value: "2",   text: "2月入会" },
-        { value: "3",   text: "3月入会" },
-        { value: "4",   text: "4月入会" },
+      "冬季会員": [
+        { value: "ALL", text: "冬季限定（12/1～4/30）" },
+        { value: "1",   text: "冬季1月（1/1～4/30）" },
+        { value: "2",   text: "冬季2月（2/1～4/30）" },
+        { value: "3",   text: "冬季3月（3/1～4/30）" },
+        { value: "4",   text: "冬季4月（4/1～4/30）" },
+        { value: "継続", text: "冬季継続（5/1～11/30）" },
       ],
       "スクール": [
         { value: "B",  text: "Bコース" },
@@ -384,14 +385,14 @@ document.addEventListener("DOMContentLoaded", function () {
       ],
     };
     const memberTypeMap = {
-      "年会員": "年会員", "冬季限定会員": "冬季会員",
+      "年会員": "年会員", "冬季会員": "冬季会員",
       "スクール": "スクール", "ビジター": "ビジター",
       "他校スクール": "他校スクール",
     };
 
     function resolveCourseFeeKey(ct, cn) {
       if (ct === "年会員")       return "年会費";
-      if (ct === "冬季限定会員") return { "ALL":"冬季料金","1":"冬季1月","2":"冬季2月","3":"冬季3月","4":"冬季4月" }[cn] || null;
+      if (ct === "冬季会員")     return { "ALL":"冬季料金","1":"冬季1月","2":"冬季2月","3":"冬季3月","4":"冬季4月","継続":"冬季継続料金" }[cn] || null;
       if (ct === "スクール")     return { "B":"Bコース入校料","NP":"NPコース入校料","P":"Pコース入校料","XC":"XCコース入校料","T":"Tコース入校料" }[cn] || null;
       return null;
     }
@@ -433,8 +434,8 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll('input[name="experience"]').forEach(e => e.checked = false);
       }
 
-      if (fieldCourseName) fieldCourseName.style.display = (ct === "冬季限定会員" || ct === "スクール") ? "" : "none";
-      if (fieldCourseFee)  fieldCourseFee.style.display  = (ct === "年会員" || ct === "冬季限定会員" || ct === "スクール") ? "" : "none";
+      if (fieldCourseName) fieldCourseName.style.display = (ct === "冬季会員" || ct === "スクール") ? "" : "none";
+      if (fieldCourseFee)  fieldCourseFee.style.display  = (ct === "年会員" || ct === "冬季会員" || ct === "スクール") ? "" : "none";
 
       autoFillCourseFee();
     }
@@ -648,8 +649,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const ct = (el("course_type") || {}).value || "";
       const cn = (el("course_name") || {}).value || "";
       setText("p_course_type", ct);
-      const showName = ct === "冬季限定会員" || ct === "スクール";
-      const showFee  = ct === "年会員" || ct === "冬季限定会員" || ct === "スクール";
+      const showName = ct === "冬季会員" || ct === "スクール";
+      const showFee  = ct === "年会員" || ct === "冬季会員" || ct === "スクール";
       setText("p_course_name", showName ? getVal("course_name") : "");
       setText("p_course_fee",  showFee  ? getVal("course_fee")  : "");
       if (el("p_label_course_name")) el("p_label_course_name").style.display = showName ? "" : "none";
