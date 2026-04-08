@@ -60,6 +60,12 @@ def cont_tan_index():
     """請負管理ページ（日報 + 出勤予定 統合）"""
     return render_template("請負日報.html")
 
+
+@contract_bp.route("/apply_cont_qr")
+def cont_qr_index():
+    """請負QR入力ページ（QRスキャン → 日報入力フルページ）"""
+    return render_template("請負QR入力.html")
+
 # @contract_bp.route("/apply_cont_tan")
 # def cont_tan_index():
 #    """請負日報ページ（当月分のリストを初期描画）"""
@@ -382,6 +388,39 @@ def api_update(record_id):
 
     db.session.commit()
     return jsonify({"status": "ok", "message": "更新しました"})
+
+
+# ─────────────────────────────────────────
+# API: 当日最新フライト取得（QR入力画面の前回値プリセット用）
+# ─────────────────────────────────────────
+
+@contract_bp.route("/api/cont/latest", methods=["GET"])
+def api_latest():
+    """指定UUIDの当日最新フライト1件を返す。当日登録なしは空オブジェクト。"""
+    uuid = request.args.get("uuid", "").strip()
+    if not uuid:
+        return jsonify({"error": "uuid is required"}), 400
+
+    today = date.today()
+    record = (
+        Contract.query
+        .filter(
+            Contract.uuid == uuid,
+            Contract.flight_date == today,
+        )
+        .order_by(Contract.id.desc())
+        .first()
+    )
+    if not record:
+        return jsonify({}), 200   # 当日登録なしは空オブジェクトで返す
+
+    return jsonify({
+        "takeoff_location":  record.takeoff_location  or "",
+        "used_glider":       record.used_glider        or "",
+        "size":              record.size               or "",
+        "pilot_harness":     record.pilot_harness      or "",
+        "passenger_harness": record.passenger_harness  or "",
+    })
 
 
 # ─────────────────────────────────────────

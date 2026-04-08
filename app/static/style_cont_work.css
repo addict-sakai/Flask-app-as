@@ -268,7 +268,6 @@
 /* 日付セル */
 .work-cal-cell {
   position: relative;
-  aspect-ratio: 1;
   border-radius: 6px;
   border: 1.5px solid #e8e8e8;
   background: #fafafa;
@@ -281,6 +280,9 @@
   transition: all 0.12s;
   user-select: none;
   min-height: 44px;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 2px 1px;
 }
 .work-cal-cell:hover:not(.is-past):not(.is-empty) {
   border-color: #aaa;
@@ -353,4 +355,5 @@
 @media (max-width: 480px) {
   .work-cal-day { font-size: 0.72rem; }
   .work-cal-status { display: none; }
+  .work-cal-cell { min-height: 36px; padding: 2px 1px; }
 }

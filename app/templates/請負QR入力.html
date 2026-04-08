@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>請負QR入力 | Mt.FUJI PARAGLIDING</title>
+  <link rel="stylesheet" href="../static/style.css" />
+  <link rel="stylesheet" href="../static/style_cont_tan.css" />
+  <link rel="stylesheet" href="../static/style_cont_unified.css" />
+  <link rel="stylesheet" href="../static/style_qrscan.css" />
+</head>
+<body class="cont-page uni-page">
+
+  <!-- ════ ヘッダー ════ -->
+  <header class="cont-header uni-header">
+    <a href="/" class="cont-back-btn">← トップ</a>
+    <h1 class="cont-title">請負QR入力</h1>
+    <div style="width:80px;"></div>
+  </header>
+
+  <!-- ════ QRスキャン画面 ════ -->
+  <div id="qr-screen" class="qr-screen">
+    <div class="qr-screen-inner">
+      <p class="qr-screen-label">QRコードをスキャンしてください</p>
+      <button type="button" class="qr-start-btn" onclick="QrEntry.startScan()">
+        <span style="font-size:1.4rem;">⬛</span> QRスキャン開始
+      </button>
+      <div id="qr-error" class="cont-alert cont-alert--danger" style="display:none;margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <!-- ════ 日報入力フォーム画面 ════ -->
+  <div id="form-screen" style="display:none;">
+    <div class="uni-layout-single">
+      <div class="cont-card">
+
+        <!-- 担当者名 -->
+        <div class="reg-name-row" style="justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <span class="reg-name-label" id="form-member-name">—</span>
+          <label class="reg-mini-guarantee-label">
+            <input type="checkbox" id="form-mini-guarantee" class="reg-mini-guarantee-chk" />
+            最低保証
+          </label>
+        </div>
+
+        <!-- 日付・時間（表示のみ・変更不可） -->
+        <div class="reg-row reg-row--date">
+          <div class="cont-form-group">
+            <label class="cont-label">日付</label>
+            <p class="reg-date-display" id="form-date-display">—</p>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label">時間</label>
+            <p class="reg-date-display" id="form-time-display">—</p>
+          </div>
+        </div>
+
+        <!-- 場所 -->
+        <div class="cont-form-group">
+          <label class="cont-label">場所 <span class="cont-required">必須</span></label>
+          <div id="form-location-wrap" class="cont-btn-group reg-grp-location reg-location-group"></div>
+        </div>
+
+        <!-- 使用機体・サイズ -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="form-glider-select">使用機体 <span class="cont-required">必須</span></label>
+            <select id="form-glider-select" class="cont-input reg-select">
+              <option value="">— 選択してください</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="form-size-select">サイズ <span class="cont-required">必須</span></label>
+            <select id="form-size-select" class="cont-input reg-select">
+              <option value="">— 選択してください</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ハーネス・パッセンジャー -->
+        <div class="reg-row">
+          <div class="cont-form-group">
+            <label class="cont-label" for="form-harness-select">ハーネス <span class="cont-required">必須</span></label>
+            <select id="form-harness-select" class="cont-input reg-select">
+              <option value="">— 選択してください</option>
+            </select>
+          </div>
+          <div class="cont-form-group">
+            <label class="cont-label" for="form-pass-select">パッセンジャー <span class="cont-required">必須</span></label>
+            <select id="form-pass-select" class="cont-input reg-select">
+              <option value="">— 選択してください</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="form-result" class="cont-result-msg" style="margin-top:12px;display:none;"></div>
+
+        <!-- ボタン -->
+        <div class="reg-footer-actions" style="margin-top:20px;">
+          <button type="button" class="cont-modal-save-btn reg-submit-btn" onclick="QrEntry.register()">登　録　す　る</button>
+          <button type="button" class="cont-cancel-btn reg-cancel-btn" onclick="QrEntry.cancel()">キャンセル</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ QRスキャンモーダル ════ -->
+  <div id="qrscan-overlay" class="qrscan-overlay">
+    <div class="qrscan-modal">
+      <div class="qrscan-header">
+        <span class="qrscan-title">📷 QRコードをかざしてください</span>
+        <button type="button" class="qrscan-close" onclick="QrEntry.closeQr()">✕</button>
+      </div>
+      <div class="qrscan-video-wrap" id="qrscan-video-wrap">
+        <video id="qrscan-video" class="qrscan-video" playsinline muted></video>
+        <canvas id="qrscan-canvas" style="position:absolute;visibility:hidden;width:1px;height:1px;"></canvas>
+        <div class="qrscan-frame"><div class="qrscan-frame-inner"></div></div>
+      </div>
+      <div class="qrscan-status" id="qrscan-status">カメラを起動しています…</div>
+    </div>
+  </div>
+
+
+  <script src="../static/jsQR.js"></script>
+  <script src="../static/app_qr_scan.js"></script>
+  <script src="../static/app_cont_qr.js"></script>
+</body>
+</html>

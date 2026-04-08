@@ -318,11 +318,6 @@ const UnifiedApp = (() => {
 
     await loadMyReports();
     await _loadSchedulesAndCalendar();
-
-    // QRコード認証の場合はpassコード不要で直接日報登録モーダルを開く
-    if (fromQr) {
-      _openRegModal();
-    }
   }
 
 

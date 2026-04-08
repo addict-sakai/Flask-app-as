@@ -69,6 +69,14 @@ const WorkApp = (() => {
     document.getElementById("search-input").addEventListener("keydown", e => {
       if (e.key === "Enter") lookup();
     });
+
+    // URLパラメータ uuid があれば自動でlookup（QRスキャンからの遷移）
+    const params = new URLSearchParams(window.location.search);
+    const uuidParam = params.get("uuid");
+    if (uuidParam) {
+      document.getElementById("search-input").value = uuidParam;
+      lookup();
+    }
   }
 
   /* ─── 会員検索 ─── */
