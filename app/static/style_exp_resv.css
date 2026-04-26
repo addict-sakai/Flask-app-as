@@ -1,3 +1,5 @@
+/* style_common.css を先に読み込むこと */
+
 /* ============================================================
    style_exp.css  –  体験予約画面専用スタイル
    既存 style.css を補完
@@ -731,31 +733,6 @@
 .exp-btn--ghost:hover { border-color: #000; color: #333; }
 
 /* ── トースト ────────────────────────────────────────────── */
-.toast-zone {
-  position: fixed;
-  top: 70px;
-  right: 20px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-}
-.toast-msg {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  animation: toastIn 0.2s ease;
-  pointer-events: auto;
-}
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.toast-msg--success { background: #f0fff4; border-left: 3px solid #00c853; color: #007a33; }
-.toast-msg--error   { background: #fff0f0; border-left: 3px solid #ff3355; color: #cc1133; }
 
 /* ── レスポンシブ ────────────────────────────────────────── */
 @media (max-width: 900px) {

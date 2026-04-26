@@ -1,0 +1,250 @@
+/* ============================================================
+   style_common.css  –  FUJIpara websystem 共通スタイル
+   全管理画面で共通の変数・リセット・コンポーネントを集約
+   各画面 CSS の先頭に読み込む（style_common.css を最初に）
+
+   ＜共通化対象＞
+     - CSS カスタムプロパティ（:root）
+     - ボックスモデルリセット
+     - html / body 基本定義
+     - .screen-ui（全画面レイアウト共通）
+     - .global-header（黒ヘッダー共通）
+     - .toast / .toast-zone 通知
+     - スクロールバー非表示
+
+   ＜各画面 CSS に残すもの＞
+     - 画面固有のカスタムプロパティ（--sidebar-w 等）
+     - 画面固有のレイアウト・コンポーネント
+     - style_config.css の --navy-* 系（独自変数）
+     - style_cont_info.css の --bg-base 系（独自変数）
+============================================================ */
+
+
+/* =========================================
+   CSS カスタムプロパティ（共通変数）
+   ========================================= */
+
+:root {
+  /* ── 背景・サーフェス ─────────────────── */
+  --bg:           #f5f6f8;
+  --surface:      #ffffff;
+  --surface-2:    #f0f2f5;
+  --surface-3:    #e8eaed;
+
+  /* ── ボーダー ────────────────────────── */
+  --border:       #d1d5db;
+  --border-light: #e5e7eb;
+
+  /* ── アクセント（青）───────────────── */
+  --accent:       #2563eb;
+  --accent-dim:   rgba(37, 99, 235, 0.10);
+  --accent-glow:  rgba(37, 99, 235, 0.20);
+  --accent-hover: #1d4ed8;
+
+  /* ── ステータス ──────────────────────── */
+  --success:      #059669;
+  --success-dim:  rgba(5, 150, 105, 0.10);
+  --danger:       #dc2626;
+  --danger-dim:   rgba(220, 38, 38, 0.08);
+  --warning:      #d97706;
+  --warning-dim:  rgba(217, 119, 6, 0.10);
+
+  /* ── テキスト ────────────────────────── */
+  --text-primary:   #111827;
+  --text-secondary: #4b5563;
+  --text-muted:     #9ca3af;
+
+  /* ── 角丸・シャドウ ──────────────────── */
+  --radius:    8px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.18);
+
+  /* ── フォント ────────────────────────── */
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* ── グローバルヘッダー高さ ──────────── */
+  --global-header-h: 52px;
+}
+
+
+/* =========================================
+   ボックスモデルリセット
+   ========================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* =========================================
+   html / body 基本定義
+   ========================================= */
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* スクロールバー非表示（管理画面全般）
+   -webkit-scrollbar: Chrome / Safari / iOS 全対応
+   scrollbar-width:   Firefox / Chrome 121+ 対応（警告が出るためコメントで補足）
+*/
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;   /* Chrome / Safari / iOS Safari / Edge（WebKit系全般） */
+}
+/* Firefox 対応（Chrome 121未満・Safariは上記 -webkit- で対応済み） */
+@supports (scrollbar-width: none) {
+  html, body { scrollbar-width: none; }
+}
+
+
+/* =========================================
+   .screen-ui（画面全体レイアウト）
+   全画面で使用する flex コンテナ
+   ========================================= */
+
+.screen-ui {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+
+/* =========================================
+   .global-header（黒ヘッダー共通）
+   管理画面共通の全幅黒ヘッダー
+   ========================================= */
+
+.global-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: var(--global-header-h);
+  background: #111111;
+  border-bottom: 1px solid #2a2a2a;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  flex-shrink: 0;
+  padding: 0 16px;
+}
+
+.global-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.global-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.site-name {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.page-name {
+  color: #9ca3af;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .global-header {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 12px;
+  }
+  .site-name,
+  .page-name { font-size: 11px; }
+}
+
+
+/* =========================================
+   .toast / .toast-zone 通知
+   管理画面共通のトースト通知
+   ========================================= */
+
+/* ── タイプA: style_info.css 系 (fixed bottom-right) ─── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1000;
+  max-width: 360px;
+}
+.toast.show       { transform: translateY(0); opacity: 1; }
+.toast.toast-success {
+  border-color: rgba(82, 196, 160, 0.4);
+  background: linear-gradient(135deg, var(--surface-3), rgba(82, 196, 160, 0.08));
+}
+.toast.toast-error {
+  border-color: rgba(224, 82, 82, 0.4);
+  background: linear-gradient(135deg, var(--surface-3), rgba(224, 82, 82, 0.08));
+}
+.toast.toast-warn {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: linear-gradient(135deg, var(--surface-3), rgba(217, 119, 6, 0.08));
+}
+
+/* ── タイプB: style_exp_resv.css 系 (toast-zone) ────── */
+.toast-zone {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+.toast-msg {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  animation: toastIn 0.2s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-msg--success { background: #f0fff4; border-left: 3px solid #00c853; color: #007a33; }
+.toast-msg--error   { background: #fff0f0; border-left: 3px solid #ff3355; color: #cc1133; }
+.toast-msg--warn    { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; }

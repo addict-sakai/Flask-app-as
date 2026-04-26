@@ -33,9 +33,11 @@ const $q = sel => document.querySelector(sel);
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
 
-  // URLパラメータから編集モード判定
+  // URLパラメータから編集モード判定・戻り先判定
   const params = new URLSearchParams(location.search);
   const editNo = params.get("edit");
+  const from   = params.get("from"); // "staff_manage" | "tour_status" | null
+
   if (editNo) {
     state.editMode  = true;
     state.bookingNo = editNo;
@@ -76,14 +78,13 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBooking();
   });
 
-  // 終了ボタン
+  // 終了ボタン（確認ポップなしで即戻る）
   $("exitBtn").addEventListener("click", () => {
-    if (confirm("申込フォームを終了しますか？")) {
-      window.location.href = "/apply_tour_select";
-    }
+    $("hmDropdown").classList.remove("is-open");
+    goBack();
   });
 
-  // 検索ボタン（新規モードのみ有効）
+  // 検索ボタン
   $("leaderSearchBtn").addEventListener("click", () =>
     searchMember("leader", $("leaderSearchName").value, $("leaderSearchPhone").value));
   $("participantSearchBtn").addEventListener("click", () =>
@@ -101,9 +102,24 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "/apply_tour_select";
   });
   $("modalExitBtn").addEventListener("click", () => {
-    window.location.href = "/apply_tour_select";
+    goBack();
   });
 });
+
+// ============================================================
+// 戻り先へ遷移
+// ============================================================
+function goBack() {
+  const params = new URLSearchParams(location.search);
+  const from   = params.get("from");
+  if (from === "staff_manage") {
+    window.location.href = "/apply_staff_manage";
+  } else if (from === "tour_status") {
+    window.location.href = "/apply_tour_status";
+  } else {
+    window.location.href = "/apply_tour_select";
+  }
+}
 
 // ============================================================
 // フライト日数計算
@@ -165,17 +181,14 @@ function getFlightDates() {
   return dates;
 }
 
-// 日付を表示用文字列に変換（例: 5/10）
 function fmtDateShort(d) {
   return `${d.getMonth()+1}/${d.getDate()}`;
 }
 
-// 日付を比較用文字列に変換（例: 2026-05-10）
 function fmtDateISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-// attend_days文字列から選択済み日付のセットを生成
 function parseAttendDays(str) {
   if (!str) return new Set();
   const parts = str.split(/[,、\s]+/).map(s => s.trim()).filter(Boolean);
@@ -205,7 +218,6 @@ function buildAttendDaysUI(card, existingAttendDays) {
 
   dates.forEach(d => {
     const short = fmtDateShort(d);
-    // 既存データとの照合（M/D 形式または YYYY-MM-DD 形式）
     const isChecked = existing.has(short) || existing.has(fmtDateISO(d));
 
     const label = document.createElement("label");
@@ -217,14 +229,12 @@ function buildAttendDaysUI(card, existingAttendDays) {
     `;
     checkboxWrap.appendChild(label);
 
-    // チェック時のビジュアル更新
     const cb = label.querySelector("input");
     cb.addEventListener("change", () => {
       label.style.background    = cb.checked ? "#e0f2fe" : "#fff";
       label.style.borderColor   = cb.checked ? "#0ea5e9" : "var(--border,#d1d5db)";
       syncAttendDaysHidden(card);
     });
-    // 初期ビジュアル
     if (isChecked) {
       label.style.background  = "#e0f2fe";
       label.style.borderColor = "#0ea5e9";
@@ -235,7 +245,6 @@ function buildAttendDaysUI(card, existingAttendDays) {
   syncAttendDaysHidden(card);
 }
 
-// チェックボックスの選択状態を hidden input に同期
 function syncAttendDaysHidden(card) {
   const hidden = card.querySelector("[data-field='attend_days']");
   if (!hidden) return;
@@ -251,7 +260,7 @@ async function loadBooking(bookingNo) {
     const res = await fetch(`/api/tour/bookings/by-no/${encodeURIComponent(bookingNo)}`);
     if (!res.ok) {
       alert(`申込番号 ${bookingNo} が見つかりませんでした。`);
-      window.location.href = "/apply_tour_select";
+      goBack();
       return;
     }
     const data = await res.json();
@@ -263,24 +272,21 @@ async function loadBooking(bookingNo) {
     setDatePicker("flightDateTo",   data.flight_date_to);
     recalcFlightDays();
 
-    // 引率者カード（編集不可）
     const leaderList = $("leaderCardList");
     leaderList.innerHTML = "";
     (data.leaders || []).forEach((ld, i) => {
-      const card = createLeaderCard(i, true);  // editMode=true
+      const card = createLeaderCard(i, true);
       leaderList.appendChild(card);
       fillCardFromData(card, ld, "leader");
     });
     renumberCards(leaderList, "引率者");
 
-    // 参加者カード（参加日のみ編集可）
     const participantList = $("participantCardList");
     participantList.innerHTML = "";
     (data.participants || []).forEach((p, i) => {
-      const card = createParticipantCard(i, true);  // editMode=true
+      const card = createParticipantCard(i, true);
       participantList.appendChild(card);
       fillCardFromData(card, p, "participant");
-      // チェックボックスUIを構築（フライト日が確定後）
       buildAttendDaysUI(card, p.attend_days);
     });
     renumberCards(participantList, "参加者");
@@ -289,7 +295,7 @@ async function loadBooking(bookingNo) {
   } catch (err) {
     console.error("loadBooking error:", err);
     alert("データの読み込みに失敗しました");
-    window.location.href = "/apply_tour_select";
+    goBack();
   }
 }
 
@@ -315,11 +321,10 @@ function fillCardFromData(card, data, type) {
   if (type === "leader") {
     set("instructor_role", data.instructor_role);
   }
-  // attend_days は buildAttendDaysUI で別途処理
 }
 
 // ============================================================
-// 会員検索（氏名＆電話番号の両方必須）
+// 会員検索
 // ============================================================
 async function searchMember(type, name, phone) {
   name  = (name  || "").trim();
@@ -391,7 +396,7 @@ function clearSearchInputs(type) {
 }
 
 // ============================================================
-// 検索結果をカードに反映（新規モードのみ）
+// 検索結果をカードに反映
 // ============================================================
 function fillMemberIntoCard(type, member) {
   const listId = type === "leader" ? "leaderCardList" : "participantCardList";
@@ -450,7 +455,6 @@ function setCardFromMember(card, member, type) {
 
 // ============================================================
 // 引率者カード生成
-// editMode=true: 全フィールドreadonly（分類・教員区分は常にreadonly）
 // ============================================================
 function createLeaderCard(index, editMode) {
   const card = document.createElement("div");
@@ -521,7 +525,6 @@ function createLeaderCard(index, editMode) {
 
 // ============================================================
 // 参加者カード生成
-// editMode=true: 参加日のみ編集可、他readonly
 // ============================================================
 function createParticipantCard(index, editMode) {
   const card = document.createElement("div");
@@ -616,7 +619,6 @@ function validateForm() {
     return null;
   }
 
-  // school_name チェックの直後に追加
   const contactEmail = $("contactEmail") ? $("contactEmail").value.trim() : "";
   if (!contactEmail) {
     alert("連絡先メールアドレスを入力してください");
@@ -641,7 +643,6 @@ function validateForm() {
   for (const [i, card] of participantCards.entries()) {
     const name = card.querySelector("[data-field='full_name']").value.trim();
     if (!name) { alert(`参加者 ${i+1} の氏名を入力してください`); return null; }
-    // チェックボックスから attend_days を収集
     syncAttendDaysHidden(card);
     const attendDays = card.querySelector("[data-field='attend_days']").value.trim();
     if (!attendDays) { alert(`参加者 ${i+1} の参加日を選択してください`); return null; }
@@ -736,7 +737,7 @@ async function deleteBooking() {
 
     if (data.status === "ok") {
       alert(`${state.bookingNo} を削除しました`);
-      window.location.href = "/apply_tour_select";
+      goBack();
     } else {
       alert("削除エラー：" + (data.message || "削除に失敗しました"));
     }

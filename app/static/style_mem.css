@@ -1,50 +1,14 @@
+/* style_common.css を先に読み込むこと */
+
 /* =========================================
    会員申込書 - style_mem.css
    画面：会員管理と同じカード型UI
    印刷：従来の申込書表形式（A4×1枚）
    ========================================= */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:           #f5f6f8;
-  --surface:      #ffffff;
-  --surface-2:    #f0f2f5;
-  --surface-3:    #e8eaed;
-  --border:       #d1d5db;
-  --border-light: #e5e7eb;
-  --accent:       #2563eb;
-  --accent-dim:   rgba(37,99,235,0.10);
-  --danger:       #dc2626;
-  --text-primary:   #0a0f1a;
-  --text-secondary: #1f2937;
-  --text-muted:     #4b5563;
-  --radius:    8px;
-  --radius-lg: 14px;
-  --font-body: 'Noto Sans JP', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
-
 /* =========================================
    画面UI全体
    ========================================= */
-.screen-ui {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
 
 /* 固定ヘッダー */
 .fixed-header {
@@ -403,7 +367,6 @@ textarea.field-input { resize: vertical; min-height: 72px; }
   .field-group.span-2, .field-group.span-3 { grid-column: span 1; }
   .page-title { font-size: 14px; }
 }
-
 
 /* =========================================
    印刷：従来の申込書形式（A4×1枚）

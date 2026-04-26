@@ -404,7 +404,11 @@ function openCalDetail(dateStr) {
   const dowLabel = ["日","月","火","水","木","金","土"][dow];
   const holidayName = _holidays[dateStr] || "";
 
-  let html = `<div class="cal-detail-header">${y}年${parseInt(m)}月${parseInt(day)}日（${dowLabel}）${holidayName ? " " + holidayName : ""}</div>`;
+  let html = `
+    <div class="cal-detail-header">
+      <span>${y}年${parseInt(m)}月${parseInt(day)}日（${dowLabel}）${holidayName ? " " + holidayName : ""}</span>
+      <button type="button" class="cal-detail-close-btn" onclick="closeCalDetail()">✕ 閉じる</button>
+    </div>`;
 
   // ── ツアー ──
   html += `<div class="detail-sub-title">🗓 ツアー申込</div>`;
@@ -449,6 +453,11 @@ function openCalDetail(dateStr) {
   detailWrap.innerHTML = html;
   detailWrap.style.display = "block";
 
+  // カレンダー詳細が画面に収まるようスクロール
+  requestAnimationFrame(() => {
+    detailWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   // ツアー行クリック
   detailWrap.querySelectorAll("tr[data-tour-id]").forEach(tr => {
     const tid = parseInt(tr.dataset.tourId);
@@ -461,6 +470,15 @@ function openCalDetail(dateStr) {
   // 体験予約・入山未入金を非同期で追加取得
   if (d.exp_count > 0)  loadCalExpDetail(dateStr);
   if (d.unpaid > 0)     loadCalPayDetail(dateStr);
+}
+
+// カレンダー詳細を閉じる
+function closeCalDetail() {
+  _activeCalDate = null;
+  const detailWrap = document.getElementById("calDetail");
+  detailWrap.style.display = "none";
+  detailWrap.innerHTML = "";
+  document.querySelectorAll(".cal-cell.selected").forEach(c => c.classList.remove("selected"));
 }
 
 // カレンダーからツアーモーダルを開く（承認済みは承認ボタン非表示）
@@ -613,7 +631,7 @@ function closeTourModal() {
 function openTourEdit() {
   if (!_currentTourData) return;
   closeTourModal();
-  window.open(`/apply_tour?edit=${encodeURIComponent(_currentTourData.booking_no || _currentTourData.id)}`, "_blank");
+  window.location.href = `/apply_tour?edit=${encodeURIComponent(_currentTourData.booking_no || _currentTourData.id)}&from=staff_manage`;
 }
 
 // =============================================================

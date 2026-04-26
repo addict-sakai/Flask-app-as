@@ -1,53 +1,13 @@
+/* style_common.css を先に読み込むこと */
+
 /* =========================================
    ツアー申込書 - style_tour.css
    新規作成（2026-04-11）
    ========================================= */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:           #f5f6f8;
-  --surface:      #ffffff;
-  --surface-2:    #f0f2f5;
-  --surface-3:    #e8eaed;
-  --border:       #d1d5db;
-  --border-light: #e5e7eb;
-  --accent:       #2563eb;
-  --accent-dim:   rgba(37,99,235,0.10);
-  --success:      #16a34a;
-  --success-dim:  rgba(22,163,74,0.10);
-  --danger:       #dc2626;
-  --warn:         #d97706;
-  --warn-dim:     rgba(217,119,6,0.10);
-  --text-primary:   #0a0f1a;
-  --text-secondary: #1f2937;
-  --text-muted:     #4b5563;
-  --radius:    8px;
-  --radius-lg: 14px;
-  --font-body: 'Noto Sans JP', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
-
 /* =========================================
    画面UI全体
    ========================================= */
-.screen-ui {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
 
 /* 固定ヘッダー */
 .fixed-header {

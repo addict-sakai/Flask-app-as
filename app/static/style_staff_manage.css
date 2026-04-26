@@ -1,9 +1,9 @@
+/* style_common.css を先に読み込むこと */
+
 /* ============================================================
    style_staff_manage.css  rev.3
    ホワイトサイドバー + 黒グローバルヘッダー
    ============================================================ */
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --sidebar-w:      160px;
@@ -144,7 +144,6 @@ body {
 .body-wrapper {
   display: flex;
   flex: 1;
-  min-height: 0;
 }
 
 /* ============================================================
@@ -155,7 +154,7 @@ body {
   flex-shrink: 0;
   background: #1a1a1a;
   border-right: 1px solid #2a2a2a;
-  overflow-y: auto;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
 }
@@ -498,7 +497,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
 }
 
 /* ============================================================
@@ -779,15 +777,39 @@ body {
   box-shadow: var(--shadow);
   padding: 16px 20px;
   animation: fadeIn 0.18s ease;
+  scroll-margin-top: 16px;
 }
 
 .cal-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 15px;
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 14px;
   padding-bottom: 10px;
   border-bottom: 2px solid var(--accent);
+}
+
+.cal-detail-close-btn {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  background: var(--white);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cal-detail-close-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
 }
 
 @keyframes fadeIn {

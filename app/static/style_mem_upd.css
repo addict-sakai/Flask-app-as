@@ -1,3 +1,5 @@
+/* style_common.css を先に読み込むこと */
+
 /* =========================================
    会員情報更新画面 - style_mem_upd.css
    CSS変数（会員申込書と統一・白テーマ）
@@ -24,8 +26,6 @@
   --changed-bg:    #fefce8;
   --changed-border:#facc15;
 }
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* スクロールバー非表示 */
 html, body {
