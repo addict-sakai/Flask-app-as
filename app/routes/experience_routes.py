@@ -25,7 +25,7 @@ def apply_page_exp():
 # 🔵 体験申込書（英語）表示
 @experience_bp.route("/apply_exp_e")
 def apply_page_exp_e():
-    return render_template("体験申込書_e.html")
+    return render_template("体験申込書_E.html")
 
 # 🔵 保険案内ページ単体の表示（ポップアップ用）
 @experience_bp.route("/insurance_guide")
