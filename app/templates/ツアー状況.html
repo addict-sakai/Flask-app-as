@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<!-- ツアー状況.html  改定２（2026-04-20）:
+     - 検索バー：開始日削除・スクール/エリア名セレクト追加
+     - 初期表示：当月以降のツアー
+     - スクール/エリア名選択時は過去含む全件表示
+     - 承認確認後にツアー承認・案内メール送信モーダルを表示
+     - 編集ボタン削除
+     - 引率者/参加者行クリックで会員情報編集画面へ遷移
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ツアー状況</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_tour_status.css') }}" />
+</head>
+<body class="ts-page">
+
+  <!-- ══ ヘッダー ══ -->
+  <header class="ts-header">
+    <a href="/apply_staff_manage" class="ts-back-btn">← 管理</a>
+    <h1 class="ts-title">ツアー受入状況</h1>
+    <div style="width:80px;"></div>
+  </header>
+
+  <!-- ══ 検索バー ══ -->
+  <div class="ts-search-bar">
+    <span class="ts-search-label">承認</span>
+    <select id="filterStatus">
+      <option value="">すべて</option>
+      <option value="pending">未承認</option>
+      <option value="confirmed">承認済</option>
+      <option value="cancelled">キャンセル</option>
+    </select>
+    <span class="ts-search-label">スクール/エリア</span>
+    <select id="filterSchool">
+      <option value="">すべて</option>
+    </select>
+    <span class="ts-search-label">終了日〜</span>
+    <input type="date" id="filterDateTo" />
+    <button class="ts-search-reset" id="filterReset">リセット</button>
+  </div>
+
+  <!-- ══ メイン ══ -->
+  <main class="ts-main">
+
+    <!-- 一覧セクション -->
+    <div class="ts-section">
+      <div class="ts-section-header">
+        <span class="ts-section-icon">🗓</span>
+        <h2 class="ts-section-title">ツアー申込一覧</h2>
+        <span class="ts-section-count" id="listCount">0 件</span>
+      </div>
+      <div class="ts-table-wrap">
+        <table class="ts-table">
+          <thead>
+            <tr>
+              <th>登録番号</th>
+              <th>スクール/エリア名</th>
+              <th>開始日</th>
+              <th>終了日</th>
+              <th>引率者１</th>
+              <th>合計人数</th>
+              <th>承認</th>
+            </tr>
+          </thead>
+          <tbody id="tourTableBody">
+            <tr class="ts-empty-row"><td colspan="7">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 詳細パネル -->
+    <div class="ts-detail-panel" id="detailPanel">
+
+      <div class="ts-detail-header">
+        <span class="ts-detail-header-no" id="detailNo">—</span>
+        <span class="ts-detail-header-school" id="detailSchool">—</span>
+        <button class="ts-detail-close" id="detailCloseBtn" title="閉じる">✕</button>
+      </div>
+
+      <div class="ts-detail-body">
+
+        <!-- 1. 申込情報 -->
+        <div class="ts-sub">
+          <div class="ts-sub-header">
+            <h3 class="ts-sub-title">申込情報</h3>
+          </div>
+          <div class="ts-info-grid" id="detailInfo"></div>
+        </div>
+
+        <!-- 2. 引率者 -->
+        <div class="ts-sub">
+          <div class="ts-sub-header">
+            <h3 class="ts-sub-title">引率者</h3>
+            <span class="ts-sub-count" id="leaderCount">0 名</span>
+          </div>
+          <div class="ts-table-wrap">
+            <table class="ts-sub-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>氏名</th><th>電話番号</th><th>技能証</th>
+                  <th>フライヤー登録番号</th><th>分類</th><th>教員区分</th>
+                </tr>
+              </thead>
+              <tbody id="leaderTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. 参加者 -->
+        <div class="ts-sub">
+          <div class="ts-sub-header">
+            <h3 class="ts-sub-title">参加者</h3>
+            <span class="ts-sub-count" id="participantCount">0 名</span>
+          </div>
+          <div class="ts-table-wrap">
+            <table class="ts-sub-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>氏名</th><th>電話番号</th><th>技能証</th>
+                  <th>フライヤー登録番号</th><th>分類</th><th>参加日</th>
+                </tr>
+              </thead>
+              <tbody id="participantTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /ts-detail-body -->
+
+      <div class="ts-detail-actions">
+        <button class="ts-approve-btn" id="detailApproveBtn">承認する</button>
+      </div>
+
+    </div><!-- /ts-detail-panel -->
+
+  </main>
+
+  <!-- ══ 承認確認モーダル ══ -->
+  <div class="ts-overlay" id="confirmOverlay" style="display:none;">
+    <div class="ts-modal">
+      <div class="ts-modal-header">ツアー承認の確認</div>
+      <div class="ts-modal-body" id="confirmBody"></div>
+      <div class="ts-modal-footer">
+        <button class="ts-edit-btn" id="confirmCancelBtn">キャンセル</button>
+        <button class="ts-approve-btn" id="confirmOkBtn">承認する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ツアー承認・案内メール送信モーダル ══ -->
+  <div class="ts-overlay" id="mailOverlay" style="display:none;">
+    <div class="ts-modal ts-modal--mail">
+      <div class="ts-modal-header">✉️ ツアー承認・案内メール送信</div>
+      <div class="ts-modal-body">
+        <input type="hidden" id="mailBookingId" />
+        <div class="ts-form-item">
+          <label class="ts-form-label">送信元</label>
+          <select id="mailFrom" class="ts-form-ctrl"></select>
+        </div>
+        <div class="ts-form-item">
+          <label class="ts-form-label">送信先</label>
+          <input type="email" id="mailTo" class="ts-form-ctrl" placeholder="送信先メールアドレス" />
+        </div>
+        <div class="ts-form-item">
+          <label class="ts-form-label">件名</label>
+          <input type="text" id="mailSubject" class="ts-form-ctrl" />
+        </div>
+        <div class="ts-form-item">
+          <label class="ts-form-label">本文</label>
+          <textarea id="mailBody" class="ts-form-ctrl ts-form-textarea" rows="10"></textarea>
+        </div>
+      </div>
+      <div class="ts-modal-footer">
+        <button class="ts-edit-btn" id="mailCancelBtn">キャンセル</button>
+        <button class="ts-approve-btn" id="mailSendBtn">📨 送信する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ トースト ══ -->
+  <div class="ts-toast-zone" id="toastZone"></div>
+
+  <script>
+  "use strict";
+
+  /* ── ユーティリティ ──────────────────────────────── */
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+  const STATUS_LABEL = { pending:"未承認", confirmed:"承認済", cancelled:"キャンセル" };
+  const STATUS_CLASS = { pending:"ts-badge--pending", confirmed:"ts-badge--confirmed", cancelled:"ts-badge--cancelled" };
+
+  function statusBadge(s) {
+    return `<span class="ts-badge ${STATUS_CLASS[s]||""}">${esc(STATUS_LABEL[s]||s)}</span>`;
+  }
+
+  function toast(msg, type="success") {
+    const el = document.createElement("div");
+    el.className = `ts-toast ts-toast--${type}`;
+    el.textContent = msg;
+    $("toastZone").appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  function thisMonthStart() {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-01`;
+  }
+
+  /* ── 状態 ── */
+  let _allBookings = [];
+  let _activeId    = null;
+  let _approveId   = null;
+  let _fromCache   = null;
+
+  /* ── 送信元取得 ── */
+  async function getFromEmails() {
+    if (_fromCache) return _fromCache;
+    try {
+      const res = await fetch("/config/api/masters?category=" + encodeURIComponent("メール関連"));
+      if (!res.ok) return [];
+      const masters = await res.json();
+      const master  = masters.find(m => m.item_name === "送信元");
+      if (!master) return [];
+      const vres = await fetch("/config/api/values/" + master.id);
+      if (!vres.ok) return [];
+      const vals = await vres.json();
+      _fromCache = vals.filter(v => v.is_active).map(v => ({
+        value: v.value, label: v.label || v.value,
+      }));
+      return _fromCache;
+    } catch { return []; }
+  }
+
+  /* ══════════════════════════════════════
+     一覧取得
+  ══════════════════════════════════════ */
+  async function loadList() {
+    try {
+      const res = await fetch("/api/tour/bookings");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      _allBookings = await res.json();
+      buildSchoolSelect();
+      applyFilter();
+    } catch (e) {
+      console.error(e);
+      $("tourTableBody").innerHTML =
+        `<tr class="ts-empty-row"><td colspan="7">読み込みに失敗しました</td></tr>`;
+    }
+  }
+
+  function buildSchoolSelect() {
+    const names = [...new Set(_allBookings.map(b => b.school_name).filter(Boolean))].sort();
+    const sel   = $("filterSchool");
+    while (sel.options.length > 1) sel.remove(1);
+    names.forEach(n => {
+      const opt = document.createElement("option");
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+  }
+
+  function applyFilter() {
+    const status = $("filterStatus").value;
+    const school = $("filterSchool").value;
+    const dateTo = $("filterDateTo").value;
+
+    let list = _allBookings.slice();
+
+    if (school) {
+      // スクール/エリア名指定 → 過去含む全件
+      list = list.filter(b => b.school_name === school);
+    } else {
+      // 未指定 → 当月以降
+      list = list.filter(b => (b.flight_date_from || "") >= thisMonthStart());
+    }
+
+    if (status) list = list.filter(b => b.app_status === status);
+    if (dateTo) list = list.filter(b => (b.flight_date_to || "") <= dateTo);
+
+    list.sort((a, b) => (a.flight_date_from||"").localeCompare(b.flight_date_from||""));
+    renderList(list);
+  }
+
+  function renderList(list) {
+    $("listCount").textContent = `${list.length} 件`;
+    if (list.length === 0) {
+      $("tourTableBody").innerHTML =
+        `<tr class="ts-empty-row"><td colspan="7">該当するデータがありません</td></tr>`;
+      return;
+    }
+    $("tourTableBody").innerHTML = list.map(b => {
+      const leaders  = (b.leaders||[]).slice().sort((a,z) => a.sort_order - z.sort_order);
+      const paxTotal = leaders.length + (b.participants||[]).length;
+      const leader1  = leaders[0] ? esc(leaders[0].full_name) : "—";
+      const active   = b.id === _activeId ? " ts-row--active" : "";
+      return `<tr class="ts-list-row${active}" data-id="${b.id}">
+        <td class="td-no">${esc(b.booking_no||"—")}</td>
+        <td class="td-school">${esc(b.school_name||"—")}</td>
+        <td class="td-date">${esc(b.flight_date_from||"—")}</td>
+        <td class="td-date">${esc(b.flight_date_to||"—")}</td>
+        <td class="td-leader">${leader1}</td>
+        <td class="td-pax">${paxTotal} 名</td>
+        <td>${statusBadge(b.app_status)}</td>
+      </tr>`;
+    }).join("");
+
+    $("tourTableBody").querySelectorAll("tr[data-id]").forEach(tr => {
+      tr.addEventListener("click", () => {
+        const id = parseInt(tr.dataset.id);
+        _activeId === id ? closeDetail() : openDetail(id);
+      });
+    });
+  }
+
+  /* ══════════════════════════════════════
+     詳細パネル
+  ══════════════════════════════════════ */
+  async function openDetail(bookingId) {
+    _activeId = bookingId;
+    document.querySelectorAll(".ts-list-row").forEach(tr =>
+      tr.classList.toggle("ts-row--active", parseInt(tr.dataset.id) === bookingId)
+    );
+    try {
+      const res = await fetch(`/api/tour/bookings/${bookingId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      renderDetail(await res.json());
+    } catch (e) {
+      console.error(e);
+      toast("詳細の取得に失敗しました", "error");
+    }
+  }
+
+  function renderDetail(b) {
+    const leaders      = (b.leaders||[]).slice().sort((a,z) => a.sort_order - z.sort_order);
+    const participants = (b.participants||[]).slice().sort((a,z) => a.sort_order - z.sort_order);
+
+    $("detailNo").textContent     = b.booking_no  || "—";
+    $("detailSchool").textContent = b.school_name || "—";
+
+    /* 申込情報 */
+    $("detailInfo").innerHTML = `
+      <span class="ts-info-label">登録番号</span>
+      <span class="ts-info-value">${esc(b.booking_no||"—")}</span>
+      <span class="ts-info-label">スクール/エリア名</span>
+      <span class="ts-info-value">${esc(b.school_name||"—")}</span>
+      <span class="ts-info-label">連絡先メール</span>
+      <span class="ts-info-value">${esc(b.contact_email||"—")}</span>
+      <span class="ts-info-label">開始日</span>
+      <span class="ts-info-value">${esc(b.flight_date_from||"—")}</span>
+      <span class="ts-info-label">終了日</span>
+      <span class="ts-info-value">${esc(b.flight_date_to||"—")}</span>
+      <span class="ts-info-label">申請承認</span>
+      <span class="ts-info-value">${statusBadge(b.app_status)}</span>
+    `;
+
+    /* 引率者 */
+    $("leaderCount").textContent = `${leaders.length} 名`;
+    $("leaderTableBody").innerHTML = leaders.length === 0
+      ? `<tr><td colspan="7" style="text-align:center;color:#bbb;padding:14px;">引率者なし</td></tr>`
+      : leaders.map((l, i) => {
+          const hasMember = !!l.member_number;
+          const rowCls    = hasMember ? ' class="ts-member-row"' : "";
+          return `<tr data-member-no="${esc(l.member_number||"")}"${rowCls}
+                     style="${hasMember ? "cursor:pointer;" : "color:#888;"}">
+            <td style="color:#888;">${i+1}</td>
+            <td class="td-name-bold">${esc(l.full_name||"—")}${hasMember ? ' <span style="font-size:0.7rem;color:#2563eb;">→</span>' : ""}</td>
+            <td>${esc(l.phone||"—")}</td>
+            <td>${esc(l.license||"—")}</td>
+            <td>${esc(l.reg_no||"—")}</td>
+            <td>${esc(l.member_type||"—")}</td>
+            <td>${esc(l.instructor_role||"—")}</td>
+          </tr>`;
+        }).join("");
+
+    /* 参加者 */
+    $("participantCount").textContent = `${participants.length} 名`;
+    $("participantTableBody").innerHTML = participants.length === 0
+      ? `<tr><td colspan="7" style="text-align:center;color:#bbb;padding:14px;">参加者なし</td></tr>`
+      : participants.map((p, i) => {
+          const hasMember = !!p.member_number;
+          const rowCls    = hasMember ? ' class="ts-member-row"' : "";
+          return `<tr data-member-no="${esc(p.member_number||"")}"${rowCls}
+                     style="${hasMember ? "cursor:pointer;" : "color:#888;"}">
+            <td style="color:#888;">${i+1}</td>
+            <td class="td-name-bold">${esc(p.full_name||"—")}${hasMember ? ' <span style="font-size:0.7rem;color:#2563eb;">→</span>' : ""}</td>
+            <td>${esc(p.phone||"—")}</td>
+            <td>${esc(p.license||"—")}</td>
+            <td>${esc(p.reg_no||"—")}</td>
+            <td>${esc(p.member_type||"—")}</td>
+            <td>${esc(p.attend_days||"—")}</td>
+          </tr>`;
+        }).join("");
+
+    /* 会員行クリック → 会員情報編集へ */
+    document.querySelectorAll(".ts-member-row").forEach(tr => {
+      const mno = tr.dataset.memberNo;
+      if (mno) {
+        tr.addEventListener("click", () => {
+          window.location.href = `/apply_info?member_number=${encodeURIComponent(mno)}`;
+        });
+      }
+    });
+
+    /* 承認ボタン表示制御 */
+    _approveId = b.id;
+    $("detailApproveBtn").style.display = b.app_status === "pending" ? "" : "none";
+
+    const panel = $("detailPanel");
+    panel.classList.add("is-open");
+    panel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
+
+  function closeDetail() {
+    _activeId = _approveId = null;
+    $("detailPanel").classList.remove("is-open");
+    document.querySelectorAll(".ts-list-row").forEach(tr => tr.classList.remove("ts-row--active"));
+  }
+
+  /* ══════════════════════════════════════
+     承認確認モーダル
+  ══════════════════════════════════════ */
+  function openConfirm() {
+    if (!_approveId) return;
+    const b = _allBookings.find(x => x.id === _approveId);
+    $("confirmBody").innerHTML =
+      `<strong>${esc(b?.booking_no||"")}</strong><br>` +
+      `${esc(b?.school_name||"")}<br><br>このツアーを承認しますか？`;
+    $("confirmOverlay").style.display = "flex";
+  }
+
+  function closeConfirm() {
+    $("confirmOverlay").style.display = "none";
+  }
+
+  /* 確認OK → メール送信モーダルへ */
+  async function onConfirmOk() {
+    closeConfirm();
+    if (!_approveId) return;
+    const b = _allBookings.find(x => x.id === _approveId);
+    await openMailModal(b || { id: _approveId });
+  }
+
+  /* ══════════════════════════════════════
+     案内メール送信モーダル
+  ══════════════════════════════════════ */
+  async function openMailModal(b) {
+    $("mailBookingId").value = b.id;
+    $("mailTo").value        = b.contact_email || "";
+
+    const fromSel    = $("mailFrom");
+    fromSel.innerHTML = "";
+    const fromEmails = await getFromEmails();
+    if (fromEmails.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = ""; opt.textContent = "（設定なし）";
+      fromSel.appendChild(opt);
+    } else {
+      fromEmails.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value       = f.value;
+        opt.textContent = f.label !== f.value ? `${f.label}（${f.value}）` : f.value;
+        fromSel.appendChild(opt);
+      });
+    }
+
+    const period = (b.flight_date_from && b.flight_date_to)
+      ? `${b.flight_date_from} ～ ${b.flight_date_to}` : "—";
+    $("mailSubject").value =
+      `【Mt.FUJI PARAGLIDING】ツアー申込承認のご連絡（${b.booking_no||""}）`;
+    $("mailBody").value =
+      `${b.school_name||""} 御中\n\n` +
+      `この度はツアー申込をいただきありがとうございます。\n\n` +
+      `以下の内容でツアー申込を承認いたしました。\n\n` +
+      `申込番号：${b.booking_no||""}\n` +
+      `フライト期間：${period}\n\n` +
+      `当日はスタッフまでお声がけください。\n\n` +
+      `Mt.FUJI PARAGLIDING スタッフ`;
+
+    $("mailOverlay").style.display = "flex";
+  }
+
+  function closeMailModal() {
+    $("mailOverlay").style.display = "none";
+  }
+
+  async function doSendMail() {
+    const bookingId = $("mailBookingId").value;
+    const fromEmail = $("mailFrom").value.trim();
+    const toEmail   = $("mailTo").value.trim();
+    const subject   = $("mailSubject").value.trim();
+    const body      = $("mailBody").value.trim();
+
+    if (!fromEmail || !toEmail || !subject) {
+      toast("送信元・送信先・件名は必須です", "error");
+      return;
+    }
+
+    const sendBtn = $("mailSendBtn");
+    sendBtn.disabled    = true;
+    sendBtn.textContent = "送信中...";
+
+    try {
+      /* ① confirm */
+      const cRes = await fetch(`/api/tour/bookings/${bookingId}/confirm`, { method:"PUT" });
+      if (!cRes.ok) throw new Error("ステータス更新に失敗しました");
+
+      /* ② メール */
+      const mRes = await fetch("/api/staff/send_tour_mail", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ from_email:fromEmail, to_email:toEmail, subject, body }),
+      });
+      const mData = await mRes.json();
+      if (!mRes.ok) throw new Error(mData.error || "メール送信に失敗しました");
+
+      closeMailModal();
+      toast("承認しました。案内メールを送信しました。");
+
+      const idx = _allBookings.findIndex(x => x.id === parseInt(bookingId));
+      if (idx >= 0) _allBookings[idx].app_status = "confirmed";
+      applyFilter();
+      if (_activeId) openDetail(_activeId);
+
+    } catch (e) {
+      toast("エラー: " + e.message, "error");
+    } finally {
+      sendBtn.disabled    = false;
+      sendBtn.textContent = "📨 送信する";
+    }
+  }
+
+  /* ══════════════════════════════════════
+     イベントバインド
+  ══════════════════════════════════════ */
+  document.addEventListener("DOMContentLoaded", () => {
+    loadList();
+
+    $("filterStatus").addEventListener("change", applyFilter);
+    $("filterSchool").addEventListener("change", applyFilter);
+    $("filterDateTo").addEventListener("change", applyFilter);
+    $("filterReset").addEventListener("click", () => {
+      $("filterStatus").value = "";
+      $("filterSchool").value = "";
+      $("filterDateTo").value = "";
+      applyFilter();
+    });
+
+    $("detailCloseBtn").addEventListener("click",   closeDetail);
+    $("detailApproveBtn").addEventListener("click", openConfirm);
+
+    $("confirmCancelBtn").addEventListener("click", closeConfirm);
+    $("confirmOkBtn").addEventListener("click",     onConfirmOk);
+    $("confirmOverlay").addEventListener("click", e => {
+      if (e.target === $("confirmOverlay")) closeConfirm();
+    });
+
+    $("mailCancelBtn").addEventListener("click", closeMailModal);
+    $("mailSendBtn").addEventListener("click",   doSendMail);
+    $("mailOverlay").addEventListener("click", e => {
+      if (e.target === $("mailOverlay")) closeMailModal();
+    });
+  });
+  </script>
+
+</body>
+</html>

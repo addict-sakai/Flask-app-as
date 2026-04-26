@@ -183,6 +183,10 @@ def _get_config_multi(items: list[tuple[str, str]]) -> list[dict]:
 def exp_index():
     return render_template("体験予約.html")
 
+@exp_bp.route("/apply_exp_resv")
+def exp_resv_page():
+    return render_template("体験管理.html")
+
 
 # ═════════════════════════════════════════
 # Config API  GET /api/exp/config

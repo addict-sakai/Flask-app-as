@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 改定1 2026/04/01 -->
+<!-- 改定3 2026/04/14 -->
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -24,19 +24,9 @@
   <div class="fixed-header">
     <div class="page-header">
 
-      <!-- 左：言語切替ドロップダウン -->
+      <!-- 左：選択ページへ戻るボタン -->
       <div class="page-header-left">
-        <div class="lang-dropdown-wrap">
-          <button type="button" class="lang-dropdown-btn" id="langDropdownBtn">
-            <span class="lang-icon">🌐</span>
-            <span id="langDropdownLabel">日本語</span>
-            <span class="lang-caret">▾</span>
-          </button>
-          <ul class="lang-dropdown-menu" id="langDropdownMenu">
-            <li class="lang-dropdown-item lang-dropdown-item--active" data-lang="ja">🇯🇵 日本語</li>
-            <li class="lang-dropdown-item" data-lang="en">🇬🇧 English</li>
-          </ul>
-        </div>
+        <a href="/apply_exp_select" class="back-link-btn">← トップ</a>
       </div>
 
       <!-- 中央：タイトル -->
@@ -196,10 +186,15 @@
 
           <div class="field-group">
             <label class="field-label">予約番号</label>
-            <input type="text" class="field-input" name="resv_no" id="resvNoInput"
-                   placeholder="英数字のみ"
-                   inputmode="text"
-                   oninput="this.value=this.value.replace(/[^A-Za-z0-9\-]/g,'')">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span style="font-weight:600; font-size:1em; letter-spacing:0.03em; color:var(--text-primary,#222); white-space:nowrap;">P-</span>
+              <input type="text" class="field-input" id="resvNoDigits"
+                     inputmode="numeric" maxlength="5" placeholder="00000"
+                     style="width:90px; letter-spacing:0.08em;"
+                     oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <input type="hidden" name="resv_no" id="resvNoHidden">
+            <p class="field-note" style="margin-top:4px;">予約番号がない場合は空欄のままにしてください。</p>
           </div>
 
           <div class="field-group span-3">
@@ -308,7 +303,10 @@
     </tr>
     <tr>
       <th>コース</th><td><span id="p_course_exp"></span></td>
-      <th>きっかけ</th><td><span id="p_school_find"></span></td>
+      <th>予約番号</th><td><span id="p_resv_no"></span></td>
+    </tr>
+    <tr>
+      <th>きっかけ</th><td colspan="3"><span id="p_school_find"></span></td>
     </tr>
   </table>
 

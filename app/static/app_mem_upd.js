@@ -74,7 +74,7 @@ const REQUIRED_FIELDS = [
 ];
 
 // コース変更フィールド（申請登録 → スタッフ確認待ち）
-const COURSE_FIELDS = new Set(["member_type", "course_name"]);
+const COURSE_FIELDS = new Set(["member_type", "course_name", "course_fee"]);
 
 // 編集対象フィールド（member_number・reg_no・zip_code は個別管理）
 const EDIT_FIELDS = Object.keys(FIELD_LABELS).filter(k => k !== "reg_no" && k !== "zip_code");
@@ -695,6 +695,19 @@ function _collectChanges() {
     }
   });
 
+  // ★ 改定１１：年会員・ビジターへの変更時は course_name を強制削除
+  // （コース内容が不要なコース種別では空文字で差分が生じても送信しない）
+  const newMemberType = courseChanges["member_type"] || "";
+  if (newMemberType === "年会員" || newMemberType === "ビジター") {
+    delete courseChanges["course_name"];
+  }
+
+  // コース変更がある場合、現在表示中の料金を course_fee として追加
+  if (courseChanges["member_type"] && typeof window.getCurrentCourseFee === "function") {
+    const fee = window.getCurrentCourseFee();
+    if (fee) courseChanges["course_fee"] = fee;
+  }
+
   return { courseChanges, infoChanges };
 }
 
@@ -1059,24 +1072,38 @@ function esc(str) {
 
     if (!mt || mt === "ビジター") {
       courseFeeDisplay.classList.remove("visible");
+      courseFeeAmount.dataset.fee = "";
       return;
     }
     if (mt === "年会員") {
       const fee = courseFeeMap["年会費"];
-      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeAmount.textContent  = fee ? formatFee(fee) : "料金確認中";
+      courseFeeAmount.dataset.fee  = fee ? String(fee) : "";
       courseFeeDisplay.classList.add("visible");
       return;
     }
     if (mt === "冬季会員" || mt === "スクール") {
-      if (!cn) { courseFeeDisplay.classList.remove("visible"); return; }
+      if (!cn) {
+        courseFeeDisplay.classList.remove("visible");
+        courseFeeAmount.dataset.fee = "";
+        return;
+      }
       const key = resolveCourseFeeKey(mt, cn);
       const fee = key ? courseFeeMap[key] : undefined;
-      courseFeeAmount.textContent = fee ? formatFee(fee) : "料金確認中";
+      courseFeeAmount.textContent  = fee ? formatFee(fee) : "料金確認中";
+      courseFeeAmount.dataset.fee  = fee ? String(fee) : "";
       courseFeeDisplay.classList.add("visible");
       return;
     }
     courseFeeDisplay.classList.remove("visible");
+    courseFeeAmount.dataset.fee = "";
   }
+
+  /* 外部から現在の料金を取得できるよう公開 */
+  window.getCurrentCourseFee = function () {
+    const el = document.getElementById("courseFeeAmount");
+    return el ? (el.dataset.fee || "") : "";
+  };
 
   /* ──────────────────────────────────────
      コースタイプ変更イベント
@@ -1260,7 +1287,16 @@ function esc(str) {
     }
     if (mt === "冬季会員") {
       const mon = d.getMonth() + 1;
-      return new Date(mon === 12 ? d.getFullYear() + 1 : d.getFullYear(), 3, 30);
+      if (mon === 12) {
+        // 冬季シーズン（12月開始）→ 翌年4/30
+        return new Date(d.getFullYear() + 1, 3, 30);
+      } else if (mon >= 1 && mon <= 4) {
+        // 冬季シーズン（1〜4月）→ 当年4/30
+        return new Date(d.getFullYear(), 3, 30);
+      } else {
+        // 継続シーズン（5〜11月）→ 当年11/30
+        return new Date(d.getFullYear(), 10, 30);
+      }
     }
     return null;
   }
@@ -1283,11 +1319,24 @@ function esc(str) {
     const waitEl  = document.getElementById("renewalWaiting");
     const ccsWrap = document.querySelector(".course-change-row");
     if (waitEl)  waitEl.classList.toggle("hidden", !_renewalPending);
-    // コース変更セレクトを無効化
-    if (ccsWrap) {
-      const selects = ccsWrap.querySelectorAll("select");
-      selects.forEach(s => { s.disabled = _renewalPending; });
+
+    // ★ 改定１２：更新ONの時は member_type セレクトに「年会員」を強制セット
+    // 更新OFFに戻した時は空に戻す（コース変更セレクトの disabled も連動）
+    const memberTypeSel = document.getElementById("member_type");
+    if (_renewalPending) {
+      // コース変更セレクトを無効化し、member_type を「年会員」に固定
+      if (ccsWrap) {
+        ccsWrap.querySelectorAll("select").forEach(s => { s.disabled = true; });
+      }
+      if (memberTypeSel) memberTypeSel.value = "年会員";
+    } else {
+      // キャンセル：セレクトを再有効化し、member_type を空に戻す
+      if (ccsWrap) {
+        ccsWrap.querySelectorAll("select").forEach(s => { s.disabled = false; });
+      }
+      if (memberTypeSel) memberTypeSel.value = "";
     }
+
     const btn = document.getElementById("btnRenewal");
     if (btn) btn.textContent = _renewalPending ? "更新をキャンセル" : "更新";
   };
@@ -1314,6 +1363,19 @@ function esc(str) {
 
     if (el("currentCourseValue")) el("currentCourseValue").textContent = mt || "未設定";
     if (el("currentApplyDate"))   el("currentApplyDate").textContent   = startDate ? fmtJp(new Date(startDate.slice(0,10))) : "―";
+
+    // コース内容（course_name）を開始日行に表示
+    const courseNameEl = el("currentCourseName");
+    if (courseNameEl) {
+      const cn = data.course_name || "";
+      if (cn) {
+        courseNameEl.textContent = cn;
+        courseNameEl.classList.remove("hidden");
+      } else {
+        courseNameEl.textContent = "";
+        courseNameEl.classList.add("hidden");
+      }
+    }
 
     const exp = calcExpireDate(mt, startDate ? startDate.slice(0,10) : null);
     const expEl = el("currentExpireDate");

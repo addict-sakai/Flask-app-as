@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>請負QR入力 | Mt.FUJI PARAGLIDING</title>
+  <title>請負フライト入力 | Mt.FUJI PARAGLIDING</title>
   <link rel="stylesheet" href="../static/style.css" />
   <link rel="stylesheet" href="../static/style_cont_tan.css" />
   <link rel="stylesheet" href="../static/style_cont_unified.css" />
@@ -14,7 +14,7 @@
   <!-- ════ ヘッダー ════ -->
   <header class="cont-header uni-header">
     <a href="/" class="cont-back-btn">← トップ</a>
-    <h1 class="cont-title">請負QR入力</h1>
+    <h1 class="cont-title">請負フライト入力</h1>
     <div style="width:80px;"></div>
   </header>
 
@@ -25,6 +25,7 @@
       <button type="button" class="qr-start-btn" onclick="QrEntry.startScan()">
         <span style="font-size:1.4rem;">⬛</span> QRスキャン開始
       </button>
+      <p class="qr-screen-label">登録後30分間は登録できません</p>
       <div id="qr-error" class="cont-alert cont-alert--danger" style="display:none;margin-top:16px;"></div>
     </div>
   </div>

@@ -444,3 +444,100 @@ select.field-input {
   min-width: 100px;
   padding: 0 6px;
 }
+
+/* =========================================
+   英語版追加スタイル (改定2 2026/04/09)
+   ========================================= */
+
+/* ラジオグループ（縦並び：コース選択） */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.radio-label input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+/* ラジオグループ（横並び：Yes/No等） */
+.radio-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 6px;
+}
+.radio-inline label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.radio-inline input[type="radio"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+/* コース注意書き（保険込み表示） */
+.field-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ヘルス詳細入力欄 */
+.memo-wrap {
+  margin-top: 8px;
+}
+
+/* 誓約文リスト */
+.pledge-list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+.pledge-list li {
+  list-style-type: disc;
+}
+
+/* ── 戻るボタン（申込書ヘッダー左端）(改定3 2026/04/09) ── */
+.back-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.back-link-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}

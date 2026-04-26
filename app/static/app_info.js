@@ -2,6 +2,7 @@
    app_info.js  会員管理
    改定８（2026-03-31）: is_leader / instructor_role フィールド対応
    改定９（2026-04-01）: QRカード一括作成ビュー追加・カードデザイン改修
+   改定１０（2026/04/11）: 一覧テーブルにタンデムP・引率者・教員区分列追加
    ================================================ */
 "use strict";
 
@@ -259,7 +260,7 @@ function renderList(members) {
   $("totalCount").textContent = members.length;
   const tbody = $("memberTableBody");
   if (!members.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">データがありません</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">データがありません</td></tr>`;
     return;
   }
   tbody.innerHTML = members.map(m => {
@@ -271,11 +272,12 @@ function renderList(members) {
       <td>${m.member_number || "—"}</td>
       <td>${m.full_name || "—"}</td>
       <td><span class="${badgeCls}">${m.member_type || "—"}</span></td>
-      <td>${m.course_name || "—"}</td>
+      <td>${m.license || "—"}</td>
       <td>${m.glider_name || "—"}</td>
+      <td>${m.organization || "—"}</td>
       <td>${fmtDateWarning(m.reglimit_date)}</td>
       <td>${fmtRepackWarning(m.repack_date)}</td>
-      <td>${fmtDate(m.updated_at)}</td>
+      <td>${m.instructor_role || "—"}</td>
     </tr>`;
   }).join("");
 
@@ -376,6 +378,7 @@ async function openEdit(id) {
     $("editId").value = m.id;
 
     // 文字列フィールド（zip_code は分割入力のため別処理）
+    // ★ null の場合も明示的に空文字をセット（旧値が残らないよう）
     [
       "member_type","member_number","full_name","furigana","gender","blood_type",
       "weight","address","mobile_phone","home_phone","email",
@@ -386,7 +389,7 @@ async function openEdit(id) {
       "signature_name","guardian_name","medical_history",
     ].forEach(f => {
       const el = $("f_" + f);
-      if (el && m[f] != null) el.value = m[f];
+      if (el) el.value = (m[f] != null) ? m[f] : "";
     });
 
     // 郵便番号：3桁と4桁に分割して表示
@@ -454,6 +457,7 @@ async function openEdit(id) {
     _originalMemberType = m.member_type || "";
 
     // コース内容（現時点）を読み取り専用フィールドに表示
+    // ★ null の場合も明示的に空文字をセット（旧コース内容が残らないよう）
     const courseNameDisp = $("f_member_course_name");
     if (courseNameDisp) {
       courseNameDisp.value = m.course_name || "";
@@ -512,26 +516,92 @@ async function loadApplicationPanels(memberId, memberData) {
     $("newApplicationSection").style.display = "none";
   }
 
-  // コース変更申請パネル（pending application of type course_change）
+  // コース変更申請パネル
   try {
     const res = await fetch(`/api/members/${memberId}/pending_application`);
-    if (!res.ok) return;
-    const appData = await res.json();
-    if (appData && appData.status_type === 'course_change' && appData.app_status === 'pending') {
+    const appData = res.ok ? await res.json() : null;
+
+    if (appData && appData.app_status === 'pending') {
       _pendingCourseAppId = appData.id;
       $("courseChangeSection").style.display = "";
       $("pendingCourseArea").style.display   = "";
       $("confirmedCourseArea").style.display = "none";
       const changes = appData.changes || {};
-      $("disp_change_member_type").textContent = changes.member_type  || "―";
-      $("disp_change_course_name").textContent = changes.course_name  || "―";
-      $("disp_change_course_fee").textContent  = changes.course_fee   ? `¥${Number(changes.course_fee).toLocaleString()}` : "―";
-      $("disp_change_applied_at").textContent  = appData.applied_at   ? fmtDate(appData.applied_at.slice(0,10)) : "―";
+
+      // コース内容・申請日はchangesから直接セット
+      $("disp_change_course_name").textContent = changes.course_name || "―";
+      $("disp_change_applied_at").textContent  = appData.applied_at  ? fmtDate(appData.applied_at.slice(0,10)) : "―";
+
+      // コースタイプ: changesにあれば使用、なければmember_coursesから補完
+      if (changes.member_type) {
+        $("disp_change_member_type").textContent = changes.member_type;
+        _setCourseChangeFee(changes.member_type, changes.course_name || "", changes.course_fee || "");
+      } else {
+        // member_coursesの現在activeレコードからmember_typeを補完
+        fetch(`/api/members/${memberId}/courses/current`)
+          .then(r => r.ok ? r.json() : null)
+          .then(cur => {
+            const mt = (cur && cur.member_type) ? cur.member_type : "―";
+            $("disp_change_member_type").textContent = mt;
+            _setCourseChangeFee(mt, changes.course_name || "", changes.course_fee || "");
+          })
+          .catch(() => { $("disp_change_member_type").textContent = "―"; });
+      }
+
     } else {
+      // 申請なし: member_coursesの現在activeをconfirmedCourseAreaに表示
       _pendingCourseAppId = null;
-      $("courseChangeSection").style.display = "none";
+      fetch(`/api/members/${memberId}/courses/current`)
+        .then(r => r.ok ? r.json() : null)
+        .then(cur => {
+          if (cur && cur.member_type) {
+            $("courseChangeSection").style.display = "";
+            $("pendingCourseArea").style.display   = "none";
+            $("confirmedCourseArea").style.display = "";
+            $("disp_confirmed_member_type").textContent = cur.member_type || "―";
+            $("disp_confirmed_course_name").textContent = cur.course_name || "―";
+            $("disp_confirmed_course_fee").textContent  = cur.course_fee
+              ? `¥${Number(cur.course_fee).toLocaleString()}` : "―";
+            if ($("disp_course_confirmed_date"))
+              $("disp_course_confirmed_date").textContent = cur.start_date ? fmtDate(cur.start_date) : "―";
+          } else {
+            $("courseChangeSection").style.display = "none";
+          }
+        })
+        .catch(() => { $("courseChangeSection").style.display = "none"; });
     }
-  } catch { /* コース変更申請なし */ }
+  } catch { $("courseChangeSection").style.display = "none"; }
+}
+
+/* ================================================
+   コース変更パネルの金額セット
+   course_fee があれば使用、なければ config から補完
+   ================================================ */
+function _setCourseChangeFee(memberType, courseName, courseFee) {
+  if (courseFee) {
+    $("disp_change_course_fee").textContent = `¥${Number(courseFee).toLocaleString()}`;
+    return;
+  }
+  // config から料金キーを解決して補完
+  const keyMap = {
+    "年会員":  "年会費",
+    "冬季会員": {"ALL":"冬季料金","1":"冬季1月","2":"冬季2月","3":"冬季3月","4":"冬季4月","継続":"冬季継続料金"},
+    "スクール": {"B":"Bコース入校料","NP":"NPコース入校料","P":"Pコース入校料","XC":"XCコース入校料","T":"Tコース入校料"},
+  };
+  let feeKey = null;
+  if (memberType === "年会員") {
+    feeKey = "年会費";
+  } else if (keyMap[memberType] && typeof keyMap[memberType] === "object") {
+    feeKey = keyMap[memberType][courseName] || null;
+  }
+  if (feeKey) {
+    fetch(`/api/config/course_fee?course=${encodeURIComponent(feeKey)}`)
+      .then(r => r.json())
+      .then(d => { $("disp_change_course_fee").textContent = d.fee ? `¥${Number(d.fee).toLocaleString()}` : "―"; })
+      .catch(() => { $("disp_change_course_fee").textContent = "―"; });
+  } else {
+    $("disp_change_course_fee").textContent = "―";
+  }
 }
 
 /* ================================================
@@ -627,6 +697,23 @@ async function saveMember() {
 
   try {
     const id  = $("editId").value;
+
+    // ★ コース変更承認を先に実行（PUT 保存より前）
+    // 承認結果の member_type を payload に反映してから PUT する
+    if (isEdit && $("courseChangeSection") && $("courseChangeSection").style.display !== "none" &&
+        $("f_payment_confirmed_course") && $("f_payment_confirmed_course").checked) {
+      const approved = await saveCourseChangePayment();
+      if (approved && $("f_member_type")) {
+        // saveCourseChangePayment 内で f_member_type がセット済みなので再取得
+        payload.member_type = $("f_member_type").value || payload.member_type;
+        // 年会員など course_name が不要な場合は null にする
+        const newMt = payload.member_type || "";
+        if (newMt === "年会員" || newMt === "ビジター") {
+          payload.course_name = null;
+        }
+      }
+    }
+
     const url = isEdit ? `/api/members/${id}` : "/api/members";
     const res = await fetch(url, {
       method: isEdit ? "PUT" : "POST",
@@ -637,17 +724,58 @@ async function saveMember() {
     if (!res.ok) throw new Error(data.error || "保存失敗");
 
     // 分類（member_type）が変更された場合、コース履歴を更新
+    // ★ ただしコース変更承認済み（saveCourseChangePayment 実行済み）の場合は二重登録を避ける
     if (isEdit) {
       const newMemberType = ($("f_member_type") ? $("f_member_type").value : "") || "";
-      if (newMemberType && newMemberType !== _originalMemberType) {
+      const courseAlreadyApproved =
+        $("courseChangeSection") &&
+        $("courseChangeSection").style.display !== "none" &&
+        $("f_payment_confirmed_course") &&
+        $("f_payment_confirmed_course").checked;
+      if (newMemberType && newMemberType !== _originalMemberType && !courseAlreadyApproved) {
         try {
-          const today = new Date().toISOString().slice(0, 10);
+          // ★ start_date の計算：期限日前更新なら期限日翌日、そうでなければ today
+          let newStartDate = new Date().toISOString().slice(0, 10);
+          try {
+            const curRes = await fetch(`/api/members/${id}/courses/current`);
+            if (curRes.ok) {
+              const cur = await curRes.json();
+              if (cur && cur.start_date && cur.member_type) {
+                // 期限日を計算
+                const calcExpire = (memberType, startDate) => {
+                  const sd = new Date(startDate);
+                  if (memberType === "年会員" || memberType === "スクール") {
+                    const exp = new Date(sd);
+                    exp.setFullYear(exp.getFullYear() + 1);
+                    exp.setDate(exp.getDate() - 1);
+                    return exp;
+                  }
+                  if (memberType === "冬季会員") {
+                    const mon = sd.getMonth() + 1;
+                    return new Date(mon === 12 ? sd.getFullYear() + 1 : sd.getFullYear(), 3, 30);
+                  }
+                  return null;
+                };
+                const expDt = calcExpire(cur.member_type, cur.start_date);
+                const today = new Date(); today.setHours(0,0,0,0);
+                if (expDt && expDt >= today) {
+                  // 期限日前 → 期限日翌日を開始日に
+                  const next = new Date(expDt);
+                  next.setDate(next.getDate() + 1);
+                  newStartDate = next.toISOString().slice(0, 10);
+                }
+              }
+            }
+          } catch { /* 計算失敗時は today を使用 */ }
+
           await fetch(`/api/members/${id}/courses`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               member_type:  newMemberType,
-              start_date:   today,
+              course_name:  (newMemberType === "年会員" || newMemberType === "ビジター") ? null
+                            : (($("f_course_name") ? $("f_course_name").value : "") || null),
+              start_date:   newStartDate,
               confirmed_by: "staff",
             }),
           });
@@ -656,14 +784,9 @@ async function saveMember() {
     }
 
     // 新規申請：入金確認済み処理
-    if (isEdit && $("newApplicationSection").style.display !== "none" &&
+    if (isEdit && $("newApplicationSection") && $("newApplicationSection").style.display !== "none" &&
         $("f_payment_confirmed_new") && $("f_payment_confirmed_new").checked) {
       await saveNewApplicationPayment(id);
-    }
-    // コース変更：入金確認済み処理
-    if (isEdit && $("courseChangeSection").style.display !== "none" &&
-        $("f_payment_confirmed_course") && $("f_payment_confirmed_course").checked) {
-      await saveCourseChangePayment();
     }
 
     showToast(isEdit ? "更新しました" : "登録しました");

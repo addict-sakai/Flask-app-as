@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<!-- 改定1 2026/04/09 -->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>体験申込 / Experience Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #f5f6f8;
+      --surface: #ffffff;
+      --border:  #d1d5db;
+      --accent:  #2563eb;
+      --text-primary:   #0a0f1a;
+      --text-secondary: #1f2937;
+      --text-muted:     #6b7280;
+      --radius:  10px;
+      --font:    'Noto Sans JP', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── ヘッダー ── */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 50;
+    }
+    .header-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 6px 12px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: var(--radius);
+      transition: background 0.18s;
+      white-space: nowrap;
+    }
+    .header-back:hover {
+      background: rgba(255,255,255,0.12);
+    }
+    .header-title {
+      flex: 1;
+      text-align: center;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    /* ヘッダー左右を等幅にしてタイトルを中央に */
+    .header-spacer {
+      /* back-link と同じ最小幅を確保するためのダミー要素 */
+      min-width: 90px;
+    }
+
+    /* ── メインコンテンツ ── */
+    .main {
+      padding-top: 56px; /* ヘッダー分 */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 40px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 480px;
+      margin: 32px 20px 0;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card-heading {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .card-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .lang-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .lang-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 18px 20px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 2px solid transparent;
+      transition: all 0.18s;
+    }
+    .lang-btn--ja {
+      background: #000;
+      color: #fff;
+      border-color: #000;
+    }
+    .lang-btn--ja:hover {
+      background: #222;
+      border-color: #222;
+    }
+    .lang-btn--en {
+      background: var(--surface);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+    .lang-btn--en:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #f0f5ff;
+    }
+
+    .lang-flag { font-size: 22px; }
+
+    .lang-btn-sub {
+      font-size: 12px;
+      font-weight: 400;
+      opacity: 0.75;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .lang-btn-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* ── モバイル ── */
+    @media (max-width: 520px) {
+      .card {
+        padding: 32px 20px;
+        margin-top: 20px;
+      }
+      .card-heading { font-size: 19px; }
+      .lang-btn { font-size: 15px; padding: 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header class="header">
+    <a href="/" class="header-back">← トップ</a>
+    <div class="header-title">体験申込 / Experience</div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- メイン -->
+  <main class="main">
+    <div class="card">
+      <p class="card-label">Mt.FUJI PARAGLIDING</p>
+      <h1 class="card-heading">体験申込書<br><span style="font-size:0.78em; font-weight:500;">Experience Application</span></h1>
+      <p class="card-sub">ご希望の言語をお選びください<br>Please select your preferred language</p>
+
+      <div class="lang-btn-group">
+        <a href="/apply_exp" class="lang-btn lang-btn--ja">
+          <span class="lang-flag">🇯🇵</span>
+          <div class="lang-btn-text">
+            <span>日本語</span>
+            <span class="lang-btn-sub">Japanese</span>
+          </div>
+        </a>
+        <a href="/apply_exp_e" class="lang-btn lang-btn--en">
+          <span class="lang-flag">🇬🇧</span>
+          <div class="lang-btn-text">
+            <span>English</span>
+            <span class="lang-btn-sub">英語</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

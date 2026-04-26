@@ -1,7 +1,12 @@
 """
 app/routes/member_routes.py
 会員管理 Flask ルート & REST API
-DB構成V2 対応（2026-03-23）改定５→改定８（2026/03/31）
+DB構成V2 対応（2026-03-23）改定５→改定９（2026/04/11）
+
+改定９変更点:
+  1. _member_to_dict() に is_leader / instructor_role を追加（GETで返るように）
+  2. _MEMBER_BOOL_FIELDS に is_leader を追加（PUT/POSTで保存されるように）
+  3. _MEMBER_STR_FIELDS に instructor_role を追加（PUT/POSTで保存されるように）
 
 改定８変更点:
   1. apply_update_member() にビジター変更の即時登録ロジックを追加
@@ -33,16 +38,11 @@ from app.models.member_course   import MemberCourse
 from app.models.member_contact  import MemberContact
 from app.models.member_flyer    import MemberFlyer
 from datetime import datetime, date, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
 import uuid
 import json
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.header import Header
 from sqlalchemy import text
+from sqlalchemy.orm import selectinload
 
 member_bp = Blueprint("member", __name__)
 
@@ -100,29 +100,11 @@ def apply_page_upd():
 def apply_page_config():
     return render_template("設定管理.html")
 
-@member_bp.route("/apply_io_info")
-def apply_page_io_info():
-    return render_template("入下山管理.html")
 
-@member_bp.route("/apply_exp_resv")
-def apply_page_exp_resv():
-    return render_template("体験管理.html")
 
-@member_bp.route("/apply_exp_status")
-def apply_page_exp_status():
-    return render_template("体験状況.html")
 
-@member_bp.route("/apply_staff_manage")
-def apply_page_staff_manage():
-    return render_template("スタッフ.html")
 
-@member_bp.route("/apply_exp")
-def apply_page_exp():
-    return render_template("体験申込書.html")
 
-@member_bp.route("/apply_exp_e")
-def apply_page_exp_e():
-    return render_template("体験申込書_E.html")
 
 # =========================================
 # ヘルパー
@@ -135,6 +117,32 @@ def _parse_date(value, fmt="%Y-%m-%d"):
         return datetime.strptime(value, fmt).date()
     except ValueError:
         return None
+
+
+def _member_to_list_dict(m, course=None) -> dict:
+    """
+    GET /api/members（一覧）専用の軽量 dict。
+    renderList()・renderQrBulkList() が使うフィールドのみ返す。
+    uuid / member_status / reg_no は QRカード一括作成ビューで必要。
+    """
+    def fd(d):
+        return d.isoformat() if d else None
+    f = m.flyer  # backref 経由
+    return {
+        "id":              m.id,
+        "uuid":            str(m.uuid) if m.uuid else None,
+        "member_number":   m.member_number,
+        "full_name":       m.full_name,
+        "member_status":   m.member_status,
+        "member_type":     course.member_type if course else None,
+        "license":         f.license           if f else None,
+        "glider_name":     f.glider_name       if f else None,
+        "organization":    f.organization      if f else None,
+        "reg_no":          f.reg_no            if f else None,
+        "reglimit_date":   fd(f.reglimit_date)  if f else None,
+        "repack_date":     fd(f.repack_date)    if f else None,
+        "instructor_role": m.instructor_role,
+    }
 
 
 def _member_to_dict(m: Member) -> dict:
@@ -171,6 +179,8 @@ def _member_to_dict(m: Member) -> dict:
         "member_status":    m.member_status,
         "confirmed_at":     fd(m.confirmed_at),
         "contract":         bool(m.contract)          if m.contract          is not None else False,
+        "is_leader":        bool(m.is_leader)          if m.is_leader         is not None else False,
+        "instructor_role":  m.instructor_role,
         "payment_confirmed":bool(m.payment_confirmed) if m.payment_confirmed is not None else False,
         "from_experience":  bool(m.from_experience)   if m.from_experience   is not None else False,
         "exp_resv_no":      m.exp_resv_no,
@@ -216,10 +226,10 @@ def _member_to_dict(m: Member) -> dict:
 _MEMBER_STR_FIELDS  = [
     "full_name", "furigana", "gender", "blood_type", "weight",
     "member_number", "relationship", "signature_name", "guardian_name",
-    "course_find", "member_class", "exp_resv_no",
+    "course_find", "member_class", "exp_resv_no", "instructor_role",
 ]
 _MEMBER_DATE_FIELDS = ["application_date", "birthday", "agreement_date"]
-_MEMBER_BOOL_FIELDS = ["contract", "payment_confirmed", "from_experience"]
+_MEMBER_BOOL_FIELDS = ["contract", "is_leader", "payment_confirmed", "from_experience"]
 
 # member_contacts に書くフィールド
 _CONTACT_FIELDS = [
@@ -271,6 +281,11 @@ def _apply_fields_from_json(member: Member, data: dict) -> None:
 # =========================================
 
 def _generate_member_number() -> str:
+    """
+    数字のみの会員番号の最大値+1を5桁ゼロ埋めで返す。
+    既存の4桁番号も含めて最大値を探すため、既存データへの影響なし。
+    例: 既存最大が0038 -> 次は00039
+    """
     existing = (
         db.session.query(Member.member_number)
         .filter(Member.member_number.op("~")(r"^\d+$"))
@@ -284,7 +299,7 @@ def _generate_member_number() -> str:
                 max_num = n
         except ValueError:
             pass
-    return f"{max_num + 1:04d}"
+    return f"{max_num + 1:05d}"
 
 
 def _register_member():
@@ -504,7 +519,21 @@ def list_members():
         query = query.filter(Member.id.in_(flyer_ids_rp))
 
     members = query.order_by(Member.id.desc()).all()
-    return jsonify([_member_to_dict(m) for m in members])
+
+    if not members:
+        return jsonify([])
+
+    # ── N+1防止：active コースを1クエリで一括取得 ──────────────────
+    member_ids = [m.id for m in members]
+    active_courses = MemberCourse.query.filter(
+        MemberCourse.member_id.in_(member_ids),
+        MemberCourse.status == 'active',
+        MemberCourse.end_date.is_(None),
+    ).all()
+    course_map = {c.member_id: c for c in active_courses}
+
+    # 一覧は軽量 dict のみ返す。詳細は GET /api/members/<id> で取得
+    return jsonify([_member_to_list_dict(m, course_map.get(m.id)) for m in members])
 
 
 @member_bp.route("/api/members/<int:member_id>", methods=["GET"])
@@ -585,7 +614,8 @@ def delete_member(member_id):
 # =========================================
 
 # コース変更フィールド（申請登録対象）
-_COURSE_FIELDS = {"member_type", "course_name"}
+# course_fee を追加 → changes_json に金額が保存されスタッフ承認画面に表示される
+_COURSE_FIELDS = {"member_type", "course_name", "course_fee"}
 
 
 # POST /api/members/<id>/apply_update  改定５版
@@ -622,6 +652,11 @@ def apply_update_member(member_id):
     course_changes = {k: v for k, v in course_changes.items() if k in _COURSE_FIELDS}
     # info_changes に course 系フィールドが混入していた場合は除去（安全対策）
     info_changes   = {k: v for k, v in info_changes.items()   if k not in _COURSE_FIELDS}
+
+    # ★ 改定１１：年会員・ビジターへの変更時は course_name を強制削除
+    _new_type = course_changes.get("member_type", "")
+    if _new_type in ("年会員", "ビジター"):
+        course_changes.pop("course_name", None)
 
     info_updated   = False
     course_applied = False
@@ -713,8 +748,10 @@ def apply_update_member(member_id):
 
 
 # POST /api/applications/<id>/approve
-# スタッフが管理画面から承認する。
-# ★ 改定６: 承認時に member_courses にコース履歴レコードを追加する。
+# ★ 改定６ : 承認時に member_courses にコース履歴レコードを追加。
+# ★ 改定１０: confirmed_member_type をレスポンスに追加。
+#             年会員・ビジターへの変更時は course_name を None に強制。
+# ★ 改定１１: start_date を _calc_new_course_start() で正しく算出。
 @member_bp.route("/api/applications/<int:app_id>/approve", methods=["POST"])
 def approve_application(app_id):
     app_rec  = MemberApplication.query.get_or_404(app_id)
@@ -724,17 +761,19 @@ def approve_application(app_id):
 
     changes = app_rec.get_changes()
 
-    # ── ① members テーブルの情報変更フィールドを反映 ──────────────
-    # course_changes（member_type / course_name）は member_courses で管理するため
-    # members への上書きは行わない（互換性のため member_type だけ残す）
+    # ── ① course / reglimit フィールドを抽出 ──────────────────────
     new_member_type = changes.pop("member_type",  None)
     new_course_name = changes.pop("course_name",  None)
     new_course_fee  = changes.pop("course_fee",   None)
 
+    # 年会員・ビジターへの変更時は course_name を強制 None
+    if new_member_type in ("年会員", "ビジター"):
+        new_course_name = None
+
     # reglimit_date の早期更新判定（フライヤー登録期限）
     new_limit_str = changes.pop("reglimit_date", None)
 
-    # 残りの info_changes を members に反映
+    # ── ② 残りの info_changes を members / contacts / flyers に反映 ─
     if changes:
         _apply_fields_from_json(member, changes)
 
@@ -742,7 +781,6 @@ def approve_application(app_id):
         new_limit = _parse_date(new_limit_str)
         flyer = MemberFlyer.get_or_create(member.id)
         if flyer.reglimit_date and flyer.reglimit_date > today:
-            # 早期更新: 現期限が残っている → next_reglimit_date にセット
             flyer.next_reglimit_date = new_limit
         else:
             flyer.reglimit_date      = new_limit
@@ -750,16 +788,19 @@ def approve_application(app_id):
 
     member.updated_at = datetime.utcnow()
 
-    # ── ② member_courses にコース履歴レコードを追加 ───────────────
+    # ── ③ member_courses にコース履歴レコードを追加 ───────────────
     if new_member_type:
-        confirmed_by = req_data.get("confirmed_by", "staff")
-
-        # 現在有効なコースを終了させる
+        confirmed_by   = req_data.get("confirmed_by", "staff")
         current_course = MemberCourse.get_current(member.id)
+
+        # ★ 改定１１: コース種別に応じた start_date を計算
+        new_start = _calc_new_course_start(
+            new_member_type, new_course_name, current_course, today
+        )
+
+        # 現在有効なコースを終了
         if current_course:
-            # 新コース開始日の前日を終了日にセット
-            start = member.confirmed_at or today
-            current_course.expire(end_date=start)
+            current_course.expire(end_date=new_start)
 
         # 新コースレコードを追加
         new_course = MemberCourse(
@@ -767,21 +808,29 @@ def approve_application(app_id):
             member_type    = new_member_type,
             course_name    = new_course_name,
             course_fee     = new_course_fee,
-            start_date     = member.confirmed_at or today,
-            end_date       = None,          # 現在有効
+            start_date     = new_start,
+            end_date       = None,
             status         = 'active',
             confirmed_by   = confirmed_by,
             application_id = app_rec.id,
         )
         db.session.add(new_course)
 
-    # ── ③ 申請レコードを承認済みに更新 ───────────────────────────
+    # ── ④ 申請レコードを承認済みに更新 ───────────────────────────
     app_rec.app_status   = 'approved'
     app_rec.confirmed_at = datetime.utcnow()
     app_rec.confirmed_by = req_data.get("confirmed_by", "staff")
 
     db.session.commit()
-    return jsonify({"status": "ok"})
+
+    # フロント側で分類欄を更新できるよう confirmed_member_type を返す
+    confirmed_course      = MemberCourse.get_current(member.id)
+    confirmed_member_type = confirmed_course.member_type if confirmed_course else new_member_type
+
+    return jsonify({
+        "status":                "ok",
+        "confirmed_member_type": confirmed_member_type,
+    })
 
 
 # POST /api/applications/<id>/reject
@@ -842,19 +891,26 @@ def get_pending_application(member_id):
         })
 
     # ── ② member_applications を確認 ──
-    # まず pending を探す
+    # course_change の pending を最優先で取得
     app_rec = (
         MemberApplication.query
-        .filter_by(member_id=member_id, app_status='pending')
+        .filter_by(
+            member_id=member_id,
+            application_type='course_change',
+            app_status='pending',
+        )
         .order_by(MemberApplication.applied_at.desc())
         .first()
     )
 
-    # pending がなければ最新の承認・却下済みを返す（表示用）
+    # course_change pending がなければ最新の course_change レコードを返す（表示用）
     if not app_rec:
         app_rec = (
             MemberApplication.query
-            .filter_by(member_id=member_id)
+            .filter_by(
+                member_id=member_id,
+                application_type='course_change',
+            )
             .order_by(MemberApplication.applied_at.desc())
             .first()
         )
@@ -890,6 +946,12 @@ def _calc_course_expire(member_type: str, start_date) -> date | None:
     """
     コース種別と開始日からコース期限日（最終有効日）を返す。
     ビジター等、期限なしの場合は None を返す。
+
+    年会員・スクール : 開始日から1年後の前日
+    冬季会員        :
+        12月   → 翌年4/30（冬季シーズン）
+        1〜4月 → 当年4/30（冬季シーズン）
+        5〜11月 → 当年11/30（継続シーズン：5/1〜11/30）
     """
     if not start_date:
         return None
@@ -900,176 +962,75 @@ def _calc_course_expire(member_type: str, start_date) -> date | None:
             return None
 
     if member_type in ("年会員", "スクール"):
-        # 開始日から1年後の前日
         exp = date(start_date.year + 1, start_date.month, start_date.day) - timedelta(days=1)
         return exp
+
     if member_type == "冬季会員":
-        # 当年もしくは翌年の4月30日
-        if start_date.month == 12:
+        m = start_date.month
+        if m == 12:
             return date(start_date.year + 1, 4, 30)
-        return date(start_date.year, 4, 30)
+        elif 1 <= m <= 4:
+            return date(start_date.year, 4, 30)
+        else:  # 5〜11月：継続シーズン
+            return date(start_date.year, 11, 30)
+
     return None
 
 
-# =========================================
-# ★ 改定８：コース変更メール送信ヘルパー
-# =========================================
-
-def _send_course_change_mail(member: Member, new_member_type: str) -> None:
+def _calc_new_course_start(new_member_type: str, new_course_name,
+                           current_course, today: date) -> date:
     """
-    コースが変更された会員に通知メールを送信する。
-    MAIL_BACKEND=dummy の場合はログ出力のみ。
-    失敗しても例外は握り潰す（メール失敗でDB処理を巻き戻さない）。
+    承認時の新コース開始日をコース種別ごとに計算する。
+
+    年会員（更新）:
+        現在コースが年会員かつ期限日前 → 現在コースの期限日 + 1日
+        それ以外（期限切れ・他コースから変更）→ today
+
+    スクール:
+        常に today（承認日）
+
+    冬季会員:
+        course_name に応じた月の1日（直近の未来日）
+        ALL → 12/1、1 → 1/1、2 → 2/1、3 → 3/1、4 → 4/1、継続 → 5/1
+
+    ビジター・その他:
+        today
     """
-    try:
-        contact = MemberContact.query.filter_by(member_id=member.id).first()
-        if not contact or not contact.email:
-            return  # メールアドレスなしはスキップ
+    if new_member_type == "年会員":
+        if current_course:
+            expire_dt = _calc_course_expire(current_course.member_type, current_course.start_date)
+            if expire_dt and expire_dt >= today:
+                return expire_dt + timedelta(days=1)
+        return today
 
-        to_email  = contact.email.strip()
-        full_name = (member.full_name or "").strip()
+    if new_member_type == "スクール":
+        return today
 
-        # 設定管理から送信元取得
-        sender_vals = _get_mail_config_values("送信元")
-        if not sender_vals:
-            return
-        from_email = sender_vals[0]["value"].strip()
+    if new_member_type == "冬季会員":
+        _WINTER_MONTH = {
+            "ALL": 12,
+            "1":   1,
+            "2":   2,
+            "3":   3,
+            "4":   4,
+            "継続": 5,
+        }
+        cn = (new_course_name or "").strip()
+        target_month = _WINTER_MONTH.get(cn)
+        if target_month is None:
+            return today
 
-        subject = f"コース変更のご連絡"
-        body = (
-            f"{full_name} 様\n\n"
-            f"コースが「{new_member_type}」に変更されました。\n\n"
-            f"ご不明な点はスタッフまでお問い合わせください。\n"
-        )
-
-        # 署名追加
-        sign_vals = _get_mail_config_values("署名")
-        if sign_vals:
-            signature_lines = [v["value"] for v in sorted(sign_vals, key=lambda x: x["sort_order"])]
-            body += "\n" + "\n".join(signature_lines)
-
-        mail_backend  = os.environ.get("MAIL_BACKEND", "smtp").lower()
-        mail_server   = os.environ.get("MAIL_SERVER",  "")
-        mail_port     = int(os.environ.get("MAIL_PORT", 587))
-        use_tls       = os.environ.get("MAIL_USE_TLS", "true").lower() != "false"
-        mail_user     = os.environ.get("MAIL_USERNAME", "")
-        mail_password = os.environ.get("MAIL_PASSWORD", "")
-
-        if mail_backend == "dummy":
-            print("=" * 60)
-            print("[MAIL DUMMY] コース変更通知")
-            print(f"  From   : {from_email}")
-            print(f"  To     : {to_email}")
-            print(f"  Subject: {subject}")
-            print(f"  Body   :\n{body}")
-            print("=" * 60)
+        if target_month == 12:
+            candidate = date(today.year, 12, 1)
+            if candidate < today:
+                candidate = date(today.year + 1, 12, 1)
         else:
-            if not mail_server:
-                return
-            msg = MIMEMultipart()
-            msg["From"]    = from_email
-            msg["To"]      = to_email
-            msg["Subject"] = Header(subject, "utf-8")
-            msg.attach(MIMEText(body, "plain", "utf-8"))
+            candidate = date(today.year, target_month, 1)
+            if candidate < today:
+                candidate = date(today.year + 1, target_month, 1)
+        return candidate
 
-            if use_tls:
-                smtp = smtplib.SMTP(mail_server, mail_port, timeout=10)
-                smtp.ehlo()
-                smtp.starttls()
-            else:
-                smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=10)
-
-            if mail_user and mail_password:
-                smtp.login(mail_user, mail_password)
-            smtp.sendmail(from_email, [to_email], msg.as_bytes())
-            smtp.quit()
-
-    except Exception as e:
-        print(f"[_send_course_change_mail] メール送信失敗: {e}")
-
-
-def _daily_member_check():
-    if _member_flask_app is None:
-        return
-    with _member_flask_app.app_context():
-        today   = date.today()
-        targets = Member.query.filter(Member.member_status == 'active').all()
-
-        changed = 0
-        for m in targets:
-            # member_flyers から期限情報を取得
-            f = m.flyer
-            if not f:
-                continue  # フライヤー情報なしはスキップ
-
-            reglimit      = f.reglimit_date
-            next_reglimit = f.next_reglimit_date
-
-            # ① 早期更新の適用日到来
-            if next_reglimit and reglimit and reglimit <= today:
-                f.reglimit_date      = next_reglimit
-                f.next_reglimit_date = None
-                f.updated_at         = datetime.utcnow()
-                changed += 1
-                continue  # 以下の期限切れ判定はスキップ
-
-            # ★ 改定８：コース期限切れ判定
-            current_course = MemberCourse.get_current(m.id)
-            if not current_course:
-                continue
-
-            mt = current_course.member_type
-            start = current_course.start_date
-
-            # コース期限日を計算
-            expire_dt = _calc_course_expire(mt, start)
-
-            if expire_dt is None:
-                continue  # ビジター等は期限なし
-
-            if expire_dt >= today:
-                continue  # 期限内
-
-            # ── 期限切れ処理 ──────────────────────────────────────
-            if mt in ("年会員", "冬季会員"):
-                # → ビジターに自動変更＋メール送信
-                current_course.expire(end_date=today)
-                db.session.add(MemberCourse(
-                    member_id    = m.id,
-                    member_type  = "ビジター",
-                    start_date   = today,
-                    status       = "active",
-                    confirmed_by = "system",
-                ))
-                m.updated_at = datetime.utcnow()
-                changed += 1
-                _send_course_change_mail(m, "ビジター")
-
-            elif mt == "スクール":
-                # → 更新待ち（member_status を renewal_waiting に変更）
-                m.member_status = "renewal_waiting"
-                m.updated_at    = datetime.utcnow()
-                changed += 1
-
-        if changed:
-            db.session.commit()
-        print(f"[daily_member_check] {today} 処理件数: {changed}")
-
-
-def init_member_scheduler(app):
-    global _member_flask_app
-    _member_flask_app = app
-
-    scheduler = BackgroundScheduler(timezone="Asia/Tokyo")
-    scheduler.add_job(
-        _daily_member_check,
-        trigger=CronTrigger(hour=0, minute=5, timezone="Asia/Tokyo"),
-        id="daily_member_check",
-        replace_existing=True,
-    )
-    scheduler.start()
-    return scheduler
-
+    return today
 
 # =========================================
 # ★ 改定６：コース履歴 API
@@ -1279,286 +1240,6 @@ def verify_pass():
         return jsonify({"error": "PASSコードが正しくありません"}), 401
 
     return jsonify({"ok": True, "member_number": member.member_number})
-
-
-# =========================================
-# ★ 改定７：案内メール共通ヘルパー
-# =========================================
-
-def _get_mail_config_values(item_name):
-    """config_master カテゴリ「メール関連」から item_name に一致する
-    config_values を sort_order 順で返す"""
-    rows = db.session.execute(text("""
-        SELECT cv.value, cv.label, cv.sort_order
-        FROM config_master cm
-        JOIN config_values cv ON cv.master_id = cm.id
-        WHERE cm.category = 'メール関連'
-          AND cm.item_name = :item_name
-          AND cv.is_active = TRUE
-        ORDER BY cv.sort_order, cv.id
-    """), {"item_name": item_name}).fetchall()
-    return [dict(r._mapping) for r in rows]
-
-
-def _build_mail_preview(member_id):
-    """
-    会員IDからメールプレビュー用の辞書を生成して返す。
-    エラー時は (None, エラーメッセージ, HTTPステータス) を返す。
-    正常時は (dict, None, None) を返す。
-    """
-    member = Member.query.get(member_id)
-    if not member:
-        return None, "会員が見つかりません", 404
-
-    contact = MemberContact.query.filter_by(member_id=member.id).first()
-    to_email = (contact.email or "").strip() if contact else ""
-    full_name = (member.full_name or "").strip()
-
-    # 送信元（複数対応：labelがあればラベル付き、なければvalueをそのまま）
-    sender_vals = _get_mail_config_values("送信元")
-    if not sender_vals:
-        return None, "設定管理に「送信元」が登録されていません", 500
-    from_emails = [
-        {"value": v["value"].strip(), "label": (v["label"] or v["value"]).strip()}
-        for v in sender_vals
-        if v["value"] and v["value"].strip()
-    ]
-    if not from_emails:
-        return None, "設定管理に有効な「送信元」が登録されていません", 500
-
-    # 件名（なければデフォルト）
-    subject_vals = _get_mail_config_values("件名")
-    subject = subject_vals[0]["value"].strip() if subject_vals else "ご案内"
-
-    # 案内（本文テンプレート）
-    body_vals = _get_mail_config_values("案内")
-    if not body_vals:
-        return None, "設定管理に「案内」が登録されていません", 500
-    body_template = body_vals[0]["value"] or ""
-
-    # 署名（sort_order 順に連結）
-    sign_vals = _get_mail_config_values("署名")
-    signature_lines = [v["value"] for v in sorted(sign_vals, key=lambda x: x["sort_order"])]
-    signature_text = "\n".join(signature_lines)
-
-    # 本文組み立て: 「氏名 様」+ 空行 + テンプレート + 空行 + 署名
-    greeting = f"{full_name} 様"
-    body = f"{greeting}\n\n{body_template}\n\n{signature_text}"
-
-    return {
-        "from_emails": from_emails,
-        "to_email":    to_email,
-        "subject":     subject,
-        "body":        body,
-        "full_name":   full_name,
-    }, None, None
-
-
-# ── メールプレビュー取得 ─────────────────────────────────────────────
-# GET /api/members/<member_id>/mail_preview
-# 設定管理の値を元に組み立てたメール内容（送信元・送信先・件名・本文）を返す。
-# フロント側がプレビューモーダルに表示し、スタッフが編集してから送信ボタンを押す。
-@member_bp.route("/api/members/<int:member_id>/mail_preview", methods=["GET"])
-def mail_preview(member_id):
-    preview, err, status = _build_mail_preview(member_id)
-    if err:
-        return jsonify({"error": err}), status
-    if not preview["to_email"]:
-        return jsonify({"error": "メールアドレスが登録されていません"}), 400
-    return jsonify(preview)
-
-
-# ── 案内メール送信 ───────────────────────────────────────────────────
-# POST /api/members/<member_id>/send_info
-# リクエストボディ JSON:
-#   { "from_email": "...", "to_email": "...", "subject": "...", "body": "..." }
-# スタッフがプレビューモーダルで内容を確認・編集した後に呼び出す。
-#
-# SMTP設定は環境変数から取得:
-#   MAIL_SERVER  (default: localhost)
-#   MAIL_PORT    (default: 587)
-#   MAIL_USE_TLS (default: true)
-#   MAIL_USERNAME
-#   MAIL_PASSWORD
-@member_bp.route("/api/members/<int:member_id>/send_info", methods=["POST"])
-def send_info(member_id):
-    member = Member.query.get(member_id)
-    if not member:
-        return jsonify({"error": "会員が見つかりません"}), 404
-
-    data       = request.get_json(silent=True) or {}
-    from_email = (data.get("from_email") or "").strip()
-    to_email   = (data.get("to_email")   or "").strip()
-    subject    = (data.get("subject")    or "").strip()
-    body       = (data.get("body")       or "").strip()
-
-    if not from_email:
-        return jsonify({"error": "送信元が指定されていません"}), 400
-    if not to_email:
-        return jsonify({"error": "送信先が指定されていません"}), 400
-    if not subject:
-        return jsonify({"error": "件名が指定されていません"}), 400
-
-    # ── SMTP 送信 ─────────────────────────────────────────────────
-    # MAIL_BACKEND=dummy の場合は実際には送信せずログ出力のみ（ローカル開発用）
-    mail_backend  = os.environ.get("MAIL_BACKEND", "smtp").lower()
-    mail_server   = os.environ.get("MAIL_SERVER",   "")
-    mail_port     = int(os.environ.get("MAIL_PORT", 587))
-    use_tls       = os.environ.get("MAIL_USE_TLS", "true").lower() != "false"
-    mail_user     = os.environ.get("MAIL_USERNAME", "")
-    mail_password = os.environ.get("MAIL_PASSWORD", "")
-
-    if mail_backend == "dummy":
-        # ── ダミー送信（ローカル開発用）─────────────────────────
-        print("=" * 60)
-        print("[MAIL DUMMY] ダミー送信（実際には送信されていません）")
-        print(f"  From   : {from_email}")
-        print(f"  To     : {to_email}")
-        print(f"  Subject: {subject}")
-        print("  Body   :")
-        print(body)
-        print("=" * 60)
-    else:
-        # ── SMTP 実送信 ───────────────────────────────────────────
-        if not mail_server:
-            return jsonify({"error": "MAIL_SERVER が設定されていません。Renderの環境変数を確認してください。"}), 500
-        try:
-            msg = MIMEMultipart()
-            msg["From"]    = from_email
-            msg["To"]      = to_email
-            msg["Subject"] = Header(subject, "utf-8")
-            msg.attach(MIMEText(body, "plain", "utf-8"))
-
-            if use_tls:
-                smtp = smtplib.SMTP(mail_server, mail_port, timeout=10)
-                smtp.ehlo()
-                smtp.starttls()
-            else:
-                smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=10)
-
-            if mail_user and mail_password:
-                smtp.login(mail_user, mail_password)
-
-            smtp.sendmail(from_email, [to_email], msg.as_bytes())
-            smtp.quit()
-
-        except Exception as e:
-            return jsonify({"error": f"メール送信に失敗しました: {str(e)}"}), 500
-
-    full_name = (member.full_name or "").strip()
-    return jsonify({
-        "ok":      True,
-        "to":      to_email,
-        "subject": subject,
-        "message": f"{full_name} 様にメールを送信しました",
-    })
-
-
-# =========================================
-# ★ 改定８：期限通知アラート取得 API
-# =========================================
-
-# GET /api/members/expiry_alerts
-# 期限が近い会員リストを返す（会員管理画面の通知表示・手動メール送信用）
-# レスポンス JSON:
-# {
-#   "annual": [...],   # 年会員：期限2ヶ月前以内
-#   "winter": [...],   # 冬季会員：期限2週間前以内
-#   "school": [...],   # スクール：期限1ヶ月前以内
-# }
-# 各要素: { id, member_number, full_name, email, member_type, expire_date, remain_days }
-@member_bp.route("/api/members/expiry_alerts", methods=["GET"])
-def get_expiry_alerts():
-    today  = date.today()
-    result = {"annual": [], "winter": [], "school": []}
-
-    # 有効なコースを持つ active 会員を取得
-    active_courses = (
-        MemberCourse.query
-        .filter(
-            MemberCourse.status == "active",
-            MemberCourse.end_date.is_(None),
-            MemberCourse.member_type.in_(["年会員", "冬季会員", "スクール"]),
-        )
-        .all()
-    )
-
-    for course in active_courses:
-        expire_dt = _calc_course_expire(course.member_type, course.start_date)
-        if not expire_dt:
-            continue
-
-        remain = (expire_dt - today).days
-
-        # 通知期間の判定
-        if course.member_type == "年会員" and remain > 60:
-            continue
-        if course.member_type == "冬季会員" and remain > 14:
-            continue
-        if course.member_type == "スクール" and remain > 31:
-            continue
-        if remain < 0:
-            continue  # 期限切れはスキップ（自動処理済み）
-
-        member = Member.query.get(course.member_id)
-        if not member or member.member_status not in ("active",):
-            continue
-
-        contact = MemberContact.query.filter_by(member_id=member.id).first()
-        email   = (contact.email or "") if contact else ""
-
-        row = {
-            "id":            member.id,
-            "member_number": member.member_number,
-            "full_name":     member.full_name,
-            "email":         email,
-            "member_type":   course.member_type,
-            "expire_date":   expire_dt.isoformat(),
-            "remain_days":   remain,
-        }
-
-        if course.member_type == "年会員":
-            result["annual"].append(row)
-        elif course.member_type == "冬季会員":
-            result["winter"].append(row)
-        elif course.member_type == "スクール":
-            result["school"].append(row)
-
-    # 残日数の少ない順にソート
-    for key in result:
-        result[key].sort(key=lambda x: x["remain_days"])
-
-    return jsonify(result)
-
-
-# =========================================
-# ★ 改定８：コース料金取得 API
-# =========================================
-
-# GET /api/config/course_fee?course=冬季継続
-# config_master からコース名に対応する料金を返す
-# レスポンス JSON: { "fee": "30000", "course": "冬季継続" }
-@member_bp.route("/api/config/course_fee", methods=["GET"])
-def get_course_fee():
-    course_name = (request.args.get("course") or "").strip()
-    if not course_name:
-        return jsonify({"error": "course パラメータが必要です"}), 400
-
-    row = db.session.execute(text("""
-        SELECT cv.value
-        FROM config_master cm
-        JOIN config_values cv ON cv.master_id = cm.id
-        WHERE cm.item_name = :item_name
-          AND cv.is_active = TRUE
-        ORDER BY cv.sort_order, cv.id
-        LIMIT 1
-    """), {"item_name": course_name}).fetchone()
-
-    if not row:
-        return jsonify({"fee": None, "course": course_name})
-
-    return jsonify({"fee": row[0], "course": course_name})
-
 
 # =========================================
 # エラーハンドラ

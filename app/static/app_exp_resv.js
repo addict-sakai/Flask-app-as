@@ -96,17 +96,16 @@ const ExpApp = (() => {
     _bindExpAppModal();
     _bindKeyboard();
 
-    // config 一括取得
-    try {
-      S.config = await apiFetch("/api/exp/config");
-      _populateSelects();
-    } catch (e) {
-      toast("設定データの取得に失敗しました", "error");
-    }
+    // config・一覧・カレンダー・件数を並列取得
+    const configPromise = apiFetch("/api/exp/config")
+      .then(cfg => { S.config = cfg; _populateSelects(); })
+      .catch(() => toast("設定データの取得に失敗しました", "error"));
 
     loadList();
     loadCalendar();
     loadUnlinkedCount();
+
+    await configPromise;
     // 30秒ごとにリアルタイム更新
     setInterval(loadUnlinkedCount, 30000);
 

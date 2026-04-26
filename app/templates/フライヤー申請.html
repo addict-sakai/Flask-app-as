@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- フライヤー申請.html  改定（2026-04-11）: ツアー申込リンク有効化 -->
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>フライヤー申請 | Mt.FUJI PARAGLIDING</title>
+  <title>申込一覧 | Mt.FUJI PARAGLIDING</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <style>
     /* index と同じ style.css を継承しつつ、タイトル直下に戻るリンクを追加 */
@@ -26,16 +27,16 @@
   </style>
 </head>
 <body>
-  <h1>フライヤー申請</h1>
+  <h1>申込一覧</h1>
   <a href="/" class="back-link">← トップへ戻る</a>
 
   <div class="menu">
-    <a href="/apply"      class="btn" target="_self">（新規）フライヤー　コース申込</a>
+    <a href="/apply"      class="btn" target="_self">（新規）会員/スクール/ビジター申込</a>
     <!-- <a href="/apply_winter" class="btn" target="_self">冬季限定会員申込</a> -->
     <a href="/apply_a"    class="btn" target="_self">（新規）Ａコース申込</a>
     <!-- <a href="/apply_v"    class="btn" target="_self">ビジター申込</a> -->
     <a href="/apply_upd"  class="btn" target="_self">コース変更/更新・登録内容修正</a>
-    <a href=""  class="btn_1" target="_self">ツアー申請</a>
+    <a href="/apply_tour_select" class="btn" target="_self">ツアー申込</a>
     <!-- <a href="/apply_club" class="btn" target="_self">クラブ入会案内</a> -->
   </div>
 </body>

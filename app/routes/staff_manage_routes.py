@@ -1,8 +1,13 @@
 """
-staff_manage_routes.py  rev.5（改定８ 2026-03-31）
+staff_manage_routes.py  rev.6（改定４ 2026-04-12）
 スタッフ管理ダッシュボード API
 
-改定８変更点:
+改定４変更点:
+  1. ダッシュボードに tour_pending を追加
+       ツアー申込（pending）をフライヤー申請（未）セクションに表示
+  2. TourBooking import 追加
+
+改定８変更点（維持）:
   1. _get_expiry_alerts() 追加
        コース期限・フライヤー登録期限・リパック日の
        期限切れ/期限前をまとめて返す
@@ -10,18 +15,24 @@ staff_manage_routes.py  rev.5（改定８ 2026-03-31）
   3. POST /api/staff/send_expiry_alert/<member_id>
        期限アラートの案内メールを送信する
 """
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template
 from app.db import db
 from app.models.member import Member
 from app.models.member_application import MemberApplication   # ★ 追加
 from app.models.member_course   import MemberCourse             # ★ 改定６追加
 from app.models.member_contact  import MemberContact            # ★ スリム化追加
 from app.models.member_flyer    import MemberFlyer              # ★ スリム化追加
+from app.models.tour_booking    import TourBooking              # ★ 改定４追加
 from datetime import date, datetime, timedelta
 from calendar import monthrange
 import traceback
 
 staff_manage_bp = Blueprint("staff_manage", __name__)
+
+
+@staff_manage_bp.route("/apply_staff_manage")
+def staff_manage_page():
+    return render_template("スタッフ.html")
 
 
 # =========================================
@@ -32,6 +43,7 @@ staff_manage_bp = Blueprint("staff_manage", __name__)
 def staff_dashboard():
     return jsonify({
         "flyer":         _get_flyer_pending(),
+        "tour":          _get_tour_pending(),              # ★ 改定４追加
         "experience":    _get_exp_pending(),
         "payment":       _get_payment_pending(),
         "update_apps":   _get_update_applications(),   # ★ 追加
@@ -171,6 +183,40 @@ def confirm_member(member_id):
 # 内部ヘルパー
 # =========================================
 
+def _get_tour_pending():
+    """
+    ★ 改定４追加
+    ツアー申込（未処理 pending）
+    判定: tour_bookings.app_status = 'pending'
+    """
+    try:
+        bookings = (
+            TourBooking.query
+            .filter_by(app_status="pending")
+            .order_by(TourBooking.created_at.desc())
+            .all()
+        )
+        items = []
+        for b in bookings:
+            leader = next(
+                (l for l in sorted(b.leaders, key=lambda x: x.sort_order)), None
+            )
+            items.append({
+                "id":               b.id,
+                "booking_no":       b.booking_no,
+                "school_name":      b.school_name,
+                "contact_email":    b.contact_email,
+                "flight_date_from": b.flight_date_from.isoformat() if b.flight_date_from else None,
+                "flight_date_to":   b.flight_date_to.isoformat()   if b.flight_date_to   else None,
+                "leader_name":      leader.full_name if leader else "—",
+                "created_at":       b.created_at.strftime("%Y-%m-%d") if b.created_at else None,
+            })
+        return {"total": len(items), "items": items}
+    except Exception:
+        traceback.print_exc()
+        return {"total": 0, "items": [], "error": "取得失敗"}
+
+
 def _get_flyer_pending():
     """
     フライヤー申請（未処理）
@@ -184,15 +230,20 @@ def _get_flyer_pending():
             .all()
         )
 
+        # ── N+1防止：active コースを1クエリで一括取得 ────────────
+        m_ids = [m.id for m in members]
+        courses = MemberCourse.query.filter(
+            MemberCourse.member_id.in_(m_ids),
+            MemberCourse.status == 'active',
+            MemberCourse.end_date.is_(None),
+        ).all() if m_ids else []
+        course_map = {cc.member_id: cc for cc in courses}
+
         by_type: dict[str, int] = {}
         items = []
         for m in members:
-            # member_courses（現在有効）から取得、未作成なら "不明"
-            try:
-                current_course = MemberCourse.get_current(m.id)
-                mtype = current_course.member_type if current_course else "不明"
-            except Exception:
-                mtype = "不明"
+            current_course = course_map.get(m.id)
+            mtype = current_course.member_type if current_course else "不明"
             by_type[mtype] = by_type.get(mtype, 0) + 1
             items.append({
                 "id":               m.id,
@@ -330,15 +381,20 @@ def _get_update_applications():
             "info_change":   "情報変更",
         }
 
+        # ── N+1防止：コースを1クエリで一括取得 ──────────────────
+        app_member_ids = [a.member_id for a in apps if a.member_id]
+        app_courses = MemberCourse.query.filter(
+            MemberCourse.member_id.in_(app_member_ids),
+            MemberCourse.status == 'active',
+            MemberCourse.end_date.is_(None),
+        ).all() if app_member_ids else []
+        app_course_map = {cc.member_id: cc for cc in app_courses}
+
         items = []
         for a in apps:
             m = a.member   # MemberApplication.member リレーション
-            # member_type は member_courses（現在有効）から取得
-            try:
-                current_course = MemberCourse.get_current(a.member_id) if m else None
-                mtype = current_course.member_type if current_course else "—"
-            except Exception:
-                mtype = "—"
+            current_course = app_course_map.get(a.member_id) if m else None
+            mtype = current_course.member_type if current_course else "—"
             items.append({
                 "app_id":           a.id,
                 "member_id":        a.member_id,
@@ -356,6 +412,35 @@ def _get_update_applications():
     except Exception:
         traceback.print_exc()
         return {"total": 0, "items": [], "error": "取得失敗"}
+
+# =========================================
+# ★ 改定４追加
+# ツアー案内メール送信 API
+# POST /api/staff/send_tour_mail
+# =========================================
+@staff_manage_bp.route("/api/staff/send_tour_mail", methods=["POST"])
+def send_tour_mail():
+    """
+    ツアー申込承認の案内メールを送信する。
+    リクエストボディ: { from_email, to_email, subject, body }
+    """
+    try:
+        from app.routes.member_routes import _do_send_mail
+        data       = request.get_json(force=True) or {}
+        from_email = data.get("from_email", "").strip()
+        to_email   = data.get("to_email",   "").strip()
+        subject    = data.get("subject",    "").strip()
+        body       = data.get("body",       "").strip()
+
+        if not from_email or not to_email or not subject:
+            return jsonify({"error": "送信元・送信先・件名は必須です"}), 400
+
+        _do_send_mail(from_email, to_email, subject, body)
+        return jsonify({"status": "ok", "message": "案内メールを送信しました"})
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "メール送信に失敗しました"}), 500
+
 
 # =========================================
 # ★ 改定８追加
@@ -422,24 +507,32 @@ def _get_expiry_alerts():
             .all()
         )
 
+        # ── N+1防止：コース・連絡先を一括取得 ────────────────────
+        active_member_ids = [m.id for m in members]
+        ea_courses = MemberCourse.query.filter(
+            MemberCourse.member_id.in_(active_member_ids),
+            MemberCourse.status == 'active',
+            MemberCourse.end_date.is_(None),
+        ).all() if active_member_ids else []
+        ea_course_map = {cc.member_id: cc for cc in ea_courses}
+
+        ea_contacts = MemberContact.query.filter(
+            MemberContact.member_id.in_(active_member_ids)
+        ).all() if active_member_ids else []
+        ea_contact_map = {cc.member_id: cc for cc in ea_contacts}
+
         for m in members:
             flyer  = m.flyer
-            course = MemberCourse.get_current(m.id)
+            course = ea_course_map.get(m.id)
 
+            contact = ea_contact_map.get(m.id)
             member_info = {
                 "member_id":     m.id,
                 "full_name":     m.full_name or "（不明）",
                 "member_number": m.member_number or "—",
                 "license":       flyer.license if flyer else None,
-                "email":         None,
+                "email":         contact.email if contact else None,
             }
-
-            # email を MemberContact から取得
-            try:
-                contact = MemberContact.query.filter_by(member_id=m.id).first()
-                member_info["email"] = contact.email if contact else None
-            except Exception:
-                pass
 
             # ── 項1: コース期限 ───────────────────────────────────
             if course and course.member_type in ("年会員", "スクール", "冬季会員"):
@@ -559,3 +652,213 @@ def _repack_expiry(repack_date: date) -> date:
     exp      = _add_months(base, 5)
     last_day = monthrange(exp.year, exp.month)[1]
     return exp.replace(day=last_day)
+
+
+# =========================================
+# コース変更情報取得 API
+# GET /api/staff/member_course_change/<member_id>
+# =========================================
+@staff_manage_bp.route("/api/staff/member_course_change/<int:member_id>", methods=["GET"])
+def get_member_course_change(member_id):
+    """
+    会員情報編集のコース変更パネル用。
+    1. member_applications に course_change + pending があれば changes_json を返す
+    2. なければ member_courses の現在 active レコードを返す
+    3. どちらもなければ null を返す
+    """
+    try:
+        # ① course_change + pending を探す
+        pending = (
+            MemberApplication.query
+            .filter_by(
+                member_id=member_id,
+                application_type="course_change",
+                app_status="pending",
+            )
+            .order_by(MemberApplication.applied_at.desc())
+            .first()
+        )
+        if pending:
+            ch = pending.get_changes()
+            return jsonify({
+                "source":      "pending",
+                "member_type": ch.get("member_type") or None,
+                "course_name": ch.get("course_name") or None,
+                "course_fee":  ch.get("course_fee")  or None,
+                "applied_at":  pending.applied_at.strftime("%Y-%m-%d") if pending.applied_at else None,
+                "app_id":      pending.id,
+            })
+
+        # ② member_courses の現在 active を返す
+        current = MemberCourse.get_current(member_id)
+        if current:
+            return jsonify({
+                "source":      "current",
+                "member_type": current.member_type,
+                "course_name": current.course_name,
+                "course_fee":  current.course_fee,
+                "applied_at":  None,
+                "app_id":      None,
+            })
+
+        return jsonify(None)
+
+    except Exception:
+        traceback.print_exc()
+        return jsonify(None)
+
+
+# =========================================
+# カレンダーデータ API
+# GET /api/staff/calendar?year=YYYY&month=MM
+# 指定月の各日について:
+#   tours     : ツアー申込（confirmed含む全件）の一覧
+#   exp_count : 体験予約件数
+#   unpaid    : 入山未入金件数
+# =========================================
+@staff_manage_bp.route("/api/staff/calendar", methods=["GET"])
+def staff_calendar():
+    try:
+        today = date.today()
+        year  = int(request.args.get("year",  today.year))
+        month = int(request.args.get("month", today.month))
+
+        first_day = date(year, month, 1)
+        last_day  = date(year, month, monthrange(year, month)[1])
+
+        # ── ツアー（期間が当月に重なるもの）──────────────────────
+        sql_tour = db.text("""
+            SELECT id, booking_no, school_name, flight_date_from, flight_date_to, app_status
+            FROM tour_bookings
+            WHERE app_status != 'cancelled'
+              AND flight_date_from <= :last_day
+              AND flight_date_to   >= :first_day
+            ORDER BY flight_date_from ASC
+        """)
+        tour_rows = db.session.execute(
+            sql_tour, {"first_day": first_day, "last_day": last_day}
+        ).fetchall()
+
+        # ── 体験予約（当月分）──────────────────────────────────
+        sql_exp = db.text("""
+            SELECT reservation_date, COUNT(*) AS cnt
+            FROM exp_reservation
+            WHERE (cancelled IS NULL OR cancelled = FALSE)
+              AND reservation_date >= :first_day
+              AND reservation_date <= :last_day
+            GROUP BY reservation_date
+        """)
+        exp_rows = db.session.execute(
+            sql_exp, {"first_day": first_day, "last_day": last_day}
+        ).fetchall()
+        exp_map = {str(r[0]): r[1] for r in exp_rows}
+
+        # ── 入山未入金（entry_date が当月・入山料未確認）──────────
+        sql_pay = db.text("""
+            SELECT entry_date, COUNT(*) AS cnt
+            FROM io_flight
+            WHERE (entrance_fee_paid IS NULL OR entrance_fee_paid = FALSE)
+              AND entry_date >= :first_day
+              AND entry_date <= :last_day
+            GROUP BY entry_date
+        """)
+        pay_rows = db.session.execute(
+            sql_pay, {"first_day": first_day, "last_day": last_day}
+        ).fetchall()
+        pay_map = {str(r[0]): r[1] for r in pay_rows}
+
+        # ── ツアーを日付ごとにマッピング ──────────────────────────
+        # 期間中の各日にツアーを紐づける
+        tour_by_date = {}  # "YYYY-MM-DD" -> [ {id, booking_no, school_name, ...} ]
+        for r in tour_rows:
+            t_from = r[3] if isinstance(r[3], date) else date.fromisoformat(str(r[3]))
+            t_to   = r[4] if isinstance(r[4], date) else date.fromisoformat(str(r[4]))
+            cur = max(t_from, first_day)
+            end = min(t_to,   last_day)
+            d = cur
+            while d <= end:
+                key = d.isoformat()
+                if key not in tour_by_date:
+                    tour_by_date[key] = []
+                tour_by_date[key].append({
+                    "id":           r[0],
+                    "booking_no":   r[1],
+                    "school_name":  r[2],
+                    "date_from":    str(r[3]),
+                    "date_to":      str(r[4]),
+                    "app_status":   r[5],
+                })
+                d += timedelta(days=1)
+
+        # ── 日別データを構築 ──────────────────────────────────────
+        num_days = monthrange(year, month)[1]
+        days = []
+        for day in range(1, num_days + 1):
+            d_str = date(year, month, day).isoformat()
+            days.append({
+                "date":      d_str,
+                "tours":     tour_by_date.get(d_str, []),
+                "exp_count": exp_map.get(d_str, 0),
+                "unpaid":    pay_map.get(d_str, 0),
+            })
+
+        return jsonify({
+            "year":  year,
+            "month": month,
+            "days":  days,
+        })
+
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "カレンダーデータ取得失敗"}), 500
+
+
+# =========================================
+# 入山未入金 日別詳細 API
+# GET /api/staff/calendar_pay?date=YYYY-MM-DD
+# =========================================
+@staff_manage_bp.route("/api/staff/calendar_pay", methods=["GET"])
+def calendar_pay_detail():
+    try:
+        date_str = request.args.get("date")
+        if not date_str:
+            return jsonify([])
+
+        # ── 入山料未確認 ──
+        sql_e = db.text("""
+            SELECT id, entry_date, full_name, member_number, member_class
+            FROM io_flight
+            WHERE (entrance_fee_paid IS NULL OR entrance_fee_paid = FALSE)
+              AND entry_date = :date_str
+            ORDER BY id ASC
+        """)
+        rows_e = db.session.execute(sql_e, {"date_str": date_str}).fetchall()
+
+        # ── 山チン未確認 ──
+        sql_y = db.text("""
+            SELECT id, entry_date, full_name, member_number, member_class
+            FROM io_flight
+            WHERE yamachin = TRUE
+              AND (yamachin_confirmed IS NULL OR yamachin_confirmed = FALSE)
+              AND entry_date = :date_str
+            ORDER BY id ASC
+        """)
+        rows_y = db.session.execute(sql_y, {"date_str": date_str}).fetchall()
+
+        def to_item(r, confirm_type):
+            return {
+                "id":            r[0],
+                "flight_date":   str(r[1]) if r[1] else None,
+                "full_name":     r[2] or "（不明）",
+                "member_number": r[3] or "—",
+                "member_type":   r[4] or "—",
+                "confirm_type":  confirm_type,
+            }
+
+        items = [to_item(r, "entrance") for r in rows_e] + \
+                [to_item(r, "yamachin") for r in rows_y]
+        return jsonify(items)
+
+    except Exception:
+        traceback.print_exc()
+        return jsonify([]), 500

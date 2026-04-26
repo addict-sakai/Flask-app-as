@@ -38,9 +38,16 @@ def create_app():
 
     init_db(app)
 
-    # ★ member_bp と init_member_scheduler を同時にインポート
-    from .routes.member_routes import member_bp, init_member_scheduler
+    # member_routes（CRUD・申込・申請）
+    from .routes.member_routes import member_bp
     app.register_blueprint(member_bp)
+
+    # member_mail_routes（メール送信API）
+    from .routes.member_mail_routes import member_mail_bp
+    app.register_blueprint(member_mail_bp)
+
+    # member_schedule（APScheduler 日次バッチ）
+    from .routes.member_schedule import init_member_scheduler
     init_member_scheduler(app)   # 毎日 00:05 に期限チェック・ビジター自動変更
 
     from .routes.experience_routes import experience_bp
@@ -68,5 +75,8 @@ def create_app():
     
     from .routes.staff_manage_routes import staff_manage_bp
     app.register_blueprint(staff_manage_bp)
+
+    from .routes.tour_booking_routes import tour_bp
+    app.register_blueprint(tour_bp)
 
     return app

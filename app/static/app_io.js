@@ -332,6 +332,14 @@ const IOApp = (() => {
     document.getElementById('glider-color').value = data.glider_color || '';
     document.getElementById('radio-type').value   = '';
 
+    // 保険区分の初期値：スクール（他校スクール除く）は「年間」、それ以外は「個人」
+    const _mt = data.member_type || '';
+    const defaultIns = (_mt.includes('スクール') && !_mt.includes('他校')) ? '年間' : '個人';
+    document.querySelectorAll('.io-ins-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.val === defaultIns);
+    });
+    _insurance = defaultIns;
+
     const zone    = document.getElementById('alerts-zone');
     const blocked = data.license_status === 'expired' || data.repack_status === 'expired';
 

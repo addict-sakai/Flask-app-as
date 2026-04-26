@@ -9,6 +9,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style_mem_upd.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style_qrscan.css') }}" />
+  <style>
+    /* 現在コース：開始日右横のコース内容ラベル（改定 2026/04/12） */
+    .current-course-name {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 1px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary, #555);
+      background: var(--surface-alt, #f0f0f0);
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+    }
+    .current-course-name.hidden { display: none; }
+  </style>
 </head>
 <body>
 
@@ -105,6 +120,7 @@
               <div class="current-course-date-row">
                 <span class="date-label">開始日</span>
                 <span class="date-value" id="currentApplyDate">―</span>
+                <span class="current-course-name hidden" id="currentCourseName"></span>
               </div>
               <div class="current-course-date-row">
                 <span class="date-label">期限日</span>
@@ -191,8 +207,8 @@
               <label class="field-label">性別</label>
               <select id="gender" name="gender" class="field-input">
                 <option value="">選択してください</option>
-                <option value="男性">男性</option>
-                <option value="女性">女性</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
                 <option value="その他">その他</option>
               </select>
             </div>

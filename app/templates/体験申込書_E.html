@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- 改定1 2026/04/01 -->
+<!-- 改定4 2026/04/14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Experience Application</title>
+  <title>Paragliding Experience – Registration & Safety Agreement</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -24,23 +24,13 @@
   <div class="fixed-header">
     <div class="page-header">
 
-      <!-- Left: Language switcher dropdown -->
+      <!-- Left: Back button -->
       <div class="page-header-left">
-        <div class="lang-dropdown-wrap">
-          <button type="button" class="lang-dropdown-btn" id="langDropdownBtn">
-            <span class="lang-icon">🌐</span>
-            <span id="langDropdownLabel">English</span>
-            <span class="lang-caret">▾</span>
-          </button>
-          <ul class="lang-dropdown-menu" id="langDropdownMenu">
-            <li class="lang-dropdown-item" data-lang="ja">🇯🇵 日本語</li>
-            <li class="lang-dropdown-item lang-dropdown-item--active" data-lang="en">🇬🇧 English</li>
-          </ul>
-        </div>
+        <a href="/apply_exp_select" class="back-link-btn">← Back</a>
       </div>
 
       <!-- Center: Title -->
-      <h1 class="page-title">Experience Application</h1>
+      <h1 class="page-title">Paragliding Experience – Registration & Safety Agreement</h1>
 
       <!-- Right: Hamburger menu -->
       <div class="page-header-right">
@@ -63,13 +53,13 @@
   <div class="scroll-area">
     <form id="entryForm">
 
-      <!-- ── Personal Information ── -->
+      <!-- ── Participant Information ── -->
       <div class="form-section">
-        <h2 class="section-title">Personal Information</h2>
+        <h2 class="section-title">Participant Information</h2>
         <div class="form-grid">
 
           <div class="field-group">
-            <label class="field-label required">Application Date</label>
+            <label class="field-label required">Experience Day</label>
             <input type="text" class="field-input js-date" id="application_date" name="application_date">
           </div>
 
@@ -77,34 +67,6 @@
             <label class="field-label required">Full Name</label>
             <input type="text" class="field-input" id="fullName" name="full_name"
                    placeholder="e.g. Fuji Taro">
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Phonetic (Furigana)</label>
-            <input type="text" class="field-input" id="furigana" name="furigana"
-                   placeholder="Auto-filled">
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Gender</label>
-            <select class="field-input" name="gender">
-              <option value="">Select</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Blood Type</label>
-            <select class="field-input" name="blood_type">
-              <option value="">Select</option>
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="O">O</option>
-              <option value="AB">AB</option>
-              <option value="Unknown">Unknown</option>
-            </select>
           </div>
 
           <div class="field-group">
@@ -118,36 +80,39 @@
           </div>
 
           <div class="field-group">
+            <label class="field-label">Height (cm)</label>
+            <input type="text" class="field-input" id="height" name="height" inputmode="decimal" placeholder="e.g. 170">
+          </div>
+
+          <div class="field-group">
             <label class="field-label">Weight (kg)</label>
-            <input type="text" class="field-input" id="weight" name="weight" inputmode="decimal">
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ── Contact Information ── -->
-      <div class="form-section">
-        <h2 class="section-title">Contact Information</h2>
-        <div class="form-grid">
-
-          <div class="field-group">
-            <label class="field-label required">Mobile Phone</label>
-            <input type="tel" class="field-input" name="mobile_phone" inputmode="tel">
+            <input type="text" class="field-input" id="weight" name="weight" inputmode="decimal" placeholder="e.g. 65">
           </div>
 
           <div class="field-group">
-            <label class="field-label required">E-mail</label>
+            <label class="field-label required">Phone</label>
+            <input type="tel" class="field-input" name="mobile_phone" inputmode="tel" placeholder="e.g. +81-90-0000-0000">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">Email</label>
             <input type="email" class="field-input" id="email" name="email" inputmode="email">
           </div>
 
-          <div class="field-group">
-            <label class="field-label">Country of Residence</label>
-            <input type="text" class="field-input" name="country" placeholder="e.g. Japan">
+          <div class="field-group span-3">
+            <label class="field-label">Address in Japan</label>
+            <input type="text" class="field-input" id="address" name="address" placeholder="e.g. 1-1 Fujisan, Shizuoka">
           </div>
 
-          <div class="field-group span-3">
-            <label class="field-label">Address</label>
-            <input type="text" class="field-input" id="address" name="address">
+          <div class="field-group">
+            <label class="field-label">Country</label>
+            <input type="text" class="field-input" name="country" placeholder="e.g. Australia">
+          </div>
+
+          <div class="field-group span-2">
+            <label class="field-label">Booking Source</label>
+            <input type="text" class="field-input" name="book_source"
+                   placeholder="Please specify platform if applicable (e.g. Airbnb, Viator, Klook…)">
           </div>
 
         </div>
@@ -164,13 +129,13 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label required">Phone Number</label>
-            <input type="tel" class="field-input" name="emergency_phone" inputmode="tel">
+            <label class="field-label">Relationship</label>
+            <input type="text" class="field-input" name="relationship" placeholder="e.g. Spouse">
           </div>
 
           <div class="field-group">
-            <label class="field-label">Relationship</label>
-            <input type="text" class="field-input" name="relationship" placeholder="e.g. Spouse">
+            <label class="field-label required">Phone</label>
+            <input type="tel" class="field-input" name="emergency_phone" inputmode="tel">
           </div>
 
         </div>
@@ -178,52 +143,174 @@
 
       <!-- ── Course Selection ── -->
       <div class="form-section">
-        <h2 class="section-title">Course Selection</h2>
+        <h2 class="section-title">Course Selection <small style="font-weight:400;font-size:0.85em;">(please check one)</small></h2>
         <div class="form-grid">
 
-          <div class="field-group span-3">
-            <label class="field-label required">Course</label>
-            <select class="field-input" name="course_exp" id="courseExpSelect">
-              <option value="">-- Please select --</option>
-            </select>
+          <div class="field-group">
+            <label class="field-label">Reservation Number</label>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span style="font-weight:600; font-size:1em; letter-spacing:0.03em; color:var(--text-primary,#222); white-space:nowrap;">P-</span>
+              <input type="text" class="field-input" id="resvNoDigits"
+                     inputmode="numeric" maxlength="5" placeholder="00000"
+                     style="width:90px; letter-spacing:0.08em;"
+                     oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <input type="hidden" name="resv_no" id="resvNoHidden">
+            <p class="field-note" style="margin-top:4px;">Leave blank if you don't have a reservation number.</p>
           </div>
 
           <div class="field-group span-3">
-            <label class="field-label">How did you find us?</label>
-            <select class="field-input" name="school_find">
-              <option value="">Select</option>
-              <option value="Website">Website</option>
-              <option value="Jalan">Jalan</option>
-              <option value="Asoview">Asoview</option>
-              <option value="SNS">SNS</option>
-              <option value="Referral">Referral</option>
-              <option value="Other">Other</option>
-            </select>
+            <label class="field-label required">Course</label>
+            <div class="radio-group" id="courseRadioGroup">
+              <label class="radio-label">
+                <input type="radio" name="course_exp" value="slope">
+                Introductory Training (Slope Practice) – ¥15,000
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="course_exp" value="tandem">
+                Tandem Flight – ¥20,000
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="course_exp" value="package">
+                Training + Tandem Package – ¥30,000
+              </label>
+            </div>
+            <p class="field-note">☑ Insurance included in all courses</p>
           </div>
 
         </div>
       </div>
 
-      <!-- ── Participation Agreement ── -->
+      <!-- ── Basic Information ── -->
       <div class="form-section">
-        <h2 class="section-title">Participation Agreement</h2>
+        <h2 class="section-title">Basic Information</h2>
+        <div class="form-grid">
+
+          <div class="field-group span-3">
+            <label class="field-label">First time paragliding?</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="first_time_para" value="true"> Yes</label>
+              <label><input type="radio" name="first_time_para" value="false"> No</label>
+            </div>
+          </div>
+
+          <div class="field-group span-3">
+            <label class="field-label">Preferred language</label>
+            <div class="radio-inline" id="langPrefGroup">
+              <label><input type="radio" name="language" value="English"> English</label>
+              <label><input type="radio" name="language" value="Japanese"> Japanese</label>
+              <label><input type="radio" name="language" value="Other" id="langOtherRadio"> Other</label>
+            </div>
+            <div id="langOtherWrap" style="display:none; margin-top:8px;">
+              <input type="text" class="field-input" name="other_language" id="otherLangInput" placeholder="Please specify">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Health Declaration ── -->
+      <div class="form-section">
+        <h2 class="section-title">Health Declaration</h2>
+        <div class="form-grid">
+
+          <!-- Any medical condition? -->
+          <div class="field-group span-3">
+            <label class="field-label">Any medical condition?</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="condtion" value="false" class="health-radio" data-memo="memo_condtion_wrap"> No</label>
+              <label><input type="radio" name="condtion" value="true"  class="health-radio" data-memo="memo_condtion_wrap"> Yes:</label>
+            </div>
+            <div id="memo_condtion_wrap" class="memo-wrap" style="display:none; margin-top:8px;">
+              <input type="text" class="field-input" name="memo_condtion" placeholder="Please describe">
+            </div>
+          </div>
+
+          <!-- Any injury / physical limitation? -->
+          <div class="field-group span-3">
+            <label class="field-label">Any injury / physical limitation?</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="physical" value="false" class="health-radio" data-memo="memo_physical_wrap"> No</label>
+              <label><input type="radio" name="physical" value="true"  class="health-radio" data-memo="memo_physical_wrap"> Yes:</label>
+            </div>
+            <div id="memo_physical_wrap" class="memo-wrap" style="display:none; margin-top:8px;">
+              <input type="text" class="field-input" name="memo_physical" placeholder="Please describe">
+            </div>
+          </div>
+
+          <!-- Under medical treatment? -->
+          <div class="field-group span-3">
+            <label class="field-label">Under medical treatment?</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="treatment" value="false" class="health-radio" data-memo="memo_treatment_wrap"> No</label>
+              <label><input type="radio" name="treatment" value="true"  class="health-radio" data-memo="memo_treatment_wrap"> Yes:</label>
+            </div>
+            <div id="memo_treatment_wrap" class="memo-wrap" style="display:none; margin-top:8px;">
+              <input type="text" class="field-input" name="memo_treatment" placeholder="Please describe">
+            </div>
+          </div>
+
+          <!-- Pregnant? -->
+          <div class="field-group span-3">
+            <label class="field-label">Pregnant?</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="pregnant" value="false"> No</label>
+              <label><input type="radio" name="pregnant" value="true"> Yes</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Safety & Responsibility Agreement ── -->
+      <div class="form-section">
+        <h2 class="section-title">Safety &amp; Responsibility Agreement</h2>
         <div class="pledge-box">
-          <p class="pledge-text">
-            I, <strong id="agreeName" class="agree-name">　　　　　　　　　</strong>, fully understand the risks associated with paragliding experience flights and agree to follow all instructions from the staff.
-            I hereby waive any claims against the school and its staff for any injuries or damages sustained during the experience, beyond the scope of personal accident insurance.
+          <ul class="pledge-list">
+            <li>I understand that paragliding is an outdoor activity involving risks and I am responsible for my own participation. I will follow all instructor safety instructions.</li>
+            <li>I acknowledge and accept that any injury, damage, or loss I may suffer as a result of participating in this activity — whether foreseeable or unforeseeable — shall be entirely my own responsibility.</li>
+            <li>I further agree that I, as well as my family members and any related parties, will not make any claims for compensation or liability against the school, its staff, or related parties, except within the scope of the applicable insurance coverage.</li>
+            <li>The school is not liable beyond insurance coverage.</li>
+            <li>I understand that this is an outdoor activity and agree to participate in appropriate clothing that may become dirty or damaged. My personal belongings are my responsibility — including but not limited to clothing, watches, glasses, or other accessories, regardless of the cause.</li>
+            <li>Activities depend on weather and may be cancelled or modified.</li>
+            <li>There will be no refund in case of unsafe behavior or rule violation.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Media Consent ── -->
+      <div class="form-section">
+        <h2 class="section-title">Media Consent</h2>
+        <div class="form-grid">
+          <div class="field-group span-3">
+            <label class="field-label">Photos/videos may be used for promotion:</label>
+            <div class="radio-inline">
+              <label><input type="radio" name="media" value="false"> No</label>
+              <label><input type="radio" name="media" value="true"> Yes</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Signature ── -->
+      <div class="form-section">
+        <h2 class="section-title">Signature</h2>
+        <div class="pledge-box">
+          <p class="pledge-text" style="margin-bottom:16px;">
+            I have read and understood this document and agree to its terms.
           </p>
-          <div class="form-grid" style="margin-top:20px;">
+          <div class="form-grid">
             <div class="field-group">
-              <label class="field-label required">Confirmation Date</label>
+              <label class="field-label required">Date</label>
               <input type="text" class="field-input" id="agreement_date" name="agreement_date"
                      readonly style="background:var(--surface-alt, #f5f5f5); color:var(--text-secondary,#555); cursor:not-allowed;">
             </div>
             <div class="field-group">
-              <label class="field-label required">Signature</label>
-              <input type="text" class="field-input" name="signature_name" placeholder="Please sign here">
+              <label class="field-label required">Name &amp; Signature</label>
+              <input type="text" class="field-input" name="signature_name" placeholder="Please write your name">
             </div>
             <div class="field-group">
-              <label class="field-label">Guardian Name (Under 18)</label>
+              <label class="field-label">Guardian Signature (under 20)</label>
               <input type="text" class="field-input" name="guardian_name">
             </div>
           </div>
@@ -241,11 +328,11 @@
      Print Layout (hidden on screen)
 ══════════════════════════════════════ -->
 <div class="print-sheet print-only">
-  <h1>Experience Application</h1>
+  <h1>Paragliding Experience – Registration &amp; Safety Agreement</h1>
 
   <table class="pt">
     <tr>
-      <th>Application Date</th>
+      <th>Experience Day</th>
       <td colspan="3"><span id="p_application_date"></span></td>
     </tr>
   </table>
@@ -253,64 +340,104 @@
   <table class="pt">
     <tr>
       <th>Full Name</th><td><span id="p_full_name"></span></td>
-      <th>Phonetic</th><td><span id="p_furigana"></span></td>
-    </tr>
-    <tr>
-      <th>Gender</th><td><span id="p_gender"></span></td>
-      <th>Blood Type</th><td><span id="p_blood_type"></span></td>
-    </tr>
-    <tr>
       <th>Date of Birth</th><td><span id="p_birthday"></span></td>
+    </tr>
+    <tr>
       <th>Age</th><td><span id="p_age"></span></td>
+      <th>Height (cm)</th><td><span id="p_height"></span></td>
     </tr>
     <tr>
       <th>Weight (kg)</th><td><span id="p_weight"></span></td>
       <th></th><td></td>
     </tr>
     <tr>
-      <th>Mobile Phone</th><td><span id="p_mobile_phone"></span></td>
-      <th>E-mail</th><td><span id="p_email"></span></td>
+      <th>Phone</th><td><span id="p_mobile_phone"></span></td>
+      <th>Email</th><td><span id="p_email"></span></td>
+    </tr>
+    <tr>
+      <th>Address in Japan</th><td colspan="3"><span id="p_address"></span></td>
     </tr>
     <tr>
       <th>Country</th><td><span id="p_country"></span></td>
-      <th></th><td></td>
-    </tr>
-    <tr>
-      <th>Address</th><td colspan="3"><span id="p_address"></span></td>
+      <th>Booking Source</th><td><span id="p_book_source"></span></td>
     </tr>
     <tr>
       <th>Emergency Contact</th><td><span id="p_emergency_name"></span></td>
-      <th>Phone (Emergency)</th><td><span id="p_emergency_phone"></span></td>
+      <th>Relationship</th><td><span id="p_relationship"></span></td>
     </tr>
     <tr>
-      <th>Relationship</th><td><span id="p_relationship"></span></td>
-      <th></th><td></td>
+      <th>Emergency Phone</th><td colspan="3"><span id="p_emergency_phone"></span></td>
     </tr>
   </table>
 
   <table class="pt">
     <tr>
-      <th class="pt-section-head" colspan="4">Course</th>
+      <th class="pt-section-head" colspan="4">Course Selection</th>
     </tr>
     <tr>
-      <th>Course</th><td><span id="p_course_exp"></span></td>
-      <th>How did you find us</th><td><span id="p_school_find"></span></td>
+      <th>Reservation Number</th><td colspan="3"><span id="p_resv_no"></span></td>
+    </tr>
+    <tr>
+      <th>Course</th><td colspan="3"><span id="p_course_exp"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th class="pt-section-head" colspan="4">Basic Information</th>
+    </tr>
+    <tr>
+      <th>First time paragliding</th><td><span id="p_first_time_para"></span></td>
+      <th>Preferred language</th><td><span id="p_language"></span></td>
+    </tr>
+  </table>
+
+  <table class="pt">
+    <tr>
+      <th class="pt-section-head" colspan="4">Health Declaration</th>
+    </tr>
+    <tr>
+      <th>Medical condition</th><td><span id="p_condtion"></span></td>
+      <th>Details</th><td><span id="p_memo_condtion"></span></td>
+    </tr>
+    <tr>
+      <th>Injury / limitation</th><td><span id="p_physical"></span></td>
+      <th>Details</th><td><span id="p_memo_physical"></span></td>
+    </tr>
+    <tr>
+      <th>Under treatment</th><td><span id="p_treatment"></span></td>
+      <th>Details</th><td><span id="p_memo_treatment"></span></td>
+    </tr>
+    <tr>
+      <th>Pregnant</th><td colspan="3"><span id="p_pregnant"></span></td>
     </tr>
   </table>
 
   <div class="pt-agreement">
-    <strong>Participation Agreement</strong><br>
-    I, <span id="p_agree_name" class="pt-handwrite">　　　　　　　</span>, fully understand the risks associated with paragliding experience flights and agree to follow all instructions from the staff.
-    I hereby waive any claims against the school and its staff for any injuries or damages sustained during the experience, beyond the scope of personal accident insurance.
+    <strong>Safety &amp; Responsibility Agreement</strong>
+    <ul style="font-size:8pt; margin:4px 0 8px 16px; line-height:1.5;">
+      <li>I understand that paragliding is an outdoor activity involving risks and I am responsible for my own participation. I will follow all instructor safety instructions.</li>
+      <li>I acknowledge and accept that any injury, damage, or loss I may suffer as a result of participating in this activity — whether foreseeable or unforeseeable — shall be entirely my own responsibility.</li>
+      <li>I further agree that I, as well as my family members and any related parties, will not make any claims for compensation or liability against the school, its staff, or related parties, except within the scope of the applicable insurance coverage.</li>
+      <li>The school is not liable beyond insurance coverage.</li>
+      <li>I understand that this is an outdoor activity and agree to participate in appropriate clothing that may become dirty or damaged. My personal belongings are my responsibility — including but not limited to clothing, watches, glasses, or other accessories, regardless of the cause.</li>
+      <li>Activities depend on weather and may be cancelled or modified.</li>
+      <li>There will be no refund in case of unsafe behavior or rule violation.</li>
+    </ul>
     <table class="pt" style="margin-top:6px;">
       <tr>
-        <th>Confirmation Date</th><td><span id="p_agreement_date"></span></td>
-        <th>Signature</th><td><span id="p_signature_name"></span></td>
+        <th>Media Consent</th><td><span id="p_media"></span></td>
+        <th></th><td></td>
       </tr>
       <tr>
-        <th>Guardian Name (Under 18)</th><td colspan="3"><span id="p_guardian_name"></span></td>
+        <th>Date</th><td><span id="p_agreement_date"></span></td>
+        <th>Name &amp; Signature</th><td><span id="p_signature_name"></span></td>
+      </tr>
+      <tr>
+        <th>Guardian Signature (under 20)</th><td colspan="3"><span id="p_guardian_name"></span></td>
       </tr>
     </table>
+    <p style="font-size:8pt; margin-top:4px;">I have read and understood this document and agree to its terms.</p>
   </div>
 </div><!-- /print-sheet -->
 

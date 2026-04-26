@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!-- ツアー申込書.html  新規作成（2026-04-11）  改定５（2026/04/11）: 引率者分類対応・編集モード引率者readonly・参加日チェックボックス -->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ツアー申込詳細登録 | Mt.FUJI PARAGLIDING</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_tour.css') }}">
+  <!-- flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+</head>
+
+<body>
+<div class="screen-ui">
+
+  <!-- ── 固定ヘッダー ── -->
+  <div class="fixed-header">
+    <div class="page-header">
+      <div class="page-header-left" style="position:static; flex:1;">
+        <h1 class="page-title" style="font-size:16px;" id="pageTitle">ツアー申込詳細登録</h1>
+      </div>
+      <div class="page-header-right" style="position:static; flex-shrink:0;">
+        <button type="button" class="hamburger-btn" id="hmMenuBtn" aria-label="メニュー">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="hm-dropdown" id="hmDropdown">
+          <button type="button" class="hm-item hm-item--primary" id="submitBtn">✔ 申　込</button>
+          <button type="button" class="hm-item hm-item--ghost" id="deleteBtn" style="display:none; color:#dc2626;">🗑 削　除</button>
+          <button type="button" class="hm-item hm-item--ghost" id="exitBtn">✖ 終　了</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── スクロールエリア ── -->
+  <div class="scroll-area">
+
+    <!-- ①　申込情報 -->
+    <div class="form-section" id="section-basic">
+      <h2 class="section-title">申込情報</h2>
+      <div class="form-grid">
+
+        <!-- 登録番号（編集時のみ表示） -->
+        <div class="field-group span-3" id="bookingNoRow" style="display:none;">
+          <label class="field-label">登録番号</label>
+          <input type="text" class="field-input" id="bookingNoDisplay" readonly
+                 style="background:var(--surface-alt,#f5f5f5);color:var(--text-secondary,#555);font-family:'DM Mono',monospace;font-weight:600;letter-spacing:0.08em;">
+        </div>
+
+        <!-- スクール/エリア名（全幅） -->
+        <div class="field-group span-3">
+          <label class="field-label required">スクール / エリア名</label>
+          <input type="text" class="field-input" id="schoolName" placeholder="例：○○パラグライダースクール" maxlength="100">
+        </div>
+
+        <!-- 連絡先メールアドレス（全幅） -->
+        <div class="field-group span-3">
+          <label class="field-label required">連絡先メールアドレス</label>
+          <input type="email" class="field-input" id="contactEmail" placeholder="例：info@school.example.com" maxlength="200">
+        </div>
+
+        <!-- フライト開始日 -->
+        <div class="field-group">
+          <label class="field-label required">フライト開始日</label>
+          <input type="text" class="field-input" id="flightDateFrom" placeholder="年/月/日" autocomplete="off">
+        </div>
+
+        <!-- フライト終了日 -->
+        <div class="field-group">
+          <label class="field-label required">フライト終了日</label>
+          <input type="text" class="field-input" id="flightDateTo" placeholder="年/月/日" autocomplete="off">
+        </div>
+
+        <!-- フライト期間表示 -->
+        <div class="field-group span-3">
+          <div class="flight-date-display" id="flightDateDisplay">－</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ②　注記事項 -->
+    <div class="form-section" id="section-notice">
+      <h2 class="section-title">注記事項</h2>
+      <div class="notice-box">
+        <ul>
+          <li>初めて当エリアに来る引率者及び参加者は事前に個人でビジター申請または該当するコースの申請をお願いします。</li>
+          <li>新規登録の方は当日ショップにてQRカードを発行しますのでそのカードにて入下山をお願いします。</li>
+          <li>すでに登録済みの方は当エリアのQRカードをお持ちください。</li>
+          <li>登録済みの方は氏名と電話番号の検索で申込可能となります。</li>
+          <li><strong>スクール生の参加がある場合は引率者は教員資格（最低一人以上）が必須となります。</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ③　引率者 -->
+    <div class="form-section" id="section-leaders">
+      <h2 class="section-title">引率者（代表者）<span style="font-size:12px;font-weight:400;color:#dc2626;margin-left:8px;">※1名以上必須</span></h2>
+
+      <!-- 検索行 -->
+      <div class="search-row" id="leaderSearchRow">
+        <input type="text" class="search-name-input field-input" id="leaderSearchName" placeholder="氏名">
+        <input type="text" class="search-phone-input field-input" id="leaderSearchPhone" placeholder="電話番号">
+        <button type="button" class="btn-search" id="leaderSearchBtn">検索</button>
+      </div>
+
+      <!-- 検索結果ドロップダウン -->
+      <div class="search-result-wrap" style="margin-bottom:14px;">
+        <div class="search-dropdown" id="leaderDropdown"></div>
+      </div>
+
+      <!-- 引率者カードリスト -->
+      <div class="member-card-list" id="leaderCardList"></div>
+    </div>
+
+    <!-- ④　参加者 -->
+    <div class="form-section" id="section-participants">
+      <h2 class="section-title">参加者
+        <span id="participantCountBadge" style="font-size:13px;font-weight:400;margin-left:10px;color:var(--text-secondary,#555);">（0名）</span>
+      </h2>
+
+      <!-- 検索行 -->
+      <div class="search-row" id="participantSearchRow">
+        <input type="text" class="search-name-input field-input" id="participantSearchName" placeholder="氏名">
+        <input type="text" class="search-phone-input field-input" id="participantSearchPhone" placeholder="電話番号">
+        <button type="button" class="btn-search" id="participantSearchBtn">検索</button>
+      </div>
+
+      <!-- 検索結果ドロップダウン -->
+      <div class="search-result-wrap" style="margin-bottom:14px;">
+        <div class="search-dropdown" id="participantDropdown"></div>
+      </div>
+
+      <!-- 参加者カードリスト -->
+      <div class="member-card-list" id="participantCardList"></div>
+    </div>
+
+  </div><!-- /scroll-area -->
+</div><!-- /screen-ui -->
+
+<!-- ── 完了モーダル ── -->
+<div class="modal-overlay" id="completeModal">
+  <div class="modal-box">
+    <div class="modal-icon">✅</div>
+    <div class="modal-title" id="modalTitle">申込が完了しました</div>
+    <div class="modal-booking-no" id="modalBookingNo"></div>
+    <div class="modal-msg" id="modalMsg">
+      申込番号をお控えください。<br>
+      当日ショップにてご確認をお願いします。
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="modalNewBtn">新規申込</button>
+      <button type="button" class="btn btn-ghost" id="modalExitBtn">終　了</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='app_tour.js') }}"></script>
+</body>
+</html>

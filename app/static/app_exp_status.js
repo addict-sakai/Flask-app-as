@@ -102,15 +102,14 @@ const StatusApp = (() => {
     _bindPilotModal();
     _bindSchoolDetailModal();
 
-    // 設定を取得してモーダルのセレクトを準備
-    try {
-      S.config = await apiFetch("/api/exp_status/config");
-      _populateConfigSelects();
-    } catch (e) {
-      toast("設定データの取得に失敗", "warn");
-    }
+    // config と日別データを並列取得
+    const configPromise = apiFetch("/api/exp_status/config")
+      .then(cfg => { S.config = cfg; _populateConfigSelects(); })
+      .catch(() => toast("設定データの取得に失敗", "warn"));
 
-    await loadDay(S.currentDate);
+    const loadDayPromise = loadDay(S.currentDate);
+
+    await Promise.all([configPromise, loadDayPromise]);
   }
 
   /* ═══════════════════════════════════════
